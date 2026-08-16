@@ -4,8 +4,11 @@ use crate::sim::World;
 
 const MIN_SIMS: usize = 100;
 const MAX_SIMS: usize = 200_000;
-const MIN_ELO: f64 = 1000.0;
-const MAX_ELO: f64 = 2600.0;
+/// ClubElo's club scale is compressed relative to international Elo: the
+/// 2026-27 Süper Lig spans roughly 1509-1779. These bounds leave room for
+/// large scenario swings in both directions without admitting nonsense.
+const MIN_ELO: f64 = 1200.0;
+const MAX_ELO: f64 = 2000.0;
 /// Scenario prompts are forwarded verbatim to the paid LLM API, so cap them
 /// well below the 1 MB request-body limit to bound per-request token cost.
 pub const MAX_PROMPT_CHARS: usize = 2000;
@@ -88,17 +91,29 @@ mod tests {
     fn elo_overrides_validated() {
         let world = World::new();
         let mut overrides = HashMap::new();
-        overrides.insert("Argentina".to_string(), 2100.0);
+        overrides.insert("Galatasaray".to_string(), 1850.0);
         assert!(validate_elo_overrides(&world, &overrides).is_ok());
 
-        overrides.insert("Atlantis".to_string(), 1800.0);
+        overrides.insert("Atlantis FC".to_string(), 1600.0);
         assert!(validate_elo_overrides(&world, &overrides).is_err());
-        overrides.remove("Atlantis");
+        overrides.remove("Atlantis FC");
 
-        overrides.insert("Argentina".to_string(), 999.0);
+        overrides.insert("Galatasaray".to_string(), MIN_ELO - 1.0);
         assert!(validate_elo_overrides(&world, &overrides).is_err());
 
-        overrides.insert("Argentina".to_string(), 2601.0);
+        overrides.insert("Galatasaray".to_string(), MAX_ELO + 1.0);
         assert!(validate_elo_overrides(&world, &overrides).is_err());
+    }
+
+    /// Every club's starting rating must sit inside the accepted range, or a
+    /// scenario could never restore a club to its own baseline.
+    #[test]
+    fn every_club_baseline_rating_is_within_bounds() {
+        for (club, rating) in crate::data::elo() {
+            assert!(
+                (MIN_ELO..=MAX_ELO).contains(&rating),
+                "{club} baseline {rating} outside [{MIN_ELO}, {MAX_ELO}]"
+            );
+        }
     }
 }

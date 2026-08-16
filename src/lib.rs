@@ -2,6 +2,7 @@ pub mod data;
 pub mod dixoncoles;
 pub mod handlers;
 pub mod history;
+pub mod league;
 pub mod llm;
 pub mod models;
 pub mod odds;

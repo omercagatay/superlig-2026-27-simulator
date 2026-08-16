@@ -17,6 +17,13 @@ pub const UECL_SPOTS: usize = 1;
 pub const EUROPE_SPOTS: usize = UCL_SPOTS + UEL_SPOTS + UECL_SPOTS;
 pub const RELEGATION_SPOTS: usize = 3;
 
+/// Compile-time: the European and relegation zones must not overlap, or
+/// `simulate`'s position bucketing would count one club in both.
+const _: () = {
+    assert!(UCL_SPOTS + UEL_SPOTS + UECL_SPOTS == EUROPE_SPOTS);
+    assert!(EUROPE_SPOTS + RELEGATION_SPOTS < N_TEAMS);
+};
+
 /// 2026-27 Trendyol Süper Lig clubs with ClubElo ratings as of 2026-08-16.
 /// Order defines team indices throughout the simulator; `history::TeamIndex`
 /// is built from this same order so Dixon-Coles and pi-rating indices agree.
@@ -109,7 +116,10 @@ mod tests {
         assert_eq!(per_club.len(), N_TEAMS);
         assert!(per_club.values().all(|&c| c == 34), "every club plays 34");
         assert_eq!(unordered.len(), 153);
-        assert!(unordered.values().all(|&c| c == 2), "every pair meets twice");
+        assert!(
+            unordered.values().all(|&c| c == 2),
+            "every pair meets twice"
+        );
         assert_eq!(per_round.len(), N_ROUNDS);
         assert!(per_round.values().all(|&c| c == 9), "9 fixtures per round");
     }
@@ -125,11 +135,5 @@ mod tests {
                 fx.away
             );
         }
-    }
-
-    #[test]
-    fn european_and_relegation_spots_fit_the_table() {
-        assert_eq!(UCL_SPOTS + UEL_SPOTS + UECL_SPOTS, EUROPE_SPOTS);
-        assert!(EUROPE_SPOTS + RELEGATION_SPOTS < N_TEAMS);
     }
 }

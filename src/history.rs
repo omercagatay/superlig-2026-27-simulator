@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::data;
 
-pub const CUTOFF_YEAR: i32 = 2010;
-pub const ROW_TEAM_NAME: &str = "Rest of World";
+pub const CUTOFF_YEAR: i32 = 2012;
+pub const OTHER_TEAM_NAME: &str = "Other Club";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HistoricalMatch {
@@ -24,16 +24,22 @@ pub struct HistoricalMatch {
 pub struct TeamIndex {
     pub name_to_idx: HashMap<String, usize>,
     pub idx_to_name: Vec<String>,
-    pub wc_names: Vec<String>,
-    pub row_idx: usize,
+    pub league_names: Vec<String>,
+    pub other_idx: usize,
 }
 
 impl TeamIndex {
-    pub fn wc() -> Self {
-        let wc_names: Vec<String> = data::elo().iter().map(|(t, _)| t.to_string()).collect();
-        let mut idx_to_name = wc_names.clone();
-        idx_to_name.push(ROW_TEAM_NAME.to_string());
-        let row_idx = idx_to_name.len() - 1;
+    /// Built from `data::elo()` order so Dixon-Coles and pi-rating team
+    /// indices coincide with `World` indices, plus a trailing bucket.
+    ///
+    /// The bucket absorbs every match of every club not in the current 18 —
+    /// relegated and defunct sides alike. It is a *league-average departed
+    /// club*, not a newly-promoted baseline.
+    pub fn league() -> Self {
+        let league_names: Vec<String> = data::elo().iter().map(|(t, _)| t.to_string()).collect();
+        let mut idx_to_name = league_names.clone();
+        idx_to_name.push(OTHER_TEAM_NAME.to_string());
+        let other_idx = idx_to_name.len() - 1;
         let name_to_idx = idx_to_name
             .iter()
             .enumerate()
@@ -42,13 +48,16 @@ impl TeamIndex {
         TeamIndex {
             name_to_idx,
             idx_to_name,
-            wc_names,
-            row_idx,
+            league_names,
+            other_idx,
         }
     }
 
     pub fn canonical(&self, team: &str) -> usize {
-        self.name_to_idx.get(team).copied().unwrap_or(self.row_idx)
+        self.name_to_idx
+            .get(team)
+            .copied()
+            .unwrap_or(self.other_idx)
     }
 }
 
@@ -69,7 +78,7 @@ pub fn load_history() -> Vec<HistoricalMatch> {
 
 pub fn load_history_with_cutoff(min_year: i32) -> Vec<HistoricalMatch> {
     static CSV: OnceLock<Vec<u8>> = OnceLock::new();
-    let bytes = CSV.get_or_init(|| include_bytes!("../data/international_results.csv").to_vec());
+    let bytes = CSV.get_or_init(|| include_bytes!("../data/superlig_results.csv").to_vec());
     parse_csv(bytes, min_year)
 }
 
@@ -172,59 +181,66 @@ mod tests {
     use super::*;
 
     #[test]
-    fn canonical_maps_known_wc_team_and_row_for_unknown() {
-        let idx = TeamIndex::wc();
-        assert_eq!(idx.canonical("Argentina"), idx.name_to_idx["Argentina"]);
-        assert_eq!(idx.canonical("Bolivia"), idx.row_idx);
-        assert_eq!(idx.canonical("Nonexistent Country"), idx.row_idx);
-        assert_eq!(idx.idx_to_name[idx.row_idx], ROW_TEAM_NAME);
+    fn canonical_maps_known_club_and_bucket_for_unknown() {
+        let idx = TeamIndex::league();
+        assert_eq!(idx.canonical("Galatasaray"), idx.name_to_idx["Galatasaray"]);
+        assert_eq!(idx.canonical("Sivasspor"), idx.other_idx);
+        assert_eq!(idx.canonical("Nonexistent FC"), idx.other_idx);
+        assert_eq!(idx.idx_to_name[idx.other_idx], OTHER_TEAM_NAME);
+        assert_eq!(idx.idx_to_name.len(), crate::data::N_TEAMS + 1);
     }
 
     #[test]
-    fn load_history_drops_pre_cutoff_and_na_scores() {
-        let ms = load_history_with_cutoff(2024);
-        assert!(!ms.is_empty(), "expected some 2024+ matches");
+    fn history_loads_and_uses_canonical_club_names() {
+        let ms = load_history();
+        assert!(
+            ms.len() > 3_000,
+            "expected a full history, got {}",
+            ms.len()
+        );
         for m in &ms {
-            assert!(m.date.year() >= 2024);
             assert!(!m.home_team.is_empty());
+            assert!(!m.neutral, "league matches are never on neutral ground");
         }
     }
 
+    /// The name-drift regression net. Wikipedia display names change between
+    /// seasons ("İstanbul B.B." -> "Başakşehir"); an unmapped variant sends a
+    /// real club's history into the bucket, silently weakening it. Asserting
+    /// per-club season coverage is what makes that failure loud.
     #[test]
-    fn prepare_fit_assigns_weights_and_row_bucket() {
-        let idx = TeamIndex::wc();
-        let as_of = NaiveDate::from_ymd_opt(2026, 6, 14).unwrap();
-        let history = vec![
-            HistoricalMatch {
-                date: NaiveDate::from_ymd_opt(2024, 6, 14).unwrap(),
-                home_team: "Argentina".to_string(),
-                away_team: "Bolivia".to_string(),
-                home_score: 3,
-                away_score: 0,
-                neutral: false,
-            },
-            HistoricalMatch {
-                date: as_of,
-                home_team: "Argentina".to_string(),
-                away_team: "France".to_string(),
-                home_score: 1,
-                away_score: 1,
-                neutral: true,
-            },
-            HistoricalMatch {
-                date: NaiveDate::from_ymd_opt(2026, 7, 1).unwrap(),
-                home_team: "Argentina".to_string(),
-                away_team: "France".to_string(),
-                home_score: 2,
-                away_score: 0,
-                neutral: true,
-            },
-        ];
-        let fits = prepare_fit_matches(&history, &idx, 1460.0, as_of);
-        assert_eq!(fits.len(), 2);
-        assert!(fits[0].weight < 1.0 && fits[0].weight > 0.0);
-        assert!((fits[1].weight - 1.0).abs() < 1e-9);
-        assert_eq!(fits[0].away_idx, idx.row_idx);
-        assert_eq!(fits[1].away_idx, idx.name_to_idx["France"]);
+    fn every_ever_present_club_has_full_season_coverage() {
+        use std::collections::HashSet;
+        let ms = load_history();
+        let mut seasons: HashMap<&str, HashSet<i32>> = HashMap::new();
+        for m in &ms {
+            seasons
+                .entry(m.home_team.as_str())
+                .or_default()
+                .insert(m.date.year());
+            seasons
+                .entry(m.away_team.as_str())
+                .or_default()
+                .insert(m.date.year());
+        }
+        for club in ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor"] {
+            let n = seasons.get(club).map_or(0, |s| s.len());
+            assert_eq!(n, 14, "{club} should appear in all 14 seasons, found {n}");
+        }
+        // Promoted clubs with no top-flight history — 0 is correct here.
+        for club in ["Amedspor", "Çorum"] {
+            assert_eq!(seasons.get(club).map_or(0, |s| s.len()), 0, "{club}");
+        }
+        // Every other current club must have at least one season, or its
+        // alias mapping is broken.
+        for (name, _) in crate::data::elo() {
+            if matches!(name, "Amedspor" | "Çorum") {
+                continue;
+            }
+            assert!(
+                seasons.get(name).map_or(0, |s| s.len()) >= 1,
+                "{name} has no history — check ALIASES in scripts/fetch_history.py"
+            );
+        }
     }
 }

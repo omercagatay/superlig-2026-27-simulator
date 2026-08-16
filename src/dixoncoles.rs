@@ -25,21 +25,21 @@ pub struct DcParams {
     pub beta: Vec<f64>,
     pub half_life_days: f64,
     pub n_teams: usize,
-    pub row_idx: usize,
+    pub other_idx: usize,
     pub fitted_at: String,
 }
 
 impl DcParams {
-    /// Attack/defense lookup. ROW bucket returns 0.
+    /// Attack/defense lookup. Other-club bucket returns 0.
     pub fn attack(&self, i: usize) -> f64 {
-        if i == self.row_idx {
+        if i == self.other_idx {
             0.0
         } else {
             self.alpha[i]
         }
     }
     pub fn defense(&self, i: usize) -> f64 {
-        if i == self.row_idx {
+        if i == self.other_idx {
             0.0
         } else {
             self.beta[i]
@@ -169,11 +169,11 @@ fn tau_factor(x: usize, y: usize, lh: f64, la: f64, rho: f64) -> f64 {
 }
 
 /// Negative weighted log-likelihood over the fit set (single eval).
-fn neg_loglik(x: &[f64], fits: &[FitMatch], n_teams: usize, row_idx: usize) -> f64 {
+fn neg_loglik(x: &[f64], fits: &[FitMatch], n_teams: usize, other_idx: usize) -> f64 {
     let mu = x[0];
     let gamma = x[1];
     let rho = x[2].clamp(-RHO_CLAMP, RHO_CLAMP);
-    let na = n_teams - 1; // WC teams, ROW is fixed at 0
+    let na = n_teams - 1; // league clubs; the bucket is fixed at 0
 
     let mut alpha = vec![0.0_f64; n_teams];
     let mut beta = vec![0.0_f64; n_teams];
@@ -181,7 +181,7 @@ fn neg_loglik(x: &[f64], fits: &[FitMatch], n_teams: usize, row_idx: usize) -> f
         alpha[i] = x[3 + i];
         beta[i] = x[3 + na + i];
     }
-    let _ = row_idx;
+    let _ = other_idx;
 
     let mut total = 0.0_f64;
     for m in fits {
@@ -231,7 +231,7 @@ fn neg_loglik(x: &[f64], fits: &[FitMatch], n_teams: usize, row_idx: usize) -> f
 struct DcProblem {
     fits: Vec<FitMatch>,
     n_teams: usize,
-    row_idx: usize,
+    other_idx: usize,
     fd_step: f64,
 }
 
@@ -239,7 +239,7 @@ impl CostFunction for DcProblem {
     type Param = Vec<f64>;
     type Output = f64;
     fn cost(&self, x: &Self::Param) -> Result<Self::Output, ArgminError> {
-        Ok(neg_loglik(x, &self.fits, self.n_teams, self.row_idx))
+        Ok(neg_loglik(x, &self.fits, self.n_teams, self.other_idx))
     }
 }
 
@@ -262,7 +262,7 @@ impl Gradient for DcProblem {
         }
         let fs: Vec<f64> = perturbed
             .par_iter()
-            .map(|p| neg_loglik(p, &self.fits, self.n_teams, self.row_idx))
+            .map(|p| neg_loglik(p, &self.fits, self.n_teams, self.other_idx))
             .collect();
         let mut g = vec![0.0_f64; n];
         for i in 0..n {
@@ -290,12 +290,12 @@ pub fn fit(
     max_iters: u64,
 ) -> Result<DcParams, ArgminError> {
     let n_teams = idx.idx_to_name.len();
-    let row_idx = idx.row_idx;
+    let other_idx = idx.other_idx;
     let na = n_teams - 1;
     let n_params = 3 + 2 * na;
 
     // Initial guess: mu = log(overall mean ~ 1.4), gamma = log(1.1)-ish boost, rho slightly negative,
-    // all team attack/defense at 0 (relative to ROW=0 reference).
+    // all team attack/defense at 0 (relative to the bucket=0 reference).
     let mu0 = data::BASE.ln();
     let gamma0 = 0.2;
     let rho0 = -0.02;
@@ -307,7 +307,7 @@ pub fn fit(
     let problem = DcProblem {
         fits: fits.to_vec(),
         n_teams,
-        row_idx,
+        other_idx,
         fd_step: 1e-6,
     };
     let linesearch = MoreThuenteLineSearch::new().with_c(1e-4, 0.9)?;
@@ -347,7 +347,7 @@ pub fn fit(
         beta,
         half_life_days,
         n_teams,
-        row_idx,
+        other_idx,
         fitted_at: now_iso(),
     })
 }
@@ -386,22 +386,22 @@ mod tests {
     use super::*;
     use crate::history::HistoricalMatch;
 
-    fn idx_fixture(n_wc: usize) -> TeamIndex {
-        let mut wc_names: Vec<String> = (0..n_wc).map(|i| format!("T{}", i)).collect();
-        let mut idx_to_name = wc_names.clone();
-        idx_to_name.push("Rest of World".to_string());
-        let row_idx = idx_to_name.len() - 1;
+    fn idx_fixture(n_clubs: usize) -> TeamIndex {
+        let mut league_names: Vec<String> = (0..n_clubs).map(|i| format!("T{}", i)).collect();
+        let mut idx_to_name = league_names.clone();
+        idx_to_name.push(crate::history::OTHER_TEAM_NAME.to_string());
+        let other_idx = idx_to_name.len() - 1;
         let name_to_idx = idx_to_name
             .iter()
             .enumerate()
             .map(|(i, n)| (n.clone(), i))
             .collect();
-        let _ = &mut wc_names;
+        let _ = &mut league_names;
         TeamIndex {
             name_to_idx,
             idx_to_name,
-            wc_names,
-            row_idx,
+            league_names,
+            other_idx,
         }
     }
 
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn fit_recovers_synthetic_params() {
-        // Two strong teams and one weak team + a ROW bucket.
+        // Two strong teams and one weak team + a Other-club bucket.
         let idx = idx_fixture(3);
         let true_params = DcParams {
             mu: 0.3_f64.ln(),
@@ -489,7 +489,7 @@ mod tests {
             beta: vec![-0.5, 0.0, 0.7, 0.0],  // T0 strong defense (low beta), T2 leaky
             half_life_days: 1e9,
             n_teams: 4,
-            row_idx: 3,
+            other_idx: 3,
             fitted_at: "1970-01-01".to_string(),
         };
 
@@ -503,9 +503,9 @@ mod tests {
             let a = teams[(rng.gen::<usize>()) % 3];
             let hi = idx.canonical(h);
             let ai = idx.canonical(a);
-            // Force some ROW matches by occasionally picking ROW as away.
+            // Force some bucket matches by occasionally picking it as away.
             let (ai, away_name) = if rng.gen::<bool>() {
-                (idx.row_idx, "Rest of World")
+                (idx.other_idx, crate::history::OTHER_TEAM_NAME)
             } else {
                 (ai, a)
             };

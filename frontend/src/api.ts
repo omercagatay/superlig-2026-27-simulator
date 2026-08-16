@@ -1,35 +1,41 @@
 export interface TeamRow {
   team: string;
-  win_pct: number;
-  win_odds: number | null;
-  third_place_pct: number;
-  final_pct: number;
-  sf_pct: number;
-  qf_pct: number;
-  r16_pct: number;
-  r32_pct: number;
+  title_pct: number;
+  title_odds: number | null;
+  ucl_pct: number;
+  uel_pct: number;
+  uecl_pct: number;
+  europe_pct: number;
+  relegation_pct: number;
+  relegation_odds: number | null;
+  exp_points: number;
+  exp_gd: number;
+  mean_position: number;
 }
 
-export interface GroupRow {
+export interface PositionRow {
   team: string;
-  first_pct: number;
-  second_pct: number;
-  third_q_pct: number;
-  third_out_pct: number;
-  advance_pct: number;
+  /** position_pct[i] = P(finishing in position i + 1); sums to 100. */
+  position_pct: number[];
 }
 
-export interface BracketSlot {
-  match_id: number;
-  team_a: string;
-  team_b: string;
-  winner: string;
+export interface TableRow {
+  position: number;
+  team: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  points: number;
 }
 
-export interface FinalPair {
+export interface RivalryPair {
   a: string;
   b: string;
-  pct: number;
+  a_above_pct: number;
   count: number;
 }
 
@@ -37,11 +43,10 @@ export interface SimResponse {
   n_sims: number;
   seed: number;
   teams: TeamRow[];
-  groups: [string, GroupRow[]][];
-  bracket: BracketSlot[];
+  positions: PositionRow[];
+  table: TableRow[];
+  rivalries: RivalryPair[];
   consensus_champion: string;
-  top_finals: FinalPair[];
-  top_champions: TeamRow[];
   elo_overrides: Record<string, number>;
   scenario_applied: string | null;
 }
@@ -81,46 +86,13 @@ export async function runScenario(req: ScenarioRequest): Promise<SimResponse> {
 }
 
 export interface LiveData {
-  elo_ratings: Record<string, number>;
   played_matches: {
-    group: string;
-    team_a: string;
-    score_a: number;
-    team_b: string;
-    score_b: number;
+    round: number;
+    home: string;
+    home_score: number;
+    away: string;
+    away_score: number;
   }[];
-  knockout_matches?: {
-    team_a: string;
-    score_a: number;
-    team_b: string;
-    score_b: number;
-    winner: string;
-    penalty_score_a?: number | null;
-    penalty_score_b?: number | null;
-  }[];
-  goalscorers: {
-    player: string;
-    country: string;
-    goals: number;
-    active?: boolean;
-  }[];
-  group_standings: {
-    group: string;
-    team: string;
-    played: number;
-    wins: number;
-    draws: number;
-    losses: number;
-    goals_for: number;
-    goals_against: number;
-    points: number;
-  }[];
-  tournament_stats: {
-    matches_played: number;
-    goals_scored: number;
-    attendance: number;
-    top_scorer: string;
-  } | null;
   fetched_at: string;
 }
 
@@ -138,22 +110,22 @@ export async function getLiveData(): Promise<LiveData | null> {
 }
 
 export interface UpcomingMatch {
-  match_id: number;
-  round: string;
-  team_a: string;
-  team_b: string;
-  a_win_pct: number;
-  b_win_pct: number;
-  decided_in_90_pct: number;
-  a_win_odds: number | null;
-  b_win_odds: number | null;
+  round: number;
+  home: string;
+  away: string;
+  home_win_pct: number;
+  draw_pct: number;
+  away_win_pct: number;
+  home_odds: number | null;
+  draw_odds: number | null;
+  away_odds: number | null;
 }
 
 export interface UpcomingResponse {
   matches: UpcomingMatch[];
 }
 
-/** Forecasts for real bracket matches not yet played. */
+/** Win/draw/loss forecasts for the next matchday's unplayed fixtures. */
 export async function getUpcoming(): Promise<UpcomingResponse> {
   const resp = await fetch(`${API_BASE}/api/upcoming`);
   if (!resp.ok) throw new Error(await resp.text());

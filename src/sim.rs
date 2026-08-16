@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -6,29 +6,34 @@ use rand_distr::Poisson;
 use rayon::prelude::*;
 
 use crate::data;
+use crate::league::{apply_result, rank_table, TeamRecord};
+
+/// One scheduled fixture, with clubs resolved to `World` indices.
+#[derive(Clone, Copy, Debug)]
+pub struct LeagueFixture {
+    pub round: u8,
+    pub home: usize,
+    pub away: usize,
+}
 
 #[derive(Clone)]
 pub struct World {
     pub teams: Vec<String>,
     pub idx: HashMap<String, usize>,
     pub elo: Vec<f64>,
-    pub host: Vec<bool>,
-    pub groups: Vec<(String, Vec<usize>)>,
-    pub played: HashMap<(String, usize, usize), (u16, u16)>,
-    pub played_knockout: HashMap<(usize, usize), usize>,
-    /// Teams that have lost a confirmed real-world knockout match, derived from
-    /// `played_knockout`. Consulted by `ko_winner` so an already-eliminated team
-    /// can't be simulated as winning a hypothetical match the real bracket never
-    /// produced (e.g. because an earlier round's pairing was mis-scraped).
-    pub knockout_out: HashSet<usize>,
+    /// The official 306-fixture calendar, in round order.
+    pub fixtures: Vec<LeagueFixture>,
+    /// Real results, keyed `(home_idx, away_idx)`. Fixtures present here are
+    /// never simulated.
+    pub played: HashMap<(usize, usize), (u16, u16)>,
     /// Optional strength-model ensemble blended into expected goals; `None`
-    /// means pure Elo (the historical behavior, used by most unit tests).
+    /// means pure Elo (used by most unit tests).
     pub ensemble: Option<Ensemble>,
 }
 
 /// Weighted blend of the three strength models. Dixon-Coles and pi-rating
-/// team indices coincide with `World` team indices because
-/// `history::TeamIndex::wc()` is built from the same `data::elo()` order.
+/// club indices coincide with `World` club indices because
+/// `history::TeamIndex::league()` is built from the same `data::elo()` order.
 #[derive(Clone)]
 pub struct Ensemble {
     pub dc: crate::dixoncoles::DcParams,
@@ -42,22 +47,23 @@ pub struct Ensemble {
 impl Ensemble {
     /// Build the ensemble from data embedded in the binary: the offline
     /// Dixon-Coles fit (`data/dc_params.json`, refreshed via
-    /// `cargo run --example fit_dc`) and pi-ratings computed in one pass
-    /// over the historical results.
+    /// `cargo run --release --example fit_dc`) and pi-ratings computed in one
+    /// pass over the historical Süper Lig results.
     pub fn from_embedded_data(w_elo: f64, w_dc: f64, w_pi: f64) -> Result<Self, String> {
         let dc: crate::dixoncoles::DcParams =
             serde_json::from_str(include_str!("../data/dc_params.json"))
                 .map_err(|e| format!("dc_params.json: {e}"))?;
-        let idx = crate::history::TeamIndex::wc();
+        let idx = crate::history::TeamIndex::league();
         if dc.n_teams != idx.idx_to_name.len() || dc.alpha.len() != dc.n_teams {
             return Err(format!(
-                "dc_params.json team count {} does not match current team list {} — refit with `cargo run --example fit_dc`",
+                "dc_params.json club count {} does not match current club list {} — refit with `cargo run --release --example fit_dc`",
                 dc.n_teams,
                 idx.idx_to_name.len()
             ));
         }
-        let history = crate::history::load_history_with_cutoff(2010);
-        let since = chrono::NaiveDate::from_ymd_opt(2010, 1, 1).expect("valid date");
+        let history = crate::history::load_history_with_cutoff(crate::history::CUTOFF_YEAR);
+        let since =
+            chrono::NaiveDate::from_ymd_opt(crate::history::CUTOFF_YEAR, 1, 1).expect("valid date");
         let pi = crate::piratings::PiRatings::compute(&history, &idx, since);
         Ok(Ensemble {
             dc,
@@ -68,54 +74,48 @@ impl Ensemble {
         })
     }
 
-    /// Blended `(λ_a, λ_b)` for a match, or `None` when the ensemble
-    /// weights leave only the Elo component.
-    fn lam_pair(&self, ia: usize, ib: usize, host_a: bool, host_b: bool) -> Option<(f64, f64)> {
+    /// Blended `(λ_home, λ_away)`, or `None` when the weights leave only Elo.
+    fn lam_pair(&self, home: usize, away: usize) -> Option<(f64, f64)> {
         let total = self.w_dc + self.w_pi;
         if total <= 0.0 {
             return None;
         }
-        // Dixon-Coles: gamma is a home-ground boost; a host plays "at home".
-        let (dc_a, dc_b) = if host_a {
-            self.dc.lam(ia, ib, false)
-        } else if host_b {
-            let (lb, la) = self.dc.lam(ib, ia, false);
-            (la, lb)
-        } else {
-            self.dc.lam(ia, ib, true)
-        };
-        let (pi_a, pi_b) = self.pi.lambdas(ia, ib, host_a, host_b);
+        // `neutral = false`: league fixtures always have a home side, so
+        // Dixon-Coles applies its gamma home boost.
+        let (dc_h, dc_a) = self.dc.lam(home, away, false);
+        let (pi_h, pi_a) = self.pi.lambdas(home, away, true, false);
         Some((
+            (self.w_dc * dc_h + self.w_pi * pi_h) / total,
             (self.w_dc * dc_a + self.w_pi * pi_a) / total,
-            (self.w_dc * dc_b + self.w_pi * pi_b) / total,
         ))
     }
 }
 
-#[derive(Clone, Default, Debug)]
-pub struct GroupStat {
-    pub first: usize,
-    pub second: usize,
-    pub third_q: usize,
-    pub third_out: usize,
-    pub advance: usize,
+/// One simulated season: finishing order plus each club's final record.
+#[derive(Clone, Debug)]
+pub struct SeasonResult {
+    /// Club indices in finishing order; `order[0]` is the champion.
+    pub order: Vec<usize>,
+    /// Indexed by club, not by position.
+    pub records: Vec<TeamRecord>,
 }
 
 #[derive(Clone, Debug)]
 pub struct SimResults {
     pub n_sims: usize,
-    pub champ_counts: HashMap<usize, usize>,
-    pub final_counts: HashMap<usize, usize>,
-    pub sf_counts: HashMap<usize, usize>,
-    pub qf_counts: HashMap<usize, usize>,
-    pub r16_counts: HashMap<usize, usize>,
-    pub r32_counts: HashMap<usize, usize>,
-    pub group_stats: HashMap<String, HashMap<usize, GroupStat>>,
-    pub slot_mode: HashMap<u32, usize>,
-    pub representative_slot_winners: HashMap<u32, usize>,
-    pub representative_slot_matchups: HashMap<u32, (usize, usize)>,
-    pub final_pairs: HashMap<(usize, usize), usize>,
-    pub third_place_counts: HashMap<usize, usize>,
+    /// `position_counts[club][position]`, position 0 = champion.
+    pub position_counts: Vec<Vec<usize>>,
+    pub title_counts: Vec<usize>,
+    pub ucl_counts: Vec<usize>,
+    pub uel_counts: Vec<usize>,
+    pub uecl_counts: Vec<usize>,
+    pub europe_counts: Vec<usize>,
+    pub relegation_counts: Vec<usize>,
+    pub points_sum: Vec<f64>,
+    pub gd_sum: Vec<f64>,
+    /// `pairwise_above[a * n + b]` = trials where `a` finished above `b`.
+    pub pairwise_above: Vec<usize>,
+    pub representative: SeasonResult,
 }
 
 #[derive(Clone, Debug)]
@@ -150,175 +150,62 @@ impl World {
             .map(|(i, t)| (t.clone(), i))
             .collect();
         let elo: Vec<f64> = data::elo().iter().map(|(_, e)| *e).collect();
-        let hosts = data::hosts();
-        let host: Vec<bool> = data::elo().iter().map(|(t, _)| hosts.contains(t)).collect();
 
-        let groups: Vec<(String, Vec<usize>)> = data::groups()
-            .iter()
-            .map(|(letter, members)| {
-                (
-                    letter.to_string(),
-                    members.iter().map(|t| idx[*t]).collect(),
-                )
-            })
-            .collect();
-
-        let played = Self::static_played();
-        let played_knockout = Self::static_played_knockout(&idx);
-        let knockout_out = Self::derive_knockout_out(&played_knockout);
+        let mut fixtures = Vec::with_capacity(data::N_FIXTURES);
+        let mut played = HashMap::new();
+        for f in data::fixtures() {
+            let home = idx[&f.home];
+            let away = idx[&f.away];
+            fixtures.push(LeagueFixture {
+                round: f.round,
+                home,
+                away,
+            });
+            if let (Some(hs), Some(as_)) = (f.home_score, f.away_score) {
+                played.insert((home, away), (hs, as_));
+            }
+        }
 
         World {
             teams,
             idx,
             elo,
-            host,
-            groups,
+            fixtures,
             played,
-            played_knockout,
-            knockout_out,
             ensemble: None,
         }
     }
 
-    /// Baseline knockout results hardcoded in `data::played_knockout()`.
-    fn static_played_knockout(idx: &HashMap<String, usize>) -> HashMap<(usize, usize), usize> {
-        data::played_knockout()
-            .iter()
-            .map(|&(a, b, w)| {
-                let (ta, tb, tw) = (idx[a], idx[b], idx[w]);
-                ((ta.min(tb), ta.max(tb)), tw)
-            })
-            .collect()
-    }
-
-    fn derive_knockout_out(played_knockout: &HashMap<(usize, usize), usize>) -> HashSet<usize> {
-        played_knockout
-            .iter()
-            .map(|(&(a, b), &winner)| if winner == a { b } else { a })
-            .collect()
-    }
-
-    /// Baseline group results hardcoded in `data::played()`.
-    fn static_played() -> HashMap<(String, usize, usize), (u16, u16)> {
-        let mut played: HashMap<(String, usize, usize), (u16, u16)> = HashMap::new();
-        for pm in data::played() {
-            let members: Vec<&str> = data::groups()
+    /// Overlay scraped results onto the recorded set. Results only ever get
+    /// added or corrected — an empty or partial scrape never erases the
+    /// baseline, so a bad fetch degrades to "no new information".
+    ///
+    /// Elo ratings are no longer scraped: club ratings come from `data::elo()`
+    /// and are adjusted only through scenario overrides.
+    pub fn update_from_live(&mut self, live: &crate::scraper::LiveData) -> usize {
+        let mut applied = 0;
+        for m in &live.played_matches {
+            let (Some(&home), Some(&away)) = (self.idx.get(&m.home), self.idx.get(&m.away)) else {
+                tracing::debug!("live scrape: unknown club in {} v {}", m.home, m.away);
+                continue;
+            };
+            if !self
+                .fixtures
                 .iter()
-                .find(|(l, _)| *l == pm.group)
-                .unwrap()
-                .1
-                .clone();
-            let pa = members.iter().position(|&t| t == pm.a).unwrap();
-            let pb = members.iter().position(|&t| t == pm.b).unwrap();
-            if pa < pb {
-                played.insert((pm.group.to_string(), pa, pb), (pm.sa, pm.sb));
-            } else {
-                played.insert((pm.group.to_string(), pb, pa), (pm.sb, pm.sa));
-            }
-        }
-        played
-    }
-
-    pub fn update_from_live(&mut self, live: &crate::scraper::LiveData) -> (usize, usize) {
-        let mut elo_updated = 0;
-        for (team, rating) in &live.elo_ratings {
-            if let Some(&i) = self.idx.get(team) {
-                self.elo[i] = *rating;
-                elo_updated += 1;
-            }
-        }
-
-        // Scraped group results overlay the hardcoded baseline rather than
-        // replacing it: the Wikipedia main article stopped exposing group
-        // footballboxes once the knockout rounds started, so a scrape that
-        // parses zero group matches must not wipe the known final results.
-        self.played = Self::static_played();
-
-        for pm in &live.played_matches {
-            let Some(group_entry) = self.groups.iter().find(|g| g.0 == pm.group) else {
-                tracing::warn!(
-                    "Live played match references unknown group {:?}: {} vs {} — dropped, will be simulated instead of applied",
-                    pm.group, pm.team_a, pm.team_b
-                );
-                continue;
-            };
-            let member_names: Vec<&str> = group_entry
-                .1
-                .iter()
-                .map(|&i| self.teams[i].as_str())
-                .collect();
-            let Some(pa) = member_names.iter().position(|&t| t == pm.team_a) else {
-                tracing::warn!(
-                    "Live played match team name {:?} did not match any team in group {} — dropped, will be simulated instead of applied",
-                    pm.team_a, pm.group
-                );
-                continue;
-            };
-            let Some(pb) = member_names.iter().position(|&t| t == pm.team_b) else {
-                tracing::warn!(
-                    "Live played match team name {:?} did not match any team in group {} — dropped, will be simulated instead of applied",
-                    pm.team_b, pm.group
-                );
-                continue;
-            };
-            if pa < pb {
-                self.played
-                    .insert((pm.group.clone(), pa, pb), (pm.score_a, pm.score_b));
-            } else {
-                self.played
-                    .insert((pm.group.clone(), pb, pa), (pm.score_b, pm.score_a));
-            }
-        }
-
-        // Scraped knockout results overlay the hardcoded baseline the same
-        // way, so a partial or failed scrape can't erase known real results.
-        self.played_knockout = Self::static_played_knockout(&self.idx);
-        for km in &live.knockout_matches {
-            let Some(&ta) = self.idx.get(&km.team_a) else {
-                tracing::warn!(
-                    "Live knockout match team name not recognized: {:?} (vs {:?}) — dropped, will be simulated instead of applied",
-                    km.team_a, km.team_b
-                );
-                continue;
-            };
-            let Some(&tb) = self.idx.get(&km.team_b) else {
-                tracing::warn!(
-                    "Live knockout match team name not recognized: {:?} (vs {:?}) — dropped, will be simulated instead of applied",
-                    km.team_b, km.team_a
-                );
-                continue;
-            };
-            let Some(&winner) = self.idx.get(&km.winner) else {
-                tracing::warn!(
-                    "Live knockout match winner name not recognized: {:?} ({} vs {}) — dropped, will be simulated instead of applied",
-                    km.winner, km.team_a, km.team_b
-                );
-                continue;
-            };
-            if winner != ta && winner != tb {
-                tracing::warn!(
-                    "Live knockout match winner {:?} matches neither {} nor {} — dropped, will be simulated instead of applied",
-                    km.winner, km.team_a, km.team_b
+                .any(|f| f.home == home && f.away == away)
+            {
+                tracing::debug!(
+                    "live scrape: {} v {} is not a 2026-27 fixture",
+                    m.home,
+                    m.away
                 );
                 continue;
             }
-            self.played_knockout
-                .insert((ta.min(tb), ta.max(tb)), winner);
+            self.played
+                .insert((home, away), (m.home_score, m.away_score));
+            applied += 1;
         }
-
-        // A team that lost any recorded knockout match is out of the tournament
-        // for good, independent of whatever hypothetical opponent a simulated
-        // trial's bracket path might pit it against.
-        self.knockout_out = Self::derive_knockout_out(&self.played_knockout);
-
-        let matches_updated = self.played.len() + self.played_knockout.len();
-        tracing::info!(
-            "World updated from live data: {} Elo ratings, {} played matches applied, {} teams confirmed eliminated",
-            elo_updated,
-            matches_updated,
-            self.knockout_out.len()
-        );
-        (elo_updated, matches_updated)
+        applied
     }
 
     pub fn apply_overrides(&mut self, overrides: &HashMap<String, f64>) {
@@ -329,28 +216,29 @@ impl World {
         }
     }
 
-    fn lam_pair(&self, ia: usize, ib: usize) -> (f64, f64) {
-        let dr = self.elo[ia] - self.elo[ib]
-            + data::HOME_ADV * (self.host[ia] as i8 - self.host[ib] as i8) as f64;
-        let la_elo = data::BASE * (10.0_f64).powf(dr / data::D_DIV);
-        let lb_elo = data::BASE * (10.0_f64).powf(-dr / data::D_DIV);
+    /// Expected goals `(λ_home, λ_away)` for a fixture. The home-ground
+    /// boost goes to `home`, not to a per-team host flag.
+    fn lam_pair(&self, home: usize, away: usize) -> (f64, f64) {
+        let dr = self.elo[home] - self.elo[away] + data::HOME_ADV;
+        let lh_elo = data::BASE * (10.0_f64).powf(dr / data::D_DIV);
+        let la_elo = data::BASE * (10.0_f64).powf(-dr / data::D_DIV);
 
-        let ensemble_lam = self.ensemble.as_ref().and_then(|e| {
-            e.lam_pair(ia, ib, self.host[ia], self.host[ib])
-                .map(|l| (e, l))
-        });
-        let (la, lb) = match ensemble_lam {
-            None => (la_elo, lb_elo),
-            Some((e, (ea, eb))) => {
+        let ensemble_lam = self
+            .ensemble
+            .as_ref()
+            .and_then(|e| e.lam_pair(home, away).map(|l| (e, l)));
+        let (lh, la) = match ensemble_lam {
+            None => (lh_elo, la_elo),
+            Some((e, (eh, ea))) => {
                 let w_models = e.w_dc + e.w_pi;
                 let total = e.w_elo + w_models;
                 (
+                    (e.w_elo * lh_elo + w_models * eh) / total,
                     (e.w_elo * la_elo + w_models * ea) / total,
-                    (e.w_elo * lb_elo + w_models * eb) / total,
                 )
             }
         };
-        (la.clamp(0.15, 5.0), lb.clamp(0.15, 5.0))
+        (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
     }
 
     fn sample_poisson(rng: &mut SmallRng, lambda: f64) -> i64 {
@@ -360,7 +248,7 @@ impl World {
 
     /// ρ for joint-scoreline sampling; `Some` only while the Dixon-Coles
     /// component carries weight, so `ENSEMBLE_WEIGHTS=1,0,0` (and plain
-    /// `World::new()`) keep the original independent-Poisson behavior.
+    /// `World::new()`) keep the independent-Poisson behavior.
     fn score_rho(&self) -> Option<f64> {
         self.ensemble
             .as_ref()
@@ -381,455 +269,81 @@ impl World {
         }
     }
 
-    fn rank_group(
+    /// Monte Carlo outcome probabilities for a single league fixture:
+    /// `(home_win_pct, draw_pct, away_win_pct)`. Unlike a knockout tie, a
+    /// league match can end level, so the draw is a first-class outcome.
+    pub fn match_win_probs(
         &self,
-        letter: &str,
-        members: &[usize],
-        rng: &mut SmallRng,
-    ) -> (Vec<usize>, usize, (i64, i64, i64, i64)) {
-        let pairs = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)];
-        let mut stats: [[i64; 3]; 4] = [[0; 3]; 4]; // [pts, gf, ga]
-        let mut results: HashMap<(usize, usize), (i64, i64)> = HashMap::new();
-
-        for &(pa, pb) in &pairs {
-            let (la, lb) = self.lam_pair(members[pa], members[pb]);
-            let (ga, gb) = if let Some(&(sa, sb)) = self.played.get(&(letter.to_string(), pa, pb)) {
-                (sa as i64, sb as i64)
-            } else {
-                self.sample_match_score(la, lb, rng)
-            };
-            stats[pa][1] += ga;
-            stats[pa][2] += gb;
-            stats[pb][1] += gb;
-            stats[pb][2] += ga;
-            if ga > gb {
-                stats[pa][0] += 3;
-            } else if ga == gb {
-                stats[pa][0] += 1;
-                stats[pb][0] += 1;
-            } else {
-                stats[pb][0] += 3;
-            }
-            results.insert((pa, pb), (ga, gb));
-        }
-
-        let pkey = |p: usize| -> (i64, i64, i64) {
-            let s = &stats[p];
-            (s[0], s[1] - s[2], s[1])
-        };
-
-        let mut order: Vec<usize> = (0..4).collect();
-        order.sort_by_key(|&b| std::cmp::Reverse(pkey(b)));
-
-        let mut blocks: Vec<Vec<usize>> = Vec::new();
-        let mut i = 0;
-        while i < 4 {
-            let mut j = i;
-            while j + 1 < 4 && pkey(order[j + 1]) == pkey(order[i]) {
-                j += 1;
-            }
-            blocks.push(order[i..=j].to_vec());
-            i = j + 1;
-        }
-
-        let mut final_order: Vec<usize> = Vec::new();
-        for block in blocks {
-            if block.len() == 1 {
-                final_order.push(block[0]);
-                continue;
-            }
-            let bset: std::collections::HashSet<usize> = block.iter().copied().collect();
-            let mut h: HashMap<usize, [i64; 3]> = HashMap::new();
-            for &p in &block {
-                h.insert(p, [0; 3]);
-            }
-            for ((pa, pb), (ga, gb)) in &results {
-                if bset.contains(pa) && bset.contains(pb) {
-                    h.get_mut(pa).unwrap()[1] += ga;
-                    h.get_mut(pa).unwrap()[2] += gb;
-                    h.get_mut(pb).unwrap()[1] += gb;
-                    h.get_mut(pb).unwrap()[2] += ga;
-                    if ga > gb {
-                        h.get_mut(pa).unwrap()[0] += 3;
-                    } else if ga == gb {
-                        h.get_mut(pa).unwrap()[0] += 1;
-                        h.get_mut(pb).unwrap()[0] += 1;
-                    } else {
-                        h.get_mut(pb).unwrap()[0] += 3;
-                    }
-                }
-            }
-            let tiebreak: HashMap<usize, u64> =
-                block.iter().map(|&p| (p, rng.gen::<u64>())).collect();
-            let hkey = |p: usize| -> (i64, i64, i64, i64, u64) {
-                let hs = &h[&p];
-                let ga_overall = stats[p][2];
-                (hs[0], hs[1] - hs[2], hs[1], -ga_overall, tiebreak[&p])
-            };
-            let mut block_sorted = block.clone();
-            block_sorted.sort_by_key(|&b| std::cmp::Reverse(hkey(b)));
-            final_order.extend(block_sorted);
-        }
-
-        let third = final_order[2];
-        let s = &stats[third];
-        let third_rec = (s[0], s[1] - s[2], s[1], s[2]);
-        let ordered: Vec<usize> = final_order.iter().map(|&p| members[p]).collect();
-        (ordered, members[third], third_rec)
-    }
-
-    fn assign_thirds(
-        qual_groups: &[String],
-        slots_elig: &HashMap<u32, Vec<&'static str>>,
-    ) -> HashMap<u32, String> {
-        let mut slots: Vec<u32> = slots_elig.keys().copied().collect();
-        slots.sort();
-        let mut assignment: HashMap<u32, String> = HashMap::new();
-        let mut used: std::collections::HashSet<String> = std::collections::HashSet::new();
-
-        fn backtrack(
-            remaining: &[u32],
-            slots_elig: &HashMap<u32, Vec<&'static str>>,
-            qual_groups: &[String],
-            assignment: &mut HashMap<u32, String>,
-            used: &mut std::collections::HashSet<String>,
-        ) -> bool {
-            if remaining.is_empty() {
-                return true;
-            }
-            let mut ordered = remaining.to_vec();
-            // Sort by constrained-ness, then slot id for deterministic ordering.
-            ordered.sort_by_key(|s| {
-                (
-                    qual_groups
-                        .iter()
-                        .filter(|g| {
-                            slots_elig
-                                .get(s)
-                                .is_some_and(|elig| elig.contains(&g.as_str()))
-                        })
-                        .filter(|g| !used.contains(*g))
-                        .count(),
-                    *s,
-                )
-            });
-            let s = ordered[0];
-            for g in qual_groups {
-                if slots_elig
-                    .get(&s)
-                    .is_some_and(|elig| elig.contains(&g.as_str()))
-                    && !used.contains(g)
-                {
-                    assignment.insert(s, g.clone());
-                    used.insert(g.clone());
-                    let rest: Vec<u32> = remaining.iter().filter(|&&r| r != s).copied().collect();
-                    if backtrack(&rest, slots_elig, qual_groups, assignment, used) {
-                        return true;
-                    }
-                    used.remove(g);
-                    assignment.remove(&s);
-                }
-            }
-            false
-        }
-
-        backtrack(&slots, slots_elig, qual_groups, &mut assignment, &mut used);
-        assignment
-    }
-
-    fn ko_match(
-        &self,
-        ia: usize,
-        ib: usize,
-        rng: &mut SmallRng,
-        knockout: bool,
-    ) -> (i64, i64, bool, bool) {
-        // Elo difference still drives the penalty-shootout model below; the
-        // goal rates come from the (possibly ensemble-blended) lam_pair.
-        let dr = self.elo[ia] - self.elo[ib]
-            + data::HOME_ADV * (self.host[ia] as i8 - self.host[ib] as i8) as f64;
-        let (la, lb) = self.lam_pair(ia, ib);
-        let (ga, gb) = self.sample_match_score(la, lb, rng);
-        if !knockout {
-            return (ga, gb, false, false);
-        }
-        if ga == gb {
-            // Extra time stays independent Poisson: ρ is estimated on
-            // full-match scorelines, not 30-minute periods.
-            let et_a = Self::sample_poisson(rng, la * data::ET_FACTOR);
-            let et_b = Self::sample_poisson(rng, lb * data::ET_FACTOR);
-            let tot_a = ga + et_a;
-            let tot_b = gb + et_b;
-            if tot_a == tot_b {
-                let we = 1.0 / (1.0 + (10.0_f64).powf(-dr / 400.0));
-                let pen_prob_a = (0.5 + data::PEN_DAMP * (we - 0.5)).clamp(0.2, 0.8);
-                let u: f64 = rng.gen();
-                let win_a = u < pen_prob_a;
-                (tot_a, tot_b, win_a, !win_a)
-            } else {
-                (tot_a, tot_b, tot_a > tot_b, tot_a < tot_b)
-            }
-        } else {
-            (ga, gb, ga > gb, ga < gb)
-        }
-    }
-
-    fn ko_winner(&self, ta: usize, tb: usize, rng: &mut SmallRng) -> (usize, usize) {
-        let key = (ta.min(tb), ta.max(tb));
-        if let Some(&winner) = self.played_knockout.get(&key) {
-            let loser = if winner == ta { tb } else { ta };
-            return (winner, loser);
-        }
-
-        // Neither team played this exact hypothetical matchup for real, but if
-        // one of them is already confirmed out of the tournament by an earlier
-        // recorded result, it can't win here no matter who it's paired against.
-        let ta_out = self.knockout_out.contains(&ta);
-        let tb_out = self.knockout_out.contains(&tb);
-        if ta_out && !tb_out {
-            return (tb, ta);
-        }
-        if tb_out && !ta_out {
-            return (ta, tb);
-        }
-
-        let (_, _, wa, _) = self.ko_match(ta, tb, rng, true);
-        if wa {
-            (ta, tb)
-        } else {
-            (tb, ta)
-        }
-    }
-
-    /// Real bracket matches whose pairing is already fixed by recorded
-    /// results but which haven't been played yet, in bracket order.
-    /// Returns `(match_id, round_label, team_a, team_b)`.
-    ///
-    /// The group stage is fully recorded, so one `simulate_one` pass yields
-    /// the real R32 pairings; from there only recorded knockout results
-    /// (`played_knockout`) advance teams. Includes the third-place playoff
-    /// once both semifinal losers are known.
-    pub fn upcoming_matches(&self) -> Vec<(u32, &'static str, usize, usize)> {
-        let mut rng = SmallRng::seed_from_u64(0);
-        let trial = self.simulate_one(&mut rng);
-
-        let mut progress = BracketProgress::default();
-        for (m, _, _) in data::r32() {
-            let (ta, tb) = trial.slot_matchups[&m];
-            self.resolve_bracket_match(m, "Round of 32", ta, tb, &mut progress);
-        }
-        let rounds = [
-            ("Round of 16", data::r16()),
-            ("Quarter-final", data::qf()),
-            ("Semi-final", data::sf()),
-        ];
-        for (label, matches) in rounds {
-            for (m, a, b) in matches {
-                if let (Some(&ta), Some(&tb)) = (progress.winners.get(&a), progress.winners.get(&b))
-                {
-                    self.resolve_bracket_match(m, label, ta, tb, &mut progress);
-                }
-            }
-        }
-        if let (Some(&la), Some(&lb)) = (progress.losers.get(&101), progress.losers.get(&102)) {
-            self.resolve_bracket_match(
-                data::THIRD_PLACE_MATCH,
-                "Third-place match",
-                la,
-                lb,
-                &mut progress,
-            );
-        }
-        if let (Some(&ta), Some(&tb)) = (progress.winners.get(&101), progress.winners.get(&102)) {
-            self.resolve_bracket_match(data::FINAL, "Final", ta, tb, &mut progress);
-        }
-        progress.upcoming
-    }
-
-    /// Record `m` as decided if its real result is known, otherwise add it
-    /// to the upcoming list.
-    fn resolve_bracket_match(
-        &self,
-        m: u32,
-        label: &'static str,
-        ta: usize,
-        tb: usize,
-        progress: &mut BracketProgress,
-    ) {
-        if let Some(&w) = self.played_knockout.get(&(ta.min(tb), ta.max(tb))) {
-            progress.winners.insert(m, w);
-            progress.losers.insert(m, if w == ta { tb } else { ta });
-        } else {
-            progress.upcoming.push((m, label, ta, tb));
-        }
-    }
-
-    /// Monte Carlo win probabilities for a single knockout match:
-    /// `(a_win_pct, b_win_pct, decided_after_90_pct)`.
-    pub fn match_win_probs(&self, ta: usize, tb: usize, n: usize, seed: u64) -> (f64, f64, f64) {
-        let (la, lb) = self.lam_pair(ta, tb);
-        let mut a_wins = 0usize;
-        let mut level_after_90 = 0usize;
+        home: usize,
+        away: usize,
+        n: usize,
+        seed: u64,
+    ) -> (f64, f64, f64) {
+        let (lh, la) = self.lam_pair(home, away);
         let mut rng = SmallRng::seed_from_u64(seed);
+        let (mut hw, mut dr) = (0usize, 0usize);
         for _ in 0..n {
-            let (_, _, wa, _) = self.ko_match(ta, tb, &mut rng, true);
-            if wa {
-                a_wins += 1;
-            }
-            // Independent draw of the regulation scoreline to estimate how
-            // often the match needs extra time (unbiased, same distribution
-            // as ko_match's regulation sampling).
-            let (ga, gb) = self.sample_match_score(la, lb, &mut rng);
-            if ga == gb {
-                level_after_90 += 1;
+            let (hg, ag) = self.sample_match_score(lh, la, &mut rng);
+            match hg.cmp(&ag) {
+                std::cmp::Ordering::Greater => hw += 1,
+                std::cmp::Ordering::Equal => dr += 1,
+                std::cmp::Ordering::Less => {}
             }
         }
         let nf = n as f64;
         (
-            a_wins as f64 / nf * 100.0,
-            (n - a_wins) as f64 / nf * 100.0,
-            (n - level_after_90) as f64 / nf * 100.0,
+            hw as f64 / nf * 100.0,
+            dr as f64 / nf * 100.0,
+            (n - hw - dr) as f64 / nf * 100.0,
         )
     }
 
-    pub fn simulate_one(&self, rng: &mut SmallRng) -> SingleSimResult {
-        let _letters: Vec<String> = self.groups.iter().map(|(l, _)| l.clone()).collect();
-        let mut slot_team: HashMap<String, usize> = HashMap::new();
-        let mut thirds: Vec<(String, (i64, i64, i64, i64))> = Vec::new();
-
-        for (letter, members) in &self.groups {
-            let (ordered, _third_idx, third_rec) = self.rank_group(letter, members, rng);
-            slot_team.insert(format!("1{}", letter), ordered[0]);
-            slot_team.insert(format!("2{}", letter), ordered[1]);
-            slot_team.insert(format!("3{}", letter), ordered[2]);
-            thirds.push((letter.clone(), third_rec));
-        }
-
-        // FIFA's final cross-group tiebreaker is a drawing of lots: give each
-        // group an independent random value per trial. (A single shared value
-        // would cancel out in comparisons and deterministically favor
-        // later-lettered groups.)
-        let mut thirds_scored: Vec<(i64, i64, i64, i64, f64, String)> = thirds
+    /// Unplayed fixtures of the earliest round that still has any — the
+    /// league's equivalent of "the next matchday".
+    pub fn upcoming_matches(&self) -> Vec<LeagueFixture> {
+        let next = self
+            .fixtures
             .iter()
-            .map(|(letter, rec)| {
-                (
-                    rec.0,
-                    rec.1,
-                    rec.2,
-                    -rec.3,
-                    rng.gen::<f64>(),
-                    letter.clone(),
-                )
-            })
-            .collect();
-        thirds_scored.sort_by(|a, b| {
-            b.0.cmp(&a.0)
-                .then(b.1.cmp(&a.1))
-                .then(b.2.cmp(&a.2))
-                .then(b.3.cmp(&a.3))
-                .then(b.4.total_cmp(&a.4))
-        });
-        let qual: Vec<String> = thirds_scored
-            .iter()
-            .take(8)
-            .map(|(_, _, _, _, _, l)| l.clone())
-            .collect();
-
-        // Use FIFA's actual slot allocation when the qualified thirds are
-        // the real ones (always true with the full group stage recorded);
-        // fall back to backtracking for hypothetical scenarios.
-        let mut qual_sorted = qual.clone();
-        qual_sorted.sort();
-        let assign: HashMap<u32, String> =
-            if qual_sorted == ["B", "D", "E", "F", "I", "J", "K", "L"] {
-                data::actual_third_assignment()
-                    .into_iter()
-                    .map(|(m, g)| (m, g.to_string()))
-                    .collect()
-            } else {
-                let slots_elig = data::third_place_slots();
-                Self::assign_thirds(&qual, &slots_elig)
-            };
-
-        let mut winners: HashMap<u32, usize> = HashMap::new();
-        let mut losers: HashMap<u32, usize> = HashMap::new();
-        let mut matchups: HashMap<u32, (usize, usize)> = HashMap::new();
-        let mut r32_teams: Vec<usize> = Vec::new();
-
-        for (m, sa, sb) in data::r32() {
-            let ta = if sa == "3" {
-                let g = assign.get(&m).cloned().unwrap_or_default();
-                slot_team[&format!("3{}", g)]
-            } else {
-                slot_team[sa]
-            };
-            let tb = if sb == "3" {
-                let g = assign.get(&m).cloned().unwrap_or_default();
-                slot_team[&format!("3{}", g)]
-            } else {
-                slot_team[sb]
-            };
-            r32_teams.push(ta);
-            r32_teams.push(tb);
-            matchups.insert(m, (ta, tb));
-            let (winner, loser) = self.ko_winner(ta, tb, rng);
-            winners.insert(m, winner);
-            losers.insert(m, loser);
-        }
-
-        for (m, a, b) in data::r16() {
-            let ta = winners[&a];
-            let tb = winners[&b];
-            matchups.insert(m, (ta, tb));
-            let (winner, loser) = self.ko_winner(ta, tb, rng);
-            winners.insert(m, winner);
-            losers.insert(m, loser);
-        }
-        for (m, a, b) in data::qf() {
-            let ta = winners[&a];
-            let tb = winners[&b];
-            matchups.insert(m, (ta, tb));
-            let (winner, loser) = self.ko_winner(ta, tb, rng);
-            winners.insert(m, winner);
-            losers.insert(m, loser);
-        }
-        for (m, a, b) in data::sf() {
-            let ta = winners[&a];
-            let tb = winners[&b];
-            matchups.insert(m, (ta, tb));
-            let (winner, loser) = self.ko_winner(ta, tb, rng);
-            winners.insert(m, winner);
-            losers.insert(m, loser);
-        }
-
-        let sf_a = winners[&101];
-        let sf_b = winners[&102];
-        matchups.insert(data::FINAL, (sf_a, sf_b));
-        let (champion, runner_up) = self.ko_winner(sf_a, sf_b, rng);
-        winners.insert(data::FINAL, champion);
-        losers.insert(data::FINAL, runner_up);
-        let finalists = (sf_a.min(sf_b), sf_a.max(sf_b));
-
-        let (third_place, _) = self.ko_winner(losers[&101], losers[&102], rng);
-
-        SingleSimResult {
-            champion,
-            finalists,
-            sf_teams: vec![winners[&97], winners[&98], winners[&99], winners[&100]],
-            qf_teams: data::r16().iter().map(|(m, _, _)| winners[m]).collect(),
-            r16_teams: data::r32().iter().map(|(m, _, _)| winners[m]).collect(),
-            r32_teams,
-            slot_winners: winners.clone(),
-            slot_matchups: matchups,
-            third_place,
-            group_order: slot_team,
-            qual_thirds: qual,
+            .filter(|f| !self.played.contains_key(&(f.home, f.away)))
+            .map(|f| f.round)
+            .min();
+        match next {
+            None => Vec::new(),
+            Some(round) => self
+                .fixtures
+                .iter()
+                .filter(|f| f.round == round && !self.played.contains_key(&(f.home, f.away)))
+                .copied()
+                .collect(),
         }
     }
 
+    pub fn simulate_one(&self, rng: &mut SmallRng) -> SeasonResult {
+        let n = self.teams.len();
+        let mut records = vec![TeamRecord::default(); n];
+        let mut results: HashMap<(usize, usize), (i64, i64)> =
+            HashMap::with_capacity(self.fixtures.len());
+
+        for f in &self.fixtures {
+            let (hg, ag) = match self.played.get(&(f.home, f.away)) {
+                Some(&(hs, as_)) => (hs as i64, as_ as i64),
+                None => {
+                    let (lh, la) = self.lam_pair(f.home, f.away);
+                    self.sample_match_score(lh, la, rng)
+                }
+            };
+            apply_result(&mut records, f.home, f.away, hg, ag);
+            results.insert((f.home, f.away), (hg, ag));
+        }
+
+        let order = rank_table(&records, &results, &mut || rng.gen::<u64>());
+        SeasonResult { order, records }
+    }
+
     pub fn simulate(&self, config: &SimConfig) -> SimResults {
-        let n = config.n_sims;
-        let results: Vec<SingleSimResult> = (0..n)
+        let n_sims = config.n_sims;
+        let n = self.teams.len();
+        let seasons: Vec<SeasonResult> = (0..n_sims)
             .into_par_iter()
             .map(|i| {
                 let mut rng =
@@ -838,404 +352,441 @@ impl World {
             })
             .collect();
 
-        let mut champ_counts: HashMap<usize, usize> = HashMap::new();
-        let mut final_counts: HashMap<usize, usize> = HashMap::new();
-        let mut sf_counts: HashMap<usize, usize> = HashMap::new();
-        let mut qf_counts: HashMap<usize, usize> = HashMap::new();
-        let mut r16_counts: HashMap<usize, usize> = HashMap::new();
-        let mut r32_counts: HashMap<usize, usize> = HashMap::new();
-        let mut final_pairs: HashMap<(usize, usize), usize> = HashMap::new();
-        let mut third_place_counts: HashMap<usize, usize> = HashMap::new();
-        let mut group_stats: HashMap<String, HashMap<usize, GroupStat>> = HashMap::new();
-        let mut slot_winner_counts: HashMap<u32, HashMap<usize, usize>> = HashMap::new();
+        let mut position_counts = vec![vec![0usize; n]; n];
+        let mut title_counts = vec![0usize; n];
+        let mut ucl_counts = vec![0usize; n];
+        let mut uel_counts = vec![0usize; n];
+        let mut uecl_counts = vec![0usize; n];
+        let mut europe_counts = vec![0usize; n];
+        let mut relegation_counts = vec![0usize; n];
+        let mut points_sum = vec![0.0f64; n];
+        let mut gd_sum = vec![0.0f64; n];
+        let mut pairwise_above = vec![0usize; n * n];
 
-        for letter in self.groups.iter().map(|(l, _)| l) {
-            group_stats.insert(letter.clone(), HashMap::new());
-        }
-        for m in data::r32()
-            .iter()
-            .map(|(m, _, _)| *m)
-            .chain(data::r16().iter().map(|(m, _, _)| *m))
-            .chain(data::qf().iter().map(|(m, _, _)| *m))
-            .chain(data::sf().iter().map(|(m, _, _)| *m))
-            .chain(std::iter::once(data::FINAL))
-        {
-            slot_winner_counts.insert(m, HashMap::new());
-        }
-
-        for r in &results {
-            *champ_counts.entry(r.champion).or_insert(0) += 1;
-            *final_counts.entry(r.finalists.0).or_insert(0) += 1;
-            *final_counts.entry(r.finalists.1).or_insert(0) += 1;
-            for &t in &r.sf_teams {
-                *sf_counts.entry(t).or_insert(0) += 1;
-            }
-            for &t in &r.qf_teams {
-                *qf_counts.entry(t).or_insert(0) += 1;
-            }
-            for &t in &r.r16_teams {
-                *r16_counts.entry(t).or_insert(0) += 1;
-            }
-            for &t in &r.r32_teams {
-                *r32_counts.entry(t).or_insert(0) += 1;
-            }
-            *final_pairs.entry(r.finalists).or_insert(0) += 1;
-            *third_place_counts.entry(r.third_place).or_insert(0) += 1;
-
-            let qual_set: std::collections::HashSet<&String> = r.qual_thirds.iter().collect();
-            for (letter, _members) in &self.groups {
-                let gs = group_stats.get_mut(letter).unwrap();
-                let t1 = r.group_order[&format!("1{}", letter)];
-                let t2 = r.group_order[&format!("2{}", letter)];
-                let t3 = r.group_order[&format!("3{}", letter)];
-                let s1 = gs.entry(t1).or_default();
-                s1.first += 1;
-                s1.advance += 1;
-                let s2 = gs.entry(t2).or_default();
-                s2.second += 1;
-                s2.advance += 1;
-                let s3 = gs.entry(t3).or_default();
-                if qual_set.contains(letter) {
-                    s3.third_q += 1;
-                    s3.advance += 1;
-                } else {
-                    s3.third_out += 1;
+        let relegation_from = n - data::RELEGATION_SPOTS;
+        for s in &seasons {
+            for (pos, &club) in s.order.iter().enumerate() {
+                position_counts[club][pos] += 1;
+                if pos == 0 {
+                    title_counts[club] += 1;
+                }
+                if pos < data::UCL_SPOTS {
+                    ucl_counts[club] += 1;
+                } else if pos < data::UCL_SPOTS + data::UEL_SPOTS {
+                    uel_counts[club] += 1;
+                } else if pos < data::EUROPE_SPOTS {
+                    uecl_counts[club] += 1;
+                }
+                if pos < data::EUROPE_SPOTS {
+                    europe_counts[club] += 1;
+                }
+                if pos >= relegation_from {
+                    relegation_counts[club] += 1;
+                }
+                for &below in &s.order[pos + 1..] {
+                    pairwise_above[club * n + below] += 1;
                 }
             }
-
-            for (&m, &team) in &r.slot_winners {
-                if let Some(counts) = slot_winner_counts.get_mut(&m) {
-                    *counts.entry(team).or_insert(0) += 1;
-                }
+            for club in 0..n {
+                points_sum[club] += s.records[club].points as f64;
+                gd_sum[club] += s.records[club].gd() as f64;
             }
         }
 
-        let slot_mode: HashMap<u32, usize> = slot_winner_counts
-            .iter()
-            .map(|(&m, counts)| {
-                let (team, _) = counts.iter().max_by_key(|(_, &c)| c).unwrap();
-                (m, *team)
+        // Representative season: the trial whose finishing order best matches
+        // the per-position modal club. Replaces the old representative bracket.
+        let mode_at: Vec<usize> = (0..n)
+            .map(|pos| {
+                (0..n)
+                    .max_by_key(|&club| position_counts[club][pos])
+                    .unwrap_or(0)
             })
             .collect();
-
-        let score_representative = |r: &SingleSimResult| -> (usize, usize) {
-            let mode_matches = r
-                .slot_winners
+        let score = |s: &SeasonResult| -> usize {
+            s.order
                 .iter()
-                .filter(|(m, team)| slot_mode.get(m) == Some(team))
-                .count();
-            let champion_matches = usize::from(slot_mode.get(&data::FINAL) == Some(&r.champion));
-            (mode_matches, champion_matches)
+                .enumerate()
+                .filter(|&(pos, &club)| mode_at[pos] == club)
+                .count()
         };
-        let mut representative = &results[0];
-        let mut best_score = score_representative(representative);
-        for r in results.iter().skip(1) {
-            let score = score_representative(r);
-            if score > best_score {
-                representative = r;
-                best_score = score;
-            }
-        }
-        let representative_slot_winners = representative.slot_winners.clone();
-        let representative_slot_matchups = representative.slot_matchups.clone();
+        let representative = seasons
+            .iter()
+            .max_by_key(|s| score(s))
+            .cloned()
+            .expect("at least one trial");
 
         SimResults {
-            n_sims: n,
-            champ_counts,
-            final_counts,
-            sf_counts,
-            qf_counts,
-            r16_counts,
-            r32_counts,
-            group_stats,
-            slot_mode,
-            representative_slot_winners,
-            representative_slot_matchups,
-            final_pairs,
-            third_place_counts,
+            n_sims,
+            position_counts,
+            title_counts,
+            ucl_counts,
+            uel_counts,
+            uecl_counts,
+            europe_counts,
+            relegation_counts,
+            points_sum,
+            gd_sum,
+            pairwise_above,
+            representative,
         }
     }
-}
-
-/// Real bracket state derived while walking recorded knockout results.
-#[derive(Default)]
-struct BracketProgress {
-    winners: HashMap<u32, usize>,
-    losers: HashMap<u32, usize>,
-    upcoming: Vec<(u32, &'static str, usize, usize)>,
-}
-
-pub struct SingleSimResult {
-    pub champion: usize,
-    pub finalists: (usize, usize),
-    pub sf_teams: Vec<usize>,
-    pub qf_teams: Vec<usize>,
-    pub r16_teams: Vec<usize>,
-    pub r32_teams: Vec<usize>,
-    pub slot_winners: HashMap<u32, usize>,
-    pub slot_matchups: HashMap<u32, (usize, usize)>,
-    pub third_place: usize,
-    pub group_order: HashMap<String, usize>,
-    pub qual_thirds: Vec<String>,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::SeedableRng;
 
     #[test]
-    fn world_new_has_expected_teams_and_groups() {
-        let world = World::new();
-        assert_eq!(world.teams.len(), 48);
-        assert_eq!(world.groups.len(), 12);
-        for (_, members) in &world.groups {
-            assert_eq!(members.len(), 4);
+    fn world_new_has_eighteen_clubs_and_the_full_calendar() {
+        let w = World::new();
+        assert_eq!(w.teams.len(), data::N_TEAMS);
+        assert_eq!(w.fixtures.len(), data::N_FIXTURES);
+        assert_eq!(w.idx["Galatasaray"], 0);
+        for f in &w.fixtures {
+            assert!(f.home < data::N_TEAMS && f.away < data::N_TEAMS);
+            assert_ne!(f.home, f.away);
         }
     }
 
     #[test]
-    fn ko_winner_uses_recorded_knockout_result() {
-        let mut world = World::new();
-        let germany = world.idx["Germany"];
-        let paraguay = world.idx["Paraguay"];
-        world
-            .played_knockout
-            .insert((germany.min(paraguay), germany.max(paraguay)), paraguay);
-
-        let mut rng = SmallRng::seed_from_u64(1);
-        let (winner, loser) = world.ko_winner(germany, paraguay, &mut rng);
-
-        assert_eq!(winner, paraguay);
-        assert_eq!(loser, germany);
-    }
-
-    #[test]
-    fn ko_winner_treats_prior_loser_as_eliminated_against_any_opponent() {
-        let world = World::new();
-        // Germany really lost to Paraguay (baseline knockout result), so it's
-        // out of the tournament — even if a simulated trial's bracket path
-        // pits it against a team it never actually played (Spain, still
-        // alive), it must still lose.
-        let germany = world.idx["Germany"];
-        let spain = world.idx["Spain"];
-        assert!(world.knockout_out.contains(&germany));
-        assert!(!world.knockout_out.contains(&spain));
-
-        let mut rng = SmallRng::seed_from_u64(1);
-        for seed in 0..20 {
-            let mut rng2 = SmallRng::seed_from_u64(seed);
-            let (winner, loser) = world.ko_winner(germany, spain, &mut rng2);
-            assert_eq!(winner, spain);
-            assert_eq!(loser, germany);
-        }
-        // Order of arguments shouldn't matter either.
-        let (winner, loser) = world.ko_winner(spain, germany, &mut rng);
-        assert_eq!(winner, spain);
-        assert_eq!(loser, germany);
-    }
-
-    #[test]
-    fn world_new_includes_baseline_knockout_results() {
-        let world = World::new();
-        assert_eq!(world.played_knockout.len(), 28);
-        assert_eq!(world.knockout_out.len(), 28);
-        // Semifinalists are still alive.
-        for alive in ["Spain", "France", "Argentina", "England"] {
-            assert!(!world.knockout_out.contains(&world.idx[alive]), "{alive}");
-        }
-        // Quarter-final losers are out.
-        for out in ["Morocco", "Belgium", "Norway", "Switzerland"] {
-            assert!(world.knockout_out.contains(&world.idx[out]), "{out}");
+    fn recorded_results_are_loaded_from_the_calendar() {
+        let w = World::new();
+        for f in data::fixtures() {
+            if let (Some(hs), Some(as_)) = (f.home_score, f.away_score) {
+                let key = (w.idx[&f.home], w.idx[&f.away]);
+                assert_eq!(w.played.get(&key), Some(&(hs, as_)));
+            }
         }
     }
 
     #[test]
-    fn update_from_live_marks_knockout_losers_as_eliminated() {
-        let mut world = World::new();
-        // A newly scraped result beyond the baseline (a semifinal) must mark
-        // the loser as eliminated while the winner stays alive.
-        let live = crate::scraper::LiveData {
-            elo_ratings: HashMap::new(),
-            played_matches: Vec::new(),
-            knockout_matches: vec![crate::scraper::ScrapedKnockoutMatch {
-                team_a: "Spain".to_string(),
-                score_a: 1,
-                team_b: "France".to_string(),
-                score_b: 1,
-                winner: "Spain".to_string(),
-                penalty_score_a: Some(4),
-                penalty_score_b: Some(3),
-            }],
-            goalscorers: Vec::new(),
-            group_standings: Vec::new(),
-            tournament_stats: None,
-            fetched_at: "unix:0".to_string(),
-        };
+    fn home_advantage_applies_to_the_fixture_home_side_not_a_team_flag() {
+        let w = World::new();
+        let (a, b) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
 
-        world.update_from_live(&live);
+        let (la_home, lb_away) = w.lam_pair(a, b);
+        let (lb_home, la_away) = w.lam_pair(b, a);
 
-        assert_eq!(world.played_knockout.len(), 29);
-        assert!(world.knockout_out.contains(&world.idx["France"]));
-        assert!(!world.knockout_out.contains(&world.idx["Spain"]));
+        // The same club scores more at home than away against the same opponent.
+        assert!(la_home > la_away, "home side must get the boost");
+        assert!(
+            lb_home > lb_away,
+            "and so must the other club at its own ground"
+        );
+        // The stronger club still outscores the weaker one on neutral comparison.
+        assert!(la_home > lb_home);
+        assert!(la_away > lb_away);
+        for l in [la_home, lb_away, lb_home, la_away] {
+            assert!((0.15..=5.0).contains(&l), "lambda {l} out of clamp range");
+        }
     }
 
     #[test]
-    fn update_from_live_drops_unrecognized_names_without_panicking() {
-        let mut world = World::new();
-        let live = crate::scraper::LiveData {
-            elo_ratings: HashMap::new(),
-            played_matches: vec![crate::scraper::ScrapedMatch {
-                group: "A".to_string(),
-                team_a: "Mexico".to_string(),
-                score_a: 1,
-                team_b: "Atlantis".to_string(),
-                score_b: 0,
-            }],
-            knockout_matches: vec![crate::scraper::ScrapedKnockoutMatch {
-                team_a: "Atlantis".to_string(),
-                score_a: 2,
-                team_b: "Brazil".to_string(),
-                score_b: 0,
-                winner: "Atlantis".to_string(),
-                penalty_score_a: None,
-                penalty_score_b: None,
-            }],
-            goalscorers: Vec::new(),
-            group_standings: Vec::new(),
-            tournament_stats: None,
-            fetched_at: "unix:0".to_string(),
-        };
-
-        let (_elo_updated, matches_updated) = world.update_from_live(&live);
-        // Unrecognized rows are dropped: only the 72 baseline group results
-        // and 28 baseline knockout results remain.
-        assert_eq!(matches_updated, 100);
-        assert_eq!(world.played.len(), 72);
-        assert_eq!(world.played_knockout.len(), 28);
-        assert_eq!(world.knockout_out.len(), 28);
+    fn elo_override_changes_ratings() {
+        let mut w = World::new();
+        let before = w.elo[w.idx["Galatasaray"]];
+        let mut o = HashMap::new();
+        o.insert("Galatasaray".to_string(), before - 200.0);
+        w.apply_overrides(&o);
+        assert_eq!(w.elo[w.idx["Galatasaray"]], before - 200.0);
     }
 
     #[test]
-    fn group_stage_is_fully_determined_by_recorded_results() {
-        let world = World::new();
-        // All 72 group matches are recorded, so group outcomes must be
-        // identical across trials regardless of the RNG.
-        assert_eq!(world.played.len(), 72);
-        let mut rng1 = SmallRng::seed_from_u64(1);
-        let mut rng2 = SmallRng::seed_from_u64(999);
-        let r1 = world.simulate_one(&mut rng1);
-        let r2 = world.simulate_one(&mut rng2);
-        assert_eq!(r1.group_order, r2.group_order);
-        assert_eq!(r1.qual_thirds, r2.qual_thirds);
+    fn simulate_one_produces_a_complete_valid_season() {
+        let w = World::new();
+        let mut rng = SmallRng::seed_from_u64(42);
+        let r = w.simulate_one(&mut rng);
 
-        // Spot-check the real standings, including the tight tiebreaks.
-        assert_eq!(r1.group_order["1A"], world.idx["Mexico"]);
-        assert_eq!(r1.group_order["2B"], world.idx["Canada"]);
-        assert_eq!(r1.group_order["2D"], world.idx["Australia"]);
-        assert_eq!(r1.group_order["2H"], world.idx["Cape Verde"]);
-        assert_eq!(r1.group_order["1K"], world.idx["Colombia"]);
-        // Qualified third-placed teams (Senegal edges Iran on goal difference).
-        let mut quals = r1.qual_thirds.clone();
-        quals.sort();
-        assert_eq!(quals, vec!["B", "D", "E", "F", "I", "J", "K", "L"]);
-    }
-
-    #[test]
-    fn update_from_live_with_empty_scrape_keeps_baseline_and_knockouts() {
-        let mut world = World::new();
-        let germany = world.idx["Germany"];
-        let paraguay = world.idx["Paraguay"];
-        world
-            .played_knockout
-            .insert((germany.min(paraguay), germany.max(paraguay)), paraguay);
-
-        let live = crate::scraper::LiveData {
-            elo_ratings: HashMap::new(),
-            played_matches: Vec::new(),
-            knockout_matches: Vec::new(),
-            goalscorers: Vec::new(),
-            group_standings: Vec::new(),
-            tournament_stats: None,
-            fetched_at: "unix:0".to_string(),
-        };
-        world.update_from_live(&live);
-
-        // Hardcoded group and knockout baselines survive a scrape that
-        // found nothing.
-        assert_eq!(world.played.len(), 72);
-        assert_eq!(world.played_knockout.len(), 28);
-        assert!(world.knockout_out.contains(&germany));
-    }
-
-    #[test]
-    fn upcoming_matches_are_the_real_semifinals() {
-        let world = World::new();
-        let upcoming = world.upcoming_matches();
-        // With QFs recorded and SFs unplayed, exactly the two semifinals
-        // are pending: France vs Spain and England vs Argentina.
-        assert_eq!(upcoming.len(), 2);
-        let (m1, r1, a1, b1) = &upcoming[0];
-        let (m2, r2, a2, b2) = &upcoming[1];
-        assert_eq!((*m1, *r1), (101, "Semi-final"));
-        assert_eq!((*m2, *r2), (102, "Semi-final"));
-        let names = |a: usize, b: usize| (world.teams[a].clone(), world.teams[b].clone());
-        assert_eq!(names(*a1, *b1), ("France".to_string(), "Spain".to_string()));
+        assert_eq!(r.order.len(), data::N_TEAMS);
+        let mut seen = r.order.clone();
+        seen.sort_unstable();
         assert_eq!(
-            names(*a2, *b2),
-            ("England".to_string(), "Argentina".to_string())
+            seen,
+            (0..data::N_TEAMS).collect::<Vec<_>>(),
+            "order is a permutation"
+        );
+
+        for rec in &r.records {
+            assert_eq!(rec.played(), 34, "every club plays 34 matches");
+            assert_eq!(
+                rec.points,
+                rec.won as i64 * 3 + rec.drawn as i64,
+                "points must follow from W/D"
+            );
+        }
+
+        // A closed league: total goals for equals total goals against, and the
+        // 306 fixtures produce 306 results' worth of points.
+        let gf: i64 = r.records.iter().map(|x| x.gf).sum();
+        let ga: i64 = r.records.iter().map(|x| x.ga).sum();
+        assert_eq!(gf, ga);
+        let draws: u16 = r.records.iter().map(|x| x.drawn).sum();
+        let wins: u16 = r.records.iter().map(|x| x.won).sum();
+        assert_eq!(wins as usize + draws as usize / 2, data::N_FIXTURES);
+    }
+
+    #[test]
+    fn simulate_one_is_deterministic() {
+        let w = World::new();
+        let a = w.simulate_one(&mut SmallRng::seed_from_u64(7));
+        let b = w.simulate_one(&mut SmallRng::seed_from_u64(7));
+        assert_eq!(a.order, b.order);
+        assert_eq!(a.records, b.records);
+    }
+
+    #[test]
+    fn recorded_results_are_used_and_never_resampled() {
+        let mut w = World::new();
+        let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
+        // Force an extreme, unmistakable result onto a real fixture.
+        let fixture = w
+            .fixtures
+            .iter()
+            .find(|f| f.home == gs && f.away == gaz)
+            .copied()
+            .expect("Galatasaray host Gaziantep once");
+        w.played.insert((fixture.home, fixture.away), (9, 0));
+
+        for seed in 0..20u64 {
+            let r = w.simulate_one(&mut SmallRng::seed_from_u64(seed));
+            assert!(r.records[gs].gf >= 9, "recorded 9 goals must always appear");
+            assert!(r.records[gaz].ga >= 9);
+        }
+    }
+
+    #[test]
+    fn simulate_is_deterministic_for_same_seed() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 500,
+            seed: 999,
+            elo_overrides: HashMap::new(),
+        };
+        let a = w.simulate(&cfg);
+        let b = w.simulate(&cfg);
+        assert_eq!(a.position_counts, b.position_counts);
+        assert_eq!(a.title_counts, b.title_counts);
+        assert_eq!(a.relegation_counts, b.relegation_counts);
+        assert_eq!(a.representative.order, b.representative.order);
+    }
+
+    #[test]
+    fn every_club_position_distribution_sums_to_n_sims() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 400,
+            seed: 3,
+            elo_overrides: HashMap::new(),
+        };
+        let r = w.simulate(&cfg);
+        assert_eq!(r.position_counts.len(), data::N_TEAMS);
+        for (club, dist) in r.position_counts.iter().enumerate() {
+            assert_eq!(dist.len(), data::N_TEAMS);
+            assert_eq!(dist.iter().sum::<usize>(), cfg.n_sims, "club {club}");
+        }
+        // Each position is filled exactly once per trial.
+        for pos in 0..data::N_TEAMS {
+            let total: usize = r.position_counts.iter().map(|d| d[pos]).sum();
+            assert_eq!(total, cfg.n_sims, "position {pos}");
+        }
+    }
+
+    #[test]
+    fn spot_counts_agree_with_the_position_distribution() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 400,
+            seed: 11,
+            elo_overrides: HashMap::new(),
+        };
+        let r = w.simulate(&cfg);
+        for club in 0..data::N_TEAMS {
+            let d = &r.position_counts[club];
+            assert_eq!(r.title_counts[club], d[0]);
+            assert_eq!(r.ucl_counts[club], d[0] + d[1]);
+            assert_eq!(r.uel_counts[club], d[2]);
+            assert_eq!(r.uecl_counts[club], d[3]);
+            assert_eq!(
+                r.europe_counts[club],
+                d[..data::EUROPE_SPOTS].iter().sum::<usize>()
+            );
+            let rel: usize = d[data::N_TEAMS - data::RELEGATION_SPOTS..].iter().sum();
+            assert_eq!(
+                r.relegation_counts[club],
+                rel,
+                "bottom {} relegated",
+                data::RELEGATION_SPOTS
+            );
+        }
+        assert_eq!(r.title_counts.iter().sum::<usize>(), cfg.n_sims);
+        assert_eq!(
+            r.relegation_counts.iter().sum::<usize>(),
+            cfg.n_sims * data::RELEGATION_SPOTS
         );
     }
 
     #[test]
-    fn upcoming_includes_final_and_bronze_once_semis_are_recorded() {
-        let mut world = World::new();
-        let (spain, france) = (world.idx["Spain"], world.idx["France"]);
-        let (england, argentina) = (world.idx["England"], world.idx["Argentina"]);
-        world
-            .played_knockout
-            .insert((spain.min(france), spain.max(france)), spain);
-        world
-            .played_knockout
-            .insert((england.min(argentina), england.max(argentina)), argentina);
-
-        let upcoming = world.upcoming_matches();
-        assert_eq!(upcoming.len(), 2);
-        assert_eq!(upcoming[0].0, crate::data::THIRD_PLACE_MATCH);
-        assert_eq!(upcoming[0].1, "Third-place match");
-        assert_eq!((upcoming[0].2, upcoming[0].3), (france, england));
-        assert_eq!(upcoming[1].0, crate::data::FINAL);
-        assert_eq!((upcoming[1].2, upcoming[1].3), (spain, argentina));
+    fn pairwise_above_is_complementary() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 300,
+            seed: 5,
+            elo_overrides: HashMap::new(),
+        };
+        let r = w.simulate(&cfg);
+        let n = data::N_TEAMS;
+        for a in 0..n {
+            for b in 0..n {
+                if a == b {
+                    continue;
+                }
+                assert_eq!(
+                    r.pairwise_above[a * n + b] + r.pairwise_above[b * n + a],
+                    cfg.n_sims,
+                    "{a} vs {b}"
+                );
+            }
+        }
     }
 
     #[test]
-    fn match_win_probs_sum_to_100_and_favor_stronger_team() {
-        let world = World::new();
-        let spain = world.idx["Spain"];
-        let england = world.idx["England"];
-        let (a, b, decided_90) = world.match_win_probs(spain, england, 20_000, 42);
-        assert!((a + b - 100.0).abs() < 1e-9);
-        assert!(a > b, "higher-Elo Spain should be favored: {a} vs {b}");
-        assert!((0.0..=100.0).contains(&decided_90));
+    fn stronger_clubs_win_the_title_more_often() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 2000,
+            seed: 1,
+            elo_overrides: HashMap::new(),
+        };
+        let r = w.simulate(&cfg);
+        let gs = w.idx["Galatasaray"];
+        let gaz = w.idx["Gaziantep"];
+        assert!(
+            r.title_counts[gs] > r.title_counts[gaz],
+            "the strongest club must out-title the weakest"
+        );
+        assert!(r.relegation_counts[gaz] > r.relegation_counts[gs]);
+    }
+
+    #[test]
+    fn match_win_probs_sum_to_100_and_favor_the_stronger_side() {
+        let w = World::new();
+        let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
+        let (h, d, a) = w.match_win_probs(gs, gaz, 20_000, 4);
+        assert!((h + d + a - 100.0).abs() < 1e-6, "{h} + {d} + {a}");
+        assert!(h > a, "the stronger home side must be favored");
+        assert!(d > 5.0 && d < 40.0, "draw probability {d} is implausible");
+    }
+
+    #[test]
+    fn home_advantage_shows_up_in_match_probabilities() {
+        let w = World::new();
+        let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
+        let (gs_at_home, _, _) = w.match_win_probs(gs, gaz, 20_000, 4);
+        let (_, _, gs_away) = w.match_win_probs(gaz, gs, 20_000, 4);
+        assert!(gs_at_home > gs_away, "same club, better odds at home");
+    }
+
+    #[test]
+    fn upcoming_returns_the_earliest_round_with_unplayed_fixtures() {
+        let w = World::new();
+        let up = w.upcoming_matches();
+        assert!(!up.is_empty(), "the 2026-27 season is not finished");
+        let round = up[0].round;
+        assert!(up.iter().all(|f| f.round == round), "one round at a time");
+        for f in &up {
+            assert!(!w.played.contains_key(&(f.home, f.away)));
+        }
+        // Nothing earlier may remain unplayed.
+        for f in &w.fixtures {
+            if f.round < round {
+                assert!(
+                    w.played.contains_key(&(f.home, f.away)),
+                    "round {} incomplete",
+                    f.round
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn upcoming_is_empty_for_a_fully_played_season() {
+        let mut w = World::new();
+        for f in w.fixtures.clone() {
+            w.played.insert((f.home, f.away), (1, 1));
+        }
+        assert!(w.upcoming_matches().is_empty());
+    }
+
+    #[test]
+    fn update_from_live_records_scraped_results() {
+        let mut w = World::new();
+        let f = w
+            .fixtures
+            .iter()
+            .find(|f| !w.played.contains_key(&(f.home, f.away)))
+            .copied()
+            .expect("an unplayed fixture exists");
+        let live = crate::scraper::LiveData {
+            played_matches: vec![crate::scraper::ScrapedMatch {
+                round: f.round,
+                home: w.teams[f.home].clone(),
+                home_score: 3,
+                away: w.teams[f.away].clone(),
+                away_score: 1,
+            }],
+            fetched_at: "2026-08-16T00:00:00Z".to_string(),
+        };
+        assert_eq!(w.update_from_live(&live), 1);
+        assert_eq!(w.played.get(&(f.home, f.away)), Some(&(3, 1)));
+    }
+
+    #[test]
+    fn update_from_live_drops_unrecognized_names_without_panicking() {
+        let mut w = World::new();
+        let before = w.played.len();
+        let live = crate::scraper::LiveData {
+            played_matches: vec![crate::scraper::ScrapedMatch {
+                round: 1,
+                home: "Atlantis FC".to_string(),
+                home_score: 1,
+                away: "Galatasaray".to_string(),
+                away_score: 0,
+            }],
+            fetched_at: "2026-08-16T00:00:00Z".to_string(),
+        };
+        assert_eq!(w.update_from_live(&live), 0);
+        assert_eq!(w.played.len(), before);
+    }
+
+    #[test]
+    fn update_from_live_with_an_empty_scrape_keeps_the_baseline() {
+        let mut w = World::new();
+        let before = w.played.clone();
+        let live = crate::scraper::LiveData {
+            played_matches: Vec::new(),
+            fetched_at: "2026-08-16T00:00:00Z".to_string(),
+        };
+        assert_eq!(w.update_from_live(&live), 0);
+        assert_eq!(w.played, before, "an empty scrape must not erase results");
     }
 
     #[test]
     fn ensemble_builds_from_embedded_data_and_blends_lambdas() {
         let mut world = World::new();
-        let arg = world.idx["Argentina"];
-        let nzl = world.idx["New Zealand"];
-        let (elo_a, elo_n) = world.lam_pair(arg, nzl);
+        let gs = world.idx["Galatasaray"];
+        let gaz = world.idx["Gaziantep"];
+        let (elo_h, elo_a) = world.lam_pair(gs, gaz);
 
         let ens = Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("embedded ensemble");
-        assert_eq!(ens.dc.n_teams, world.teams.len() + 1); // + Rest of World bucket
+        assert_eq!(ens.dc.n_teams, world.teams.len() + 1); // + Other Club bucket
         world.ensemble = Some(ens);
 
-        let (mix_a, mix_n) = world.lam_pair(arg, nzl);
+        let (mix_h, mix_a) = world.lam_pair(gs, gaz);
         // Strong side still favored, lambdas clamped and changed by the blend.
-        assert!(mix_a > mix_n);
-        assert!((0.15..=5.0).contains(&mix_a) && (0.15..=5.0).contains(&mix_n));
+        assert!(mix_h > mix_a);
+        assert!((0.15..=5.0).contains(&mix_h) && (0.15..=5.0).contains(&mix_a));
         assert!(
-            (mix_a - elo_a).abs() > 1e-9 || (mix_n - elo_n).abs() > 1e-9,
+            (mix_h - elo_h).abs() > 1e-9 || (mix_a - elo_a).abs() > 1e-9,
             "blend should differ from pure Elo"
         );
     }
@@ -1243,11 +794,11 @@ mod tests {
     #[test]
     fn elo_only_weights_reproduce_pure_elo_lambdas() {
         let mut world = World::new();
-        let arg = world.idx["Argentina"];
-        let fra = world.idx["France"];
-        let pure = world.lam_pair(arg, fra);
+        let gs = world.idx["Galatasaray"];
+        let fb = world.idx["Fenerbahçe"];
+        let pure = world.lam_pair(gs, fb);
         world.ensemble = Some(Ensemble::from_embedded_data(1.0, 0.0, 0.0).expect("ensemble"));
-        let weighted = world.lam_pair(arg, fra);
+        let weighted = world.lam_pair(gs, fb);
         assert!((pure.0 - weighted.0).abs() < 1e-12);
         assert!((pure.1 - weighted.1).abs() < 1e-12);
     }
@@ -1263,9 +814,9 @@ mod tests {
 
         // With DC active, sampled draw frequency of a tight match must track
         // the joint table (which inflates low-score draws for rho < 0).
-        let arg = world.idx["Argentina"];
-        let fra = world.idx["France"];
-        let (la, lb) = world.lam_pair(arg, fra);
+        let gs = world.idx["Galatasaray"];
+        let fb = world.idx["Fenerbahçe"];
+        let (la, lb) = world.lam_pair(gs, fb);
         let table = crate::dixoncoles::score_table(la, lb, rho);
         let expected_p00 = table[0][0];
         let mut rng = SmallRng::seed_from_u64(3);
@@ -1298,154 +849,8 @@ mod tests {
         };
         let r1 = world.simulate(&config);
         let r2 = world.simulate(&config);
-        assert_eq!(r1.champ_counts, r2.champ_counts);
-        // Only the four real semifinalists can still win.
-        let alive: HashSet<usize> = ["Spain", "France", "Argentina", "England"]
-            .iter()
-            .map(|t| world.idx[*t])
-            .collect();
-        assert!(r1.champ_counts.keys().all(|t| alive.contains(t)));
-    }
-
-    #[test]
-    fn lam_pair_is_symmetric_and_host_advantage_boosts_lambda() {
-        let world = World::new();
-        let arg = world.idx["Argentina"];
-        let bra = world.idx["Brazil"];
-
-        let (la, lb) = world.lam_pair(arg, bra);
-        let (lb2, la2) = world.lam_pair(bra, arg);
-        assert!((la - la2).abs() < 1e-9);
-        assert!((lb - lb2).abs() < 1e-9);
-        assert!(la > 0.0 && lb > 0.0);
-
-        // USA (host) and Iran (non-host) have similar Elo.
-        // Hosting should give USA a higher expected goals than Iran.
-        let usa = world.idx["United States"];
-        let irn = world.idx["Iran"];
-        let (usa_home, irn_away) = world.lam_pair(usa, irn);
-        let (irn_home, usa_away) = world.lam_pair(irn, usa);
-        assert!(usa_home > irn_away);
-        assert!(usa_away > irn_home);
-        // The host's lambda when playing the same opponent should be the same regardless of order.
-        assert!((usa_home - usa_away).abs() < 1e-9);
-        assert!((irn_home - irn_away).abs() < 1e-9);
-    }
-
-    #[test]
-    fn simulate_is_deterministic_for_same_seed() {
-        let world = World::new();
-        let config = SimConfig {
-            n_sims: 1000,
-            seed: 42,
-            elo_overrides: HashMap::new(),
-        };
-        let r1 = world.simulate(&config);
-        let r2 = world.simulate(&config);
-        assert_eq!(r1.champ_counts, r2.champ_counts);
-        assert_eq!(r1.final_pairs, r2.final_pairs);
-    }
-
-    #[test]
-    fn simulate_counts_sum_to_n_sims() {
-        let world = World::new();
-        let config = SimConfig {
-            n_sims: 5000,
-            seed: 7,
-            elo_overrides: HashMap::new(),
-        };
-        let results = world.simulate(&config);
-
-        let champ_total: usize = results.champ_counts.values().sum();
-        assert_eq!(champ_total, config.n_sims);
-
-        let finalist_total: usize = results.final_counts.values().sum();
-        assert_eq!(finalist_total, config.n_sims * 2);
-
-        let sf_total: usize = results.sf_counts.values().sum();
-        assert_eq!(sf_total, config.n_sims * 4);
-
-        let r32_total: usize = results.r32_counts.values().sum();
-        assert_eq!(r32_total, config.n_sims * 32);
-    }
-
-    #[test]
-    fn representative_bracket_is_coherent() {
-        let world = World::new();
-        let config = SimConfig {
-            n_sims: 500,
-            seed: 11,
-            elo_overrides: HashMap::new(),
-        };
-        let results = world.simulate(&config);
-        let winners = &results.representative_slot_winners;
-
-        for (m, a, b) in crate::data::r16() {
-            assert!(winners[&m] == winners[&a] || winners[&m] == winners[&b]);
-        }
-        for (m, a, b) in crate::data::qf() {
-            assert!(winners[&m] == winners[&a] || winners[&m] == winners[&b]);
-        }
-        for (m, a, b) in crate::data::sf() {
-            assert!(winners[&m] == winners[&a] || winners[&m] == winners[&b]);
-        }
-        assert!(
-            winners[&crate::data::FINAL] == winners[&101]
-                || winners[&crate::data::FINAL] == winners[&102]
-        );
-    }
-
-    #[test]
-    fn simulate_one_produces_valid_tournament_result() {
-        let world = World::new();
-        let mut rng = SmallRng::seed_from_u64(99);
-        let r = world.simulate_one(&mut rng);
-
-        assert!(r.champion < world.teams.len());
-        assert_eq!(r.sf_teams.len(), 4);
-        assert_eq!(r.qf_teams.len(), 8);
-        assert_eq!(r.r16_teams.len(), 16);
-        assert_eq!(r.r32_teams.len(), 32);
-        assert_eq!(r.qual_thirds.len(), 8);
-        assert!(r.slot_winners.contains_key(&crate::data::FINAL));
-    }
-
-    #[test]
-    fn assign_thirds_finds_valid_assignment() {
-        let qual: Vec<String> = (0..8)
-            .map(|i| format!("{}", (b'A' + i as u8) as char))
-            .collect();
-        let slots = crate::data::third_place_slots();
-        let assignment = World::assign_thirds(&qual, &slots);
-        assert_eq!(assignment.len(), 8);
-
-        let mut used = std::collections::HashSet::new();
-        for (slot, group) in &assignment {
-            assert!(slots[slot].contains(&group.as_str()));
-            assert!(used.insert(group.clone()));
-        }
-    }
-
-    #[test]
-    fn elo_override_changes_ratings() {
-        let mut world = World::new();
-        let arg = world.idx["Argentina"];
-        let original = world.elo[arg];
-        let mut overrides = HashMap::new();
-        overrides.insert("Argentina".to_string(), original + 200.0);
-        world.apply_overrides(&overrides);
-        assert!((world.elo[arg] - (original + 200.0)).abs() < 1e-9);
-    }
-
-    #[test]
-    fn simulate_one_is_deterministic() {
-        let world = World::new();
-        let mut rng1 = SmallRng::seed_from_u64(42);
-        let mut rng2 = SmallRng::seed_from_u64(42);
-        let r1 = world.simulate_one(&mut rng1);
-        let r2 = world.simulate_one(&mut rng2);
-        assert_eq!(r1.champion, r2.champion);
-        assert_eq!(r1.finalists, r2.finalists);
-        assert_eq!(r1.qual_thirds, r2.qual_thirds);
+        assert_eq!(r1.title_counts, r2.title_counts);
+        assert_eq!(r1.position_counts, r2.position_counts);
+        assert_eq!(r1.representative.order, r2.representative.order);
     }
 }

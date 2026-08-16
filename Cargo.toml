@@ -20,12 +20,12 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
 thiserror = "1"
 dotenvy = "0.15"
-scraper = "0.20"
 regex = "1"
 csv = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 argmin = { version = "0.11", default-features = false }
 argmin-math = { version = "0.5", default-features = false, features = ["vec"] }
+encoding_rs = "0.8"
 
 [profile.release]
 opt-level = 3

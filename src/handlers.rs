@@ -99,16 +99,11 @@ pub async fn scenario(
 pub async fn perform_live_refresh(state: &AppState) -> anyhow::Result<LiveData> {
     let live = scraper::fetch_all().await?;
 
-    let (elo_n, match_n) = {
+    let applied = {
         let mut world = state.world.write().await;
         world.update_from_live(&live)
     };
-
-    tracing::info!(
-        "Live data applied to simulation: {} Elo ratings, {} matches",
-        elo_n,
-        match_n
-    );
+    tracing::info!("Live data applied to simulation: {applied} results");
 
     *state.live_data.write().await = Some(live.clone());
     Ok(live)
@@ -130,9 +125,7 @@ pub async fn get_live_data(
     Ok(Json(data))
 }
 
-/// Forecasts for real bracket matches whose pairing is fixed but which
-/// haven't been played yet (currently the semifinals; later the third-place
-/// match and final).
+/// Win/draw/loss forecasts for the next matchday's unplayed fixtures.
 pub async fn upcoming(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<crate::models::UpcomingResponse>, (StatusCode, String)> {
@@ -141,19 +134,19 @@ pub async fn upcoming(
         let matches = world
             .upcoming_matches()
             .into_iter()
-            .map(|(match_id, round, ta, tb)| {
-                let (a_win_pct, b_win_pct, decided_in_90_pct) =
-                    world.match_win_probs(ta, tb, 100_000, 12345);
+            .map(|f| {
+                let (home_win_pct, draw_pct, away_win_pct) =
+                    world.match_win_probs(f.home, f.away, 100_000, 12345);
                 crate::models::UpcomingMatch {
-                    match_id,
-                    round: round.to_string(),
-                    team_a: world.teams[ta].clone(),
-                    team_b: world.teams[tb].clone(),
-                    a_win_pct,
-                    b_win_pct,
-                    decided_in_90_pct,
-                    a_win_odds: crate::odds::decimal_odds_from_pct(a_win_pct),
-                    b_win_odds: crate::odds::decimal_odds_from_pct(b_win_pct),
+                    round: f.round,
+                    home: world.teams[f.home].clone(),
+                    away: world.teams[f.away].clone(),
+                    home_win_pct,
+                    draw_pct,
+                    away_win_pct,
+                    home_odds: crate::odds::decimal_odds_from_pct(home_win_pct),
+                    draw_odds: crate::odds::decimal_odds_from_pct(draw_pct),
+                    away_odds: crate::odds::decimal_odds_from_pct(away_win_pct),
                 }
             })
             .collect();

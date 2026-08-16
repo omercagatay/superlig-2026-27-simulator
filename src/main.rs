@@ -84,9 +84,8 @@ async fn main() -> anyhow::Result<()> {
                 interval.tick().await;
                 match handlers::perform_live_refresh(&bg_state).await {
                     Ok(live) => tracing::info!(
-                        "Background live refresh ok: {} group matches, {} knockout matches",
-                        live.played_matches.len(),
-                        live.knockout_matches.len()
+                        "Background live refresh ok: {} played fixtures",
+                        live.played_matches.len()
                     ),
                     Err(e) => tracing::warn!("Background live refresh failed: {e:#}"),
                 }

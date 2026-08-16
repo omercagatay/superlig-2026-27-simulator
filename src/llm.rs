@@ -5,31 +5,34 @@ use std::collections::HashMap;
 const KIMI_API_URL: &str = "https://api.moonshot.cn/v1/chat/completions";
 const KIMI_MODEL: &str = "kimi-k2.6";
 
-const SYSTEM_PROMPT: &str = r#"You are a football (soccer) analyst for the 2026 FIFA World Cup Monte Carlo simulation.
+const SYSTEM_PROMPT: &str = r#"You are a football analyst for a Monte Carlo simulation of the 2026-27 Trendyol Süper Lig (Turkish top flight).
 
-The simulation uses Elo ratings to model team strength. Each team has a rating around 1400-2100. A 50-point swing changes a team's win probability by roughly 8-10%.
+The simulation models club strength with Elo ratings on the ClubElo scale. Clubs in this league rate roughly 1500-1780. A 50-point swing changes a club's expected points over a season by roughly 4-6.
 
-When the user describes a scenario (injury, suspension, tactical change, weather, etc.), you must assess its impact on the affected team(s) and return a JSON object with Elo rating adjustments.
+When the user describes a scenario (injury, suspension, transfer, manager change, European fixture congestion, etc.), assess its impact on the affected club(s) and return a JSON object of new Elo ratings.
 
 Rules:
-- A star player injury (e.g. a team's best striker/keeper) typically reduces a team's Elo by 30-80 points.
-- A key defender injury: 20-50 points.
-- A squad-wide issue (illness, scandal): 50-120 points.
-- A favorable scenario (rival star injured, coaching change for the better): can give positive adjustments.
-- Multiple players injured: add their impacts, cap at -150 for a single team.
-- Use the EXACT team names from this list:
-  Argentina, France, Spain, England, Portugal, Netherlands, Brazil, Belgium, Germany, Croatia, Uruguay, Austria, Colombia, Morocco, Japan, Mexico, United States, Iran, Switzerland, Senegal, Ecuador, Australia, Norway, Turkey, Sweden, South Korea, Ivory Coast, Czech Republic, Scotland, Tunisia, Paraguay, Algeria, Canada, Bosnia and Herzegovina, Saudi Arabia, Egypt, Ghana, DR Congo, Qatar, Panama, Uzbekistan, South Africa, Iraq, Haiti, Jordan, Curaçao, Cape Verde, New Zealand
+- A star player injury (a club's leading scorer or first-choice keeper): 25-60 points.
+- A key defender or midfielder injury: 15-40 points.
+- A major transfer in: +15 to +50. A major transfer out: -15 to -50.
+- A manager change: -30 to +30, depending on the direction described.
+- A squad-wide issue (illness, financial crisis, points-deduction scandal): 40-100 points.
+- Heavy European fixture congestion for a club also playing in Europe: 10-30 points.
+- Multiple compounding effects: add them, capped at 120 points of movement for a single club.
+- Use the EXACT club names from this list:
+  Galatasaray, Fenerbahçe, Beşiktaş, Amedspor, Trabzonspor, Başakşehir, Göztepe, Samsunspor, Erzurumspor, Gençlerbirliği, Rizespor, Alanyaspor, Çorum, Kocaelispor, Eyüpspor, Konyaspor, Kasımpaşa, Gaziantep
+- Return absolute new ratings, not deltas. Keep every value between 1200 and 2000.
 
 Return ONLY valid JSON (no markdown fences) in this format:
 {
   "analysis": "brief explanation of the impact",
   "adjustments": {
-    "TeamName": new_elo_value_as_float,
+    "ClubName": new_elo_value_as_float,
     ...
   }
 }
 
-If a team mentioned is not in the list, omit it. If no teams are affected, return empty adjustments."#;
+If a club mentioned is not in the list, omit it. If no clubs are affected, return empty adjustments."#;
 
 #[derive(Serialize)]
 struct ChatRequest {

@@ -120,7 +120,7 @@ mod tests {
     use super::*;
 
     fn idx_fixture() -> TeamIndex {
-        TeamIndex::wc()
+        TeamIndex::league()
     }
 
     fn m(date: (i32, u32, u32), h: &str, a: &str, hs: u16, as_: u16) -> HistoricalMatch {
@@ -135,57 +135,57 @@ mod tests {
     }
 
     #[test]
-    fn winning_team_gains_rating_and_loser_drops() {
+    fn winning_club_gains_rating_and_loser_drops() {
         let idx = idx_fixture();
         let since = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
         let history = vec![
-            m((2021, 1, 1), "Brazil", "Haiti", 4, 0),
-            m((2021, 2, 1), "Brazil", "Haiti", 3, 0),
+            m((2021, 1, 1), "Galatasaray", "Gaziantep", 4, 0),
+            m((2021, 2, 1), "Galatasaray", "Gaziantep", 3, 0),
         ];
         let pi = PiRatings::compute(&history, &idx, since);
-        let (bra, hai) = (idx.canonical("Brazil"), idx.canonical("Haiti"));
-        assert!(pi.home[bra] > 0.0);
-        assert!(pi.away[bra] > 0.0, "cross-learning should lift away rating");
-        assert!(pi.away[hai] < 0.0);
-        assert!(pi.home[hai] < 0.0);
+        let (gs, gaz) = (idx.canonical("Galatasaray"), idx.canonical("Gaziantep"));
+        assert!(pi.home[gs] > 0.0);
+        assert!(pi.away[gs] > 0.0, "cross-learning should lift away rating");
+        assert!(pi.away[gaz] < 0.0);
+        assert!(pi.home[gaz] < 0.0);
     }
 
     #[test]
-    fn lambdas_favor_stronger_team_and_stay_positive() {
+    fn lambdas_favor_stronger_club_and_stay_positive() {
         let idx = idx_fixture();
         let since = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
         let mut history = Vec::new();
         for i in 0..30 {
-            history.push(m((2021, 1, 1 + (i % 27)), "Brazil", "Haiti", 3, 0));
+            history.push(m((2021, 1, 1 + (i % 27)), "Galatasaray", "Gaziantep", 3, 0));
         }
         let pi = PiRatings::compute(&history, &idx, since);
-        let (bra, hai) = (idx.canonical("Brazil"), idx.canonical("Haiti"));
-        let (lb, lh) = pi.lambdas(bra, hai, false, false);
-        assert!(lb > lh, "Brazil should have higher expected goals");
-        assert!(lh >= 0.15);
+        let (gs, gaz) = (idx.canonical("Galatasaray"), idx.canonical("Gaziantep"));
+        let (lgs, lgaz) = pi.lambdas(gs, gaz, false, false);
+        assert!(lgs > lgaz, "Galatasaray should have higher expected goals");
+        assert!(lgaz >= 0.15);
         // Order symmetry.
-        let (lh2, lb2) = pi.lambdas(hai, bra, false, false);
-        assert!((lb - lb2).abs() < 1e-12 && (lh - lh2).abs() < 1e-12);
+        let (lgaz2, lgs2) = pi.lambdas(gaz, gs, false, false);
+        assert!((lgs - lgs2).abs() < 1e-12 && (lgaz - lgaz2).abs() < 1e-12);
     }
 
     #[test]
-    fn host_home_rating_boosts_expected_goals() {
+    fn home_rating_boosts_expected_goals() {
         let idx = idx_fixture();
         let since = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
-        // USA strong at home, weaker away.
+        // Trabzonspor strong at home, weaker away.
         let history = vec![
-            m((2021, 1, 1), "United States", "Mexico", 3, 0),
-            m((2021, 2, 1), "Mexico", "United States", 2, 0),
-            m((2021, 3, 1), "United States", "Mexico", 2, 0),
+            m((2021, 1, 1), "Trabzonspor", "Konyaspor", 3, 0),
+            m((2021, 2, 1), "Konyaspor", "Trabzonspor", 2, 0),
+            m((2021, 3, 1), "Trabzonspor", "Konyaspor", 2, 0),
         ];
         let pi = PiRatings::compute(&history, &idx, since);
-        let usa = idx.canonical("United States");
-        let mex = idx.canonical("Mexico");
-        let (host_lam, _) = pi.lambdas(usa, mex, true, false);
-        let (neutral_lam, _) = pi.lambdas(usa, mex, false, false);
+        let tra = idx.canonical("Trabzonspor");
+        let kon = idx.canonical("Konyaspor");
+        let (host_lam, _) = pi.lambdas(tra, kon, true, false);
+        let (neutral_lam, _) = pi.lambdas(tra, kon, false, false);
         assert!(
             host_lam > neutral_lam,
-            "hosting should use the stronger home rating: {host_lam} vs {neutral_lam}"
+            "playing at home should use the stronger home rating: {host_lam} vs {neutral_lam}"
         );
     }
 
@@ -198,10 +198,10 @@ mod tests {
         assert!(pi.n_matches > 1000);
         assert!(pi.avg_goals > 1.5 && pi.avg_goals < 4.0);
         // Top sides should out-rate minnows on aggregate rating.
-        let strong = idx.canonical("Argentina");
-        let weak = idx.canonical("New Zealand");
+        let strong = idx.canonical("Galatasaray");
+        let weak = idx.canonical("Gaziantep");
         let s = (pi.home[strong] + pi.away[strong]) / 2.0;
         let w = (pi.home[weak] + pi.away[weak]) / 2.0;
-        assert!(s > w, "Argentina {s} should out-rate New Zealand {w}");
+        assert!(s > w, "Galatasaray {s} should out-rate Gaziantep {w}");
     }
 }
