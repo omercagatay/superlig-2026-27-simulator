@@ -108,7 +108,7 @@ Elo overrides from scenarios act through the Elo component only. `GET /api/healt
 
 ### Model selection (`examples/arena.rs`)
 
-The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. The arena's Elo is self-computed from the match history (ClubElo snapshots are unreachable), so its Elo component is the same family as production's, not identical ratings.
+The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. ML has been tried and lost: a walk-forward logistic stacker (in the arena, `logit-stack`) and sklearn GBM/RF/MLP (side experiment, `ARENA_DUMP_DIR=<dir>` dumps the feature CSV) all scored behind the ensemble on the 2025-26 test season — results-only features don't give ML room to win here. The arena's Elo is self-computed from the match history (ClubElo snapshots are unreachable), so its Elo component is the same family as production's, not identical ratings.
 
 ### Calibration (`tests/calibration.rs`)
 

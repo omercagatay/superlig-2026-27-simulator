@@ -283,6 +283,124 @@ impl Fitted {
     }
 }
 
+// ------------------------------------------------- learned combiner (ML) ---
+
+/// Feature vector for one match, built only from models fitted on seasons
+/// strictly before the match's season — walk-forward, no leakage. The Elo
+/// term uses fixed production-style scaling; the learner owns the weights.
+fn features(f: &Fitted, m: &HistoricalMatch) -> [f64; 7] {
+    let h = f.idx.canonical(&m.home_team);
+    let a = f.idx.canonical(&m.away_team);
+    let (dh, da) = f.dc.lam(h, a, false);
+    let (sh, sa) = f.dc_short.lam(h, a, false);
+    let (ph, pa) = f.pi.lambdas(h, a, true, false);
+    let dr = f.elo.rating(&m.home_team) - f.elo.rating(&m.away_team);
+    [
+        dh.ln(),
+        da.ln(),
+        sh.ln(),
+        sa.ln(),
+        dr / 400.0,
+        ph.ln(),
+        pa.ln(),
+    ]
+}
+
+/// One row of the walk-forward meta-dataset.
+struct MetaRow {
+    year: i32,
+    x: [f64; 7],
+    y: usize,
+}
+
+/// Multinomial logistic regression (softmax), full-batch gradient descent.
+/// Deterministic: zero init, fixed schedule — no RNG, so the arena stays
+/// exactly reproducible.
+struct Softmax {
+    w: [[f64; 8]; 3],
+    mean: [f64; 7],
+    sd: [f64; 7],
+}
+
+impl Softmax {
+    fn train(rows: &[&MetaRow], l2: f64, lr: f64, iters: usize) -> Self {
+        let n = rows.len() as f64;
+        let mut mean = [0.0; 7];
+        let mut sd = [0.0; 7];
+        for r in rows {
+            for (k, v) in r.x.iter().enumerate() {
+                mean[k] += v / n;
+            }
+        }
+        for r in rows {
+            for (k, v) in r.x.iter().enumerate() {
+                sd[k] += (v - mean[k]) * (v - mean[k]) / n;
+            }
+        }
+        for v in &mut sd {
+            *v = v.sqrt().max(1e-9);
+        }
+        let norm = |x: &[f64; 7]| -> [f64; 8] {
+            let mut out = [1.0; 8];
+            for k in 0..7 {
+                out[k] = (x[k] - mean[k]) / sd[k];
+            }
+            out
+        };
+
+        let mut w = [[0.0f64; 8]; 3];
+        for _ in 0..iters {
+            let mut grad = [[0.0f64; 8]; 3];
+            for r in rows {
+                let z = norm(&r.x);
+                let p = Self::soft(&w, &z);
+                for c in 0..3 {
+                    let err = p[c] - if r.y == c { 1.0 } else { 0.0 };
+                    for k in 0..8 {
+                        grad[c][k] += err * z[k] / n;
+                    }
+                }
+            }
+            for c in 0..3 {
+                for k in 0..8 {
+                    w[c][k] -= lr * (grad[c][k] + l2 * w[c][k]);
+                }
+            }
+        }
+        Softmax { w, mean, sd }
+    }
+
+    fn soft(w: &[[f64; 8]; 3], z: &[f64; 8]) -> [f64; 3] {
+        let mut logits = [0.0; 3];
+        for c in 0..3 {
+            logits[c] = w[c].iter().zip(z.iter()).map(|(wk, zk)| wk * zk).sum();
+        }
+        let m = logits.iter().cloned().fold(f64::MIN, f64::max);
+        let mut e = [0.0; 3];
+        let mut sum = 0.0;
+        for c in 0..3 {
+            e[c] = (logits[c] - m).exp();
+            sum += e[c];
+        }
+        [e[0] / sum, e[1] / sum, e[2] / sum]
+    }
+
+    fn predict(&self, x: &[f64; 7]) -> [f64; 3] {
+        let mut z = [1.0; 8];
+        for k in 0..7 {
+            z[k] = (x[k] - self.mean[k]) / self.sd[k];
+        }
+        Self::soft(&self.w, &z)
+    }
+}
+
+/// Sharpen or soften a probability triple: p_c ∝ p_c^(1/T).
+fn temper(p: [f64; 3], t: f64) -> [f64; 3] {
+    let q = [p[0].powf(1.0 / t), p[1].powf(1.0 / t), p[2].powf(1.0 / t)];
+    let s = q[0] + q[1] + q[2];
+    [q[0] / s, q[1] / s, q[2] / s]
+}
+
 // ----------------------------------------------------------------- arena ---
 
 fn main() {
@@ -339,7 +457,58 @@ fn main() {
         fitted_w.0, fitted_w.1, fitted_w.2
     );
 
-    // --- the ten contenders ------------------------------------------------
+    // --- walk-forward meta-dataset for the learned models ------------------
+    // For every season since 2015-16, features come from models fitted only
+    // on the seasons before it. Optionally dumped for outside experiments.
+    let meta: Vec<MetaRow> = (2016..=2026)
+        .flat_map(|year| {
+            let sp = split(year);
+            let f = fit_all(&sp);
+            sp.eval
+                .iter()
+                .map(|m| MetaRow {
+                    year,
+                    x: features(&f, m),
+                    y: outcome(m),
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    if let Ok(dir) = std::env::var("ARENA_DUMP_DIR") {
+        let mut csv = String::from("year,dc_lh,dc_la,dcs_lh,dcs_la,elo_dr,pi_lh,pi_la,outcome\n");
+        for r in &meta {
+            csv.push_str(&format!(
+                "{},{},{},{},{},{},{},{},{}\n",
+                r.year, r.x[0], r.x[1], r.x[2], r.x[3], r.x[4], r.x[5], r.x[6], r.y
+            ));
+        }
+        std::fs::write(format!("{dir}/arena_meta.csv"), csv).expect("dump meta csv");
+        println!("meta-dataset dumped ({} rows)\n", meta.len());
+    }
+
+    // Stacker for the validation leaderboard trains on seasons < 2025; the
+    // test one also gets 2024-25. Same protocol as every other contender.
+    let train_rows =
+        |max_year: i32| -> Vec<&MetaRow> { meta.iter().filter(|r| r.year <= max_year).collect() };
+    let stack_v = Softmax::train(&train_rows(2024), 1e-3, 0.2, 4000);
+    let stack_t = Softmax::train(&train_rows(2025), 1e-3, 0.2, 4000);
+
+    // Temperature for the production-weight ensemble, tuned on validation.
+    let mut temp = 1.0;
+    let mut best = f64::INFINITY;
+    for t10 in 6..=16 {
+        let t = t10 as f64 / 10.0;
+        let sc = evaluate(&val.eval, |m| {
+            temper(fv.blend_probs(m, 0.5, 0.3, 0.2, elo_cfg), t)
+        });
+        if sc.log_loss < best {
+            best = sc.log_loss;
+            temp = t;
+        }
+    }
+    println!("ensemble temperature tuned on validation: T={temp}\n");
+
+    // --- the contenders ----------------------------------------------------
     type Model<'a> = (
         &'static str,
         Box<dyn FnMut(&HistoricalMatch) -> [f64; 3] + 'a>,
@@ -401,7 +570,7 @@ fn main() {
         ]
     }
 
-    for (split, fitted) in [(&val, &fv), (&test, &ft)] {
+    for (split, fitted, stack) in [(&val, &fv, &stack_v), (&test, &ft, &stack_t)] {
         println!("=== {} ({} matches) ===", split.name, split.eval.len());
         println!(
             "{:<22} {:>9} {:>8} {:>8} {:>7}",
@@ -411,6 +580,16 @@ fn main() {
         for (name, mut predict) in models(fitted, elo_cfg, fitted_w) {
             rows.push((name, evaluate(&split.eval, &mut predict)));
         }
+        rows.push((
+            "logit-stack (ML)",
+            evaluate(&split.eval, |m| stack.predict(&features(fitted, m))),
+        ));
+        rows.push((
+            "ensemble + temp",
+            evaluate(&split.eval, |m| {
+                temper(fitted.blend_probs(m, 0.5, 0.3, 0.2, elo_cfg), temp)
+            }),
+        ));
         rows.sort_by(|a, b| a.1.log_loss.partial_cmp(&b.1.log_loss).unwrap());
         for (name, s) in rows {
             let n = s.n as f64;

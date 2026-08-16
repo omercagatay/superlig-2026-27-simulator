@@ -100,6 +100,8 @@ The blend was chosen by backtest, not by fiat. `cargo run --release --example ar
 
 Every real model clears the baselines by a wide margin; the gaps *within* the top group are inside sampling noise for 300 matches. The production ensemble is the only model in the top group on both hold-out seasons — weights fitted to the validation season alone (0.6/0/0.4) did better there but worse on test, i.e. they overfit. The 0.5/0.3/0.2 blend stays.
 
+**Machine learning was tried and lost.** The arena builds a leak-free walk-forward meta-dataset (11 seasons, ~3,600 matches; every feature computed from models fitted only on earlier seasons) and fields a multinomial logistic stacker over the component models' outputs; a side experiment ran scikit-learn gradient boosting, random forests, and an MLP on the same features. Test-season log-loss: logistic stack 1.0002, sklearn logistic 1.0010, random forest 1.0083, shallow GBM 1.0129, MLP 1.0602 — all behind the 0.9985 statistical ensemble, with the tree/net models overfitting outright. This matches the literature: on results-only features, ML needs richer inputs (market odds, xG, lineups, within-season form) to beat a well-specified Dixon–Coles family, and none of those inputs are available here. A tuned temperature-scaling layer also failed to transfer from validation to test.
+
 ## Run locally
 
 ### Prerequisites
