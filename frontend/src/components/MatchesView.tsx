@@ -22,33 +22,60 @@ function ForecastRow({ m }: { m: MatchCard }) {
         <div className="split-d" style={{ width: `${f.draw_pct}%` }} />
         <div className="split-b" style={{ width: `${f.away_win_pct}%` }} />
       </div>
-      <div className="odds-grid">
-        <span className="odds-cell">
-          <span className="odds-label">1</span>
-          {f.home_win_pct.toFixed(1)}% <em>{fmtOdds(f.home_odds)}</em>
-        </span>
-        <span className="odds-cell">
-          <span className="odds-label">X</span>
-          {f.draw_pct.toFixed(1)}% <em>{fmtOdds(f.draw_odds)}</em>
-        </span>
-        <span className="odds-cell">
-          <span className="odds-label">2</span>
-          {f.away_win_pct.toFixed(1)}% <em>{fmtOdds(f.away_odds)}</em>
-        </span>
-        <span className="odds-cell">
-          <span className="odds-label">O2.5</span>
-          {f.over25_pct.toFixed(1)}% <em>{fmtOdds(f.over25_odds)}</em>
-        </span>
-        <span className="odds-cell">
-          <span className="odds-label">U2.5</span>
-          {(100 - f.over25_pct).toFixed(1)}% <em>{fmtOdds(f.under25_odds)}</em>
-        </span>
-        <span className="odds-cell">
-          <span className="odds-label">BTTS</span>
-          {f.btts_pct.toFixed(1)}% <em>{fmtOdds(f.btts_odds)}</em>
-        </span>
-      </div>
+      <table className="market-table">
+        <thead>
+          <tr>
+            <th scope="col" className="mt-label">
+              Market
+            </th>
+            <th scope="col">Probability</th>
+            <th scope="col">Fair odds</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="mt-label">
+              <i className="split-key a" aria-hidden="true" />
+              {m.home} win <span className="mt-code">1</span>
+            </td>
+            <td>{f.home_win_pct.toFixed(1)}%</td>
+            <td>{fmtOdds(f.home_odds)}</td>
+          </tr>
+          <tr>
+            <td className="mt-label">
+              <i className="split-key d" aria-hidden="true" />
+              Draw <span className="mt-code">X</span>
+            </td>
+            <td>{f.draw_pct.toFixed(1)}%</td>
+            <td>{fmtOdds(f.draw_odds)}</td>
+          </tr>
+          <tr className="mt-group-end">
+            <td className="mt-label">
+              <i className="split-key b" aria-hidden="true" />
+              {m.away} win <span className="mt-code">2</span>
+            </td>
+            <td>{f.away_win_pct.toFixed(1)}%</td>
+            <td>{fmtOdds(f.away_odds)}</td>
+          </tr>
+          <tr>
+            <td className="mt-label">Over 2.5 goals</td>
+            <td>{f.over25_pct.toFixed(1)}%</td>
+            <td>{fmtOdds(f.over25_odds)}</td>
+          </tr>
+          <tr>
+            <td className="mt-label">Under 2.5 goals</td>
+            <td>{(100 - f.over25_pct).toFixed(1)}%</td>
+            <td>{fmtOdds(f.under25_odds)}</td>
+          </tr>
+          <tr>
+            <td className="mt-label">Both teams score</td>
+            <td>{f.btts_pct.toFixed(1)}%</td>
+            <td>{fmtOdds(f.btts_odds)}</td>
+          </tr>
+        </tbody>
+      </table>
       <div className="score-chips">
+        <span className="score-chips-label">Most likely scores</span>
         {f.likely_scores.map((sc) => (
           <span key={`${sc.home}-${sc.away}`} className="score-chip">
             {sc.home}–{sc.away} <em>{sc.pct.toFixed(1)}%</em>
@@ -114,8 +141,10 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
         </div>
       </header>
       <p className="panel-note">
-        Probabilities are exact under the model's scoreline distribution; odds
-        are the fair price 100/p with no bookmaker margin. Model estimates, not
+        Every unplayed fixture is priced on match result (1X2), total goals and
+        both-teams-to-score: the probability of each outcome and its fair
+        decimal odds (100/probability, no bookmaker margin). Matches already
+        played show the final score instead of a forecast. Model estimates, not
         betting advice.
       </p>
       <div className="match-list">

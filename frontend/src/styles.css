@@ -1532,35 +1532,60 @@ button {
   color: var(--ink-3);
 }
 
-/* Six markets in two rows of three; each cell is "pct odds". */
-.odds-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.25rem 0.6rem;
+/* Per-market pricing table: one labeled row per outcome. */
+.market-table {
+  width: 100%;
+  border-collapse: collapse;
   font-family: var(--data);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--ink-2);
 }
 
-.odds-cell {
-  display: flex;
-  align-items: baseline;
-  gap: 0.35rem;
+.market-table th {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: right;
+  padding: 0.1rem 0;
+  border-bottom: 1px solid var(--chalk);
+}
+
+.market-table td {
+  padding: 0.18rem 0;
+  text-align: right;
   white-space: nowrap;
 }
 
-.odds-cell em {
-  font-style: normal;
-  color: var(--ink-3);
+.market-table .mt-label {
+  text-align: left;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 11rem;
 }
 
-.odds-label {
+.market-table .mt-label .split-key {
+  margin-right: 0.4rem;
+}
+
+.mt-code {
   font-family: var(--display);
-  font-weight: 600;
-  font-size: 0.68rem;
-  letter-spacing: 0.06em;
+  font-size: 0.64rem;
   color: var(--ink-3);
-  min-width: 2.1rem;
+  margin-left: 0.3rem;
+}
+
+/* Hairline between the 1X2 block and the goals markets. */
+.market-table tr.mt-group-end td {
+  border-bottom: 1px solid var(--chalk);
+  padding-bottom: 0.35rem;
+}
+
+.market-table tr.mt-group-end + tr td {
+  padding-top: 0.35rem;
 }
 
 /* Per-match detail: model expected goals and most likely scorelines. */
@@ -1574,10 +1599,21 @@ button {
 .score-chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
   margin-top: 0.55rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--chalk);
+}
+
+.score-chips-label {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 0.2rem;
 }
 
 .score-chip {
