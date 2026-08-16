@@ -135,8 +135,7 @@ pub async fn upcoming(
             .upcoming_matches()
             .into_iter()
             .map(|f| {
-                let (home_win_pct, draw_pct, away_win_pct) =
-                    world.match_win_probs(f.home, f.away, 100_000, 12345);
+                let (home_win_pct, draw_pct, away_win_pct) = world.match_win_probs(f.home, f.away);
                 crate::models::UpcomingMatch {
                     round: f.round,
                     home: world.teams[f.home].clone(),
@@ -159,6 +158,22 @@ pub async fn upcoming(
             format!("Upcoming forecast task failed: {e}"),
         )
     })?;
+    Ok(Json(resp))
+}
+
+/// The full 306-fixture calendar with model prices for every unplayed game.
+pub async fn matches(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<crate::models::MatchesResponse>, (StatusCode, String)> {
+    let world = state.world.read().await.clone();
+    let resp = tokio::task::spawn_blocking(move || crate::models::build_matches_response(&world))
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Match forecast task failed: {e}"),
+            )
+        })?;
     Ok(Json(resp))
 }
 

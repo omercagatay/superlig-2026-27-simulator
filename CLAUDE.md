@@ -61,7 +61,8 @@ Routes (`src/handlers.rs`), each with its own per-IP rate limit (`src/rate_limit
 - `POST /api/simulate` (30/min) — takes optional `elo_overrides`, clones the current `World`, applies overrides **to the clone only** (does not mutate shared state), runs `World::simulate`.
 - `POST /api/scenario` (10/min) — sends the prompt to Kimi (`src/llm.rs`), validates the returned Elo adjustments against club names/bounds (`src/validation.rs`), applies them to a cloned `World`, simulates, returns results plus the LLM's `analysis` text.
 - `POST /api/refresh` (5/min) — scrapes the TFF fixture page (`src/scraper.rs`) for played results, then **does** mutate the shared `World` (`world.update_from_live`) and caches the raw scrape in `live_data`. This is the only path that changes state for subsequent requests.
-- `GET /api/upcoming` (30/min) — home/draw/away probabilities for the next matchday's unplayed fixtures, computed per-match via `World::match_win_probs`.
+- `GET /api/upcoming` (30/min) — home/draw/away probabilities for the next matchday's unplayed fixtures.
+- `GET /api/matches` (30/min) — the whole calendar with per-fixture 1X2, over/under 2.5 and BTTS prices. Probabilities are exact sums over the Dixon-Coles scoreline table (`World::fixture_probs`), not Monte Carlo — the table truncates at 10 goals a side, so the 1X2 triple is renormalized to sum to exactly 100. Played fixtures carry the real score and no forecast (retrodicting with current ratings would mislead).
 - `GET /api/live`, `GET /api/health` — read-only.
 
 Everything not matching `/api/*` falls back to `ServeDir::new("frontend/dist")`, so in production this is a single binary serving both API and SPA.

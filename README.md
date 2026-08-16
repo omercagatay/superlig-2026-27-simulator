@@ -159,6 +159,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
+| `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
 
 Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000 (the ClubElo club scale is compressed relative to international Elo), and request bodies are limited to 1 MiB.
 

@@ -5,16 +5,19 @@ import {
   refreshLiveData,
   getLiveData,
   getUpcoming,
+  getMatches,
   type SimResponse,
   type LiveData,
   type UpcomingMatch,
+  type MatchesResponse,
 } from "./api";
 import { ForecastView } from "./components/ForecastView";
 import { LeagueTable } from "./components/LeagueTable";
 import { PositionGrid } from "./components/PositionGrid";
 import { LiveStats } from "./components/LiveStats";
+import { MatchesView } from "./components/MatchesView";
 
-type DashboardView = "forecast" | "positions" | "table" | "live";
+type DashboardView = "forecast" | "positions" | "table" | "matches" | "live";
 
 type Theme = "dark" | "light";
 
@@ -63,6 +66,7 @@ export default function App() {
   const [nSims, setNSims] = useState(50000);
   const [seed, setSeed] = useState(12345);
   const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
+  const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
@@ -124,6 +128,11 @@ export default function App() {
       .catch(() => {
         /* upcoming forecasts are optional decoration */
       });
+    getMatches()
+      .then(setMatchesData)
+      .catch(() => {
+        /* per-match forecasts are optional decoration */
+      });
     void handleSimulate();
   }, [handleSimulate]);
 
@@ -159,6 +168,7 @@ export default function App() {
     { id: "forecast", label: "Forecast", disabled: !data },
     { id: "positions", label: "Positions", disabled: !data },
     { id: "table", label: "Table", disabled: !data },
+    { id: "matches", label: "Matches", disabled: !matchesData },
     { id: "live", label: "Live", disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
 
@@ -282,6 +292,8 @@ export default function App() {
         {data && activeView === "positions" && <PositionGrid positions={data.positions} />}
 
         {data && activeView === "table" && <LeagueTable table={data.table} />}
+
+        {matchesData && activeView === "matches" && <MatchesView data={matchesData} />}
 
         {liveData && activeView === "live" && <LiveStats liveData={liveData} />}
       </main>

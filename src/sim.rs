@@ -91,6 +91,18 @@ impl Ensemble {
     }
 }
 
+/// Exact per-fixture outcome and market probabilities, as percentages.
+#[derive(Clone, Copy, Debug)]
+pub struct FixtureProbs {
+    pub home_win_pct: f64,
+    pub draw_pct: f64,
+    pub away_win_pct: f64,
+    /// P(total goals >= 3).
+    pub over25_pct: f64,
+    /// P(both sides score).
+    pub btts_pct: f64,
+}
+
 /// One simulated season: finishing order plus each club's final record.
 #[derive(Clone, Debug)]
 pub struct SeasonResult {
@@ -276,30 +288,47 @@ impl World {
     /// Monte Carlo outcome probabilities for a single league fixture:
     /// `(home_win_pct, draw_pct, away_win_pct)`. Unlike a knockout tie, a
     /// league match can end level, so the draw is a first-class outcome.
-    pub fn match_win_probs(
-        &self,
-        home: usize,
-        away: usize,
-        n: usize,
-        seed: u64,
-    ) -> (f64, f64, f64) {
+    pub fn match_win_probs(&self, home: usize, away: usize) -> (f64, f64, f64) {
+        let p = self.fixture_probs(home, away);
+        (p.home_win_pct, p.draw_pct, p.away_win_pct)
+    }
+
+    /// Exact outcome and market probabilities for one fixture, summed from
+    /// the joint scoreline table rather than Monte Carlo sampled — no noise,
+    /// no seed, and cheap enough to run for all 306 fixtures per request.
+    /// When the ensemble is off (pure Elo) the table is used with ρ = 0,
+    /// which reduces to independent Poissons.
+    pub fn fixture_probs(&self, home: usize, away: usize) -> FixtureProbs {
         let (lh, la) = self.lam_pair(home, away);
-        let mut rng = SmallRng::seed_from_u64(seed);
-        let (mut hw, mut dr) = (0usize, 0usize);
-        for _ in 0..n {
-            let (hg, ag) = self.sample_match_score(lh, la, &mut rng);
-            match hg.cmp(&ag) {
-                std::cmp::Ordering::Greater => hw += 1,
-                std::cmp::Ordering::Equal => dr += 1,
-                std::cmp::Ordering::Less => {}
+        let rho = self.score_rho().unwrap_or(0.0);
+        let t = crate::dixoncoles::score_table(lh, la, rho);
+
+        let (mut hw, mut dr, mut aw, mut over25, mut btts) = (0.0, 0.0, 0.0, 0.0, 0.0);
+        for (x, row) in t.iter().enumerate() {
+            for (y, &p) in row.iter().enumerate() {
+                match x.cmp(&y) {
+                    std::cmp::Ordering::Greater => hw += p,
+                    std::cmp::Ordering::Equal => dr += p,
+                    std::cmp::Ordering::Less => aw += p,
+                }
+                if x + y >= 3 {
+                    over25 += p;
+                }
+                if x >= 1 && y >= 1 {
+                    btts += p;
+                }
             }
         }
-        let nf = n as f64;
-        (
-            hw as f64 / nf * 100.0,
-            dr as f64 / nf * 100.0,
-            (n - hw - dr) as f64 / nf * 100.0,
-        )
+        // The table truncates at MAX_GOALS per side; normalize so the 1X2
+        // triple sums to exactly 100 even for extreme-mismatch lambdas.
+        let total = hw + dr + aw;
+        FixtureProbs {
+            home_win_pct: hw / total * 100.0,
+            draw_pct: dr / total * 100.0,
+            away_win_pct: aw / total * 100.0,
+            over25_pct: over25 / total * 100.0,
+            btts_pct: btts / total * 100.0,
+        }
     }
 
     /// Unplayed fixtures of the earliest round that still has any — the
@@ -687,18 +716,24 @@ mod tests {
     fn match_win_probs_sum_to_100_and_favor_the_stronger_side() {
         let w = World::new();
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
-        let (h, d, a) = w.match_win_probs(gs, gaz, 20_000, 4);
-        assert!((h + d + a - 100.0).abs() < 1e-6, "{h} + {d} + {a}");
+        let (h, d, a) = w.match_win_probs(gs, gaz);
+        assert!((h + d + a - 100.0).abs() < 1e-9, "{h} + {d} + {a}");
         assert!(h > a, "the stronger home side must be favored");
         assert!(d > 5.0 && d < 40.0, "draw probability {d} is implausible");
+
+        let p = w.fixture_probs(gs, gaz);
+        assert!(p.over25_pct > 0.0 && p.over25_pct < 100.0);
+        assert!(p.btts_pct > 0.0 && p.btts_pct < 100.0);
+        // A mismatch this size should still clear typical market baselines.
+        assert!(p.over25_pct > 30.0, "over 2.5 {} too low", p.over25_pct);
     }
 
     #[test]
     fn home_advantage_shows_up_in_match_probabilities() {
         let w = World::new();
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
-        let (gs_at_home, _, _) = w.match_win_probs(gs, gaz, 20_000, 4);
-        let (_, _, gs_away) = w.match_win_probs(gaz, gs, 20_000, 4);
+        let (gs_at_home, _, _) = w.match_win_probs(gs, gaz);
+        let (_, _, gs_away) = w.match_win_probs(gaz, gs);
         assert!(gs_at_home > gs_away, "same club, better odds at home");
     }
 

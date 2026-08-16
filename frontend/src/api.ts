@@ -125,6 +125,48 @@ export interface UpcomingResponse {
   matches: UpcomingMatch[];
 }
 
+export interface MatchForecast {
+  home_win_pct: number;
+  draw_pct: number;
+  away_win_pct: number;
+  home_odds: number | null;
+  draw_odds: number | null;
+  away_odds: number | null;
+  over25_pct: number;
+  over25_odds: number | null;
+  under25_odds: number | null;
+  btts_pct: number;
+  btts_odds: number | null;
+  btts_no_odds: number | null;
+}
+
+export interface MatchCard {
+  home: string;
+  away: string;
+  played: boolean;
+  home_score: number | null;
+  away_score: number | null;
+  forecast: MatchForecast | null;
+}
+
+export interface RoundMatches {
+  round: number;
+  matches: MatchCard[];
+}
+
+export interface MatchesResponse {
+  rounds: RoundMatches[];
+  /** The earliest round with an unplayed fixture — the UI's landing round. */
+  current_round: number;
+}
+
+/** The full 306-fixture calendar with model prices for every unplayed game. */
+export async function getMatches(): Promise<MatchesResponse> {
+  const resp = await fetch(`${API_BASE}/api/matches`);
+  if (!resp.ok) throw new Error(await resp.text());
+  return resp.json();
+}
+
 /** Win/draw/loss forecasts for the next matchday's unplayed fixtures. */
 export async function getUpcoming(): Promise<UpcomingResponse> {
   const resp = await fetch(`${API_BASE}/api/upcoming`);

@@ -1478,3 +1478,85 @@ button {
 .swatch.col-rel {
   background: var(--danger);
 }
+
+/* ---- Match predictions -------------------------------------------------- */
+
+.round-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.round-pick select {
+  font-family: var(--display);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--pitch-3);
+  border: 1px solid var(--chalk-2);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.6rem;
+}
+
+.match-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 0.7rem;
+}
+
+.match-card {
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--chalk);
+  border-radius: var(--radius);
+  background: var(--pitch-2);
+}
+
+.match-card .split-bar {
+  margin: 0.45rem 0 0.55rem;
+}
+
+.match-played {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.match-ft {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+}
+
+/* Six markets in two rows of three; each cell is "pct odds". */
+.odds-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem 0.6rem;
+  font-family: var(--data);
+  font-size: 0.72rem;
+  color: var(--ink-2);
+}
+
+.odds-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.odds-cell em {
+  font-style: normal;
+  color: var(--ink-3);
+}
+
+.odds-label {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  min-width: 2.1rem;
+}

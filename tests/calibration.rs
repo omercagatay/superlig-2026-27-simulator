@@ -54,11 +54,11 @@ fn simulated_match_outcomes_match_the_real_league() {
     let (_, _, emp_home, emp_draw) = empirical();
     let w = World::new();
 
-    // Average the outcome split over every fixture in the calendar, so the
-    // comparison covers the real distribution of mismatches.
+    // Average the exact outcome split over every fixture in the calendar, so
+    // the comparison covers the real distribution of mismatches.
     let (mut home, mut draw, mut away, mut n) = (0.0, 0.0, 0.0, 0.0);
     for f in &w.fixtures {
-        let (h, d, a) = w.match_win_probs(f.home, f.away, 4_000, 77);
+        let (h, d, a) = w.match_win_probs(f.home, f.away);
         home += h;
         draw += d;
         away += a;

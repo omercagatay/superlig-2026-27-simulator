@@ -161,6 +161,7 @@ cargo run --release
 | `/api/refresh` | `POST` | 5/dk | Güncel TFF sonuçlarını çeker ve uygular. |
 | `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
+| `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
 
 Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla (ClubElo kulüp ölçeği, uluslararası Elo'ya göre daha dardır), istek gövdeleri 1 MiB ile sınırlıdır.
 

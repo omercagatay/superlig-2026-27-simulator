@@ -90,6 +90,105 @@ pub struct UpcomingResponse {
     pub matches: Vec<UpcomingMatch>,
 }
 
+/// Model prices for one unplayed fixture: 1X2, over/under 2.5 goals, and
+/// both-teams-to-score, each as a probability plus its fair decimal odds
+/// (1 / p, no bookmaker margin).
+#[derive(Serialize, Clone)]
+pub struct MatchForecast {
+    pub home_win_pct: f64,
+    pub draw_pct: f64,
+    pub away_win_pct: f64,
+    pub home_odds: Option<f64>,
+    pub draw_odds: Option<f64>,
+    pub away_odds: Option<f64>,
+    pub over25_pct: f64,
+    pub over25_odds: Option<f64>,
+    pub under25_odds: Option<f64>,
+    pub btts_pct: f64,
+    pub btts_odds: Option<f64>,
+    pub btts_no_odds: Option<f64>,
+}
+
+/// One calendar fixture: the real score once played, the model's prices
+/// while it isn't. Retrodicting played games with current ratings would be
+/// misleading, so a played match carries no forecast.
+#[derive(Serialize, Clone)]
+pub struct MatchCard {
+    pub home: String,
+    pub away: String,
+    pub played: bool,
+    pub home_score: Option<u16>,
+    pub away_score: Option<u16>,
+    pub forecast: Option<MatchForecast>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct RoundMatches {
+    pub round: u8,
+    pub matches: Vec<MatchCard>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct MatchesResponse {
+    pub rounds: Vec<RoundMatches>,
+    /// The earliest round with an unplayed fixture — the UI's landing round.
+    pub current_round: u8,
+}
+
+pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
+    let odds = crate::odds::decimal_odds_from_pct;
+    let mut rounds: Vec<RoundMatches> = Vec::new();
+    for f in &world.fixtures {
+        if rounds.last().map(|r| r.round) != Some(f.round) {
+            rounds.push(RoundMatches {
+                round: f.round,
+                matches: Vec::new(),
+            });
+        }
+        let played = world.played.get(&(f.home, f.away)).copied();
+        let forecast = if played.is_some() {
+            None
+        } else {
+            let p = world.fixture_probs(f.home, f.away);
+            Some(MatchForecast {
+                home_win_pct: p.home_win_pct,
+                draw_pct: p.draw_pct,
+                away_win_pct: p.away_win_pct,
+                home_odds: odds(p.home_win_pct),
+                draw_odds: odds(p.draw_pct),
+                away_odds: odds(p.away_win_pct),
+                over25_pct: p.over25_pct,
+                over25_odds: odds(p.over25_pct),
+                under25_odds: odds(100.0 - p.over25_pct),
+                btts_pct: p.btts_pct,
+                btts_odds: odds(p.btts_pct),
+                btts_no_odds: odds(100.0 - p.btts_pct),
+            })
+        };
+        rounds
+            .last_mut()
+            .expect("round pushed above")
+            .matches
+            .push(MatchCard {
+                home: world.teams[f.home].clone(),
+                away: world.teams[f.away].clone(),
+                played: played.is_some(),
+                home_score: played.map(|(h, _)| h),
+                away_score: played.map(|(_, a)| a),
+                forecast,
+            });
+    }
+    let current_round = rounds
+        .iter()
+        .find(|r| r.matches.iter().any(|m| !m.played))
+        .map(|r| r.round)
+        .unwrap_or(crate::data::N_ROUNDS as u8);
+    MatchesResponse {
+        rounds,
+        current_round,
+    }
+}
+
 #[derive(Serialize, Clone)]
 pub struct SimResponse {
     pub n_sims: usize,
@@ -333,5 +432,52 @@ mod tests {
 
         // Champion = modal champion = the top row of the odds table.
         assert_eq!(resp.consensus_champion, resp.teams[0].team);
+    }
+
+    #[test]
+    fn matches_response_covers_the_whole_calendar() {
+        let w = World::new();
+        let resp = build_matches_response(&w);
+
+        assert_eq!(resp.rounds.len(), crate::data::N_ROUNDS);
+        let total: usize = resp.rounds.iter().map(|r| r.matches.len()).sum();
+        assert_eq!(total, crate::data::N_FIXTURES);
+        for (i, r) in resp.rounds.iter().enumerate() {
+            assert_eq!(r.round as usize, i + 1, "rounds in calendar order");
+            assert_eq!(r.matches.len(), 9);
+        }
+
+        // The landing round is the earliest one still holding unplayed games.
+        assert!(resp
+            .rounds
+            .iter()
+            .find(|r| r.round == resp.current_round)
+            .expect("current round exists")
+            .matches
+            .iter()
+            .any(|m| !m.played));
+
+        for r in &resp.rounds {
+            for m in &r.matches {
+                if m.played {
+                    assert!(m.home_score.is_some() && m.away_score.is_some());
+                    assert!(m.forecast.is_none(), "played games are not retrodicted");
+                } else {
+                    let f = m.forecast.as_ref().expect("unplayed games are priced");
+                    let s = f.home_win_pct + f.draw_pct + f.away_win_pct;
+                    assert!((s - 100.0).abs() < 1e-9, "{} v {}: {s}", m.home, m.away);
+                    for (pct, odds) in [
+                        (f.home_win_pct, f.home_odds),
+                        (f.draw_pct, f.draw_odds),
+                        (f.away_win_pct, f.away_odds),
+                        (f.over25_pct, f.over25_odds),
+                        (f.btts_pct, f.btts_odds),
+                    ] {
+                        let o = odds.expect("all league outcomes are possible");
+                        assert!((o - 100.0 / pct).abs() < 0.02, "odds {o} vs pct {pct}");
+                    }
+                }
+            }
+        }
     }
 }
