@@ -1,0 +1,2144 @@
+[
+ {
+  "round": 1,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317790,
+  "score": "2 - 2",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 1,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317789,
+  "score": "0 - 1",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 1,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317784,
+  "score": "1 - 1",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 1,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317788,
+  "score": "2 - 1",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 1,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317785,
+  "score": "1 - 1",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 1,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317791,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 1,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317787,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 1,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317786,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 1,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317792,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317801,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317796,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317799,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 2,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317798,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "EYÜPSPOR",
+  "mac_id": 317794,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317793,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 2,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317795,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 2,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317797,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 2,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317800,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 3,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317806,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 3,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317802,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 3,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317808,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 3,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317807,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 3,
+  "home": "EYÜPSPOR",
+  "mac_id": 317803,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 3,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317804,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 3,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317810,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 3,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317805,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 3,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317809,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 4,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317816,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 4,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317811,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 4,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317813,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 4,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317819,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 4,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317818,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 4,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317817,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 4,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317812,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 4,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317815,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 4,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317814,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 5,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317826,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 5,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317824,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 5,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317822,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 5,
+  "home": "EYÜPSPOR",
+  "mac_id": 317821,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 5,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317823,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 5,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317828,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 5,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317827,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 5,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317820,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 5,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317825,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317837,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317832,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317830,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 6,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317829,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317835,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 6,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317831,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 6,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317833,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317836,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 6,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317834,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 7,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317845,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 7,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317842,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 7,
+  "home": "EYÜPSPOR",
+  "mac_id": 317839,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 7,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317844,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 7,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317843,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 7,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317840,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 7,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317838,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 7,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317841,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 7,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317846,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317848,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317847,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317855,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 8,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317851,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317850,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 8,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317852,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317854,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 8,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317853,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 8,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317849,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 9,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317864,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 9,
+  "home": "EYÜPSPOR",
+  "mac_id": 317857,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 9,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317863,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 9,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317856,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 9,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317860,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 9,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317861,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 9,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317862,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 9,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317859,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 9,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317858,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 10,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317869,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 10,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317867,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 10,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317866,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 10,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317868,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 10,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317870,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 10,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317873,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 10,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317872,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 10,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317865,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 10,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317871,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 11,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317880,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 11,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317874,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 11,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317878,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 11,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317877,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 11,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317881,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 11,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317882,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 11,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317879,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 11,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317876,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 11,
+  "home": "EYÜPSPOR",
+  "mac_id": 317875,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 12,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317889,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 12,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317890,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 12,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317888,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 12,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317883,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 12,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317885,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 12,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317886,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 12,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317891,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 12,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317884,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 12,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317887,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 13,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317892,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 13,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317895,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 13,
+  "home": "EYÜPSPOR",
+  "mac_id": 317893,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 13,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317898,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 13,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317900,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 13,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317894,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 13,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317899,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 13,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317896,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 13,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317897,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 14,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317909,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 14,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317908,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 14,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317903,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 14,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317905,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 14,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317901,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 14,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317906,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 14,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317907,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 14,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317904,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 14,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317902,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 15,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317918,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 15,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317915,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 15,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317913,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 15,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317917,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 15,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317914,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 15,
+  "home": "EYÜPSPOR",
+  "mac_id": 317911,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 15,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317910,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 15,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317916,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 15,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317912,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 16,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317920,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 16,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317924,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 16,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317927,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 16,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317923,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 16,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317921,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 16,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317926,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 16,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317922,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 16,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317925,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 16,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317919,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 17,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317934,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 17,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317935,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 17,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317930,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 17,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317931,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 17,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317928,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 17,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317933,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 17,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317932,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 17,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317936,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 17,
+  "home": "EYÜPSPOR",
+  "mac_id": 317929,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317945,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "EYÜPSPOR",
+  "mac_id": 317944,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317941,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 18,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317943,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317942,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 18,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317939,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 18,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317938,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317937,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 18,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317940,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 19,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317950,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 19,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317948,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 19,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317949,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 19,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317954,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 19,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317951,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 19,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317947,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 19,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317952,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 19,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317946,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 19,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317953,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 20,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317963,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 20,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317962,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 20,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317956,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 20,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317959,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 20,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317960,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 20,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317961,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 20,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317957,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 20,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317955,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 20,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317958,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 21,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317968,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 21,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317965,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 21,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317966,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 21,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317967,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 21,
+  "home": "EYÜPSPOR",
+  "mac_id": 317969,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 21,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317972,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 21,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317970,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 21,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317964,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 21,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317971,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 22,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317981,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 22,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317978,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 22,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317980,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 22,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317977,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 22,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317979,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 22,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317974,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 22,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317973,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 22,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317975,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 22,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317976,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 23,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 317985,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 23,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 317983,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 23,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 317986,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 23,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 317984,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 23,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 317990,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 23,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 317987,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 23,
+  "home": "EYÜPSPOR",
+  "mac_id": 317988,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 23,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 317982,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 23,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 317989,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 24,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 317993,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 24,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 317999,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 24,
+  "home": "KOCAELİSPOR",
+  "mac_id": 317998,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 24,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 317992,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 24,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 317995,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 24,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 317997,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 24,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 317996,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 24,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 317994,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 24,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 317991,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 25,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 318003,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 25,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318001,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 25,
+  "home": "EYÜPSPOR",
+  "mac_id": 318008,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 25,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 318005,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 25,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 318002,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 25,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 318004,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 25,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 318000,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 25,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 318006,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 25,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 318007,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 26,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 318016,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 26,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 318017,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 26,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 318010,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 26,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 318015,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 26,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 318014,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 26,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 318012,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 26,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 318013,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 26,
+  "home": "KOCAELİSPOR",
+  "mac_id": 318011,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 26,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 318009,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 27,
+  "home": "EYÜPSPOR",
+  "mac_id": 318021,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 27,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 318019,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 27,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 318026,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 27,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318020,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 27,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 318023,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 27,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 318022,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 27,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 318018,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 27,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 318024,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 27,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 318025,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 28,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 318035,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 28,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 318034,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 28,
+  "home": "KOCAELİSPOR",
+  "mac_id": 318028,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 28,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 318032,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 28,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 318033,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 28,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 318030,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 28,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 318031,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 28,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 318029,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 28,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 318027,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 29,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 318039,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 29,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 318037,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 29,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 318038,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 29,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 318044,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 29,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318042,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 29,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 318041,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 29,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 318040,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 29,
+  "home": "EYÜPSPOR",
+  "mac_id": 318036,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 29,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 318043,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 30,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 318053,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 30,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 318052,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 30,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 318051,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 30,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 318046,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 30,
+  "home": "KOCAELİSPOR",
+  "mac_id": 318050,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 30,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 318048,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 30,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 318047,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 30,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 318049,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 30,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 318045,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 31,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 318057,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 31,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 318055,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 31,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 318056,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 31,
+  "home": "KOCAELİSPOR",
+  "mac_id": 318062,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 31,
+  "home": "EYÜPSPOR",
+  "mac_id": 318058,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 31,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 318059,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 31,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 318060,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 31,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318061,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 31,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 318054,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 32,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 318069,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 32,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 318064,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 32,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 318071,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 32,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 318068,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 32,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 318066,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 32,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 318063,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 32,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318065,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ },
+ {
+  "round": 32,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 318067,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 32,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 318070,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 33,
+  "home": "GÖZTEPE A.Ş.",
+  "mac_id": 318075,
+  "score": "-",
+  "away": "AMED SPORTİF FAALİYETLER"
+ },
+ {
+  "round": 33,
+  "home": "FENERBAHÇE A.Ş.",
+  "mac_id": 318073,
+  "score": "-",
+  "away": "KASIMPAŞA A.Ş."
+ },
+ {
+  "round": 33,
+  "home": "ERZURUMSPOR FK",
+  "mac_id": 318074,
+  "score": "-",
+  "away": "İSTANBUL BAŞAKŞEHİR FK"
+ },
+ {
+  "round": 33,
+  "home": "ARCA ÇORUM FK",
+  "mac_id": 318076,
+  "score": "-",
+  "away": "GENÇLERBİRLİĞİ"
+ },
+ {
+  "round": 33,
+  "home": "CORENDON ALANYASPOR",
+  "mac_id": 318078,
+  "score": "-",
+  "away": "GALATASARAY A.Ş."
+ },
+ {
+  "round": 33,
+  "home": "EYÜPSPOR",
+  "mac_id": 318077,
+  "score": "-",
+  "away": "TÜMOSAN KONYASPOR"
+ },
+ {
+  "round": 33,
+  "home": "ÇAYKUR RİZESPOR A.Ş.",
+  "mac_id": 318079,
+  "score": "-",
+  "away": "BEŞİKTAŞ A.Ş."
+ },
+ {
+  "round": 33,
+  "home": "KOCAELİSPOR",
+  "mac_id": 318072,
+  "score": "-",
+  "away": "TRABZONSPOR A.Ş."
+ },
+ {
+  "round": 33,
+  "home": "GAZİANTEP FUTBOL KULÜBÜ A.Ş.",
+  "mac_id": 318080,
+  "score": "-",
+  "away": "SAMSUNSPOR A.Ş."
+ },
+ {
+  "round": 34,
+  "home": "AMED SPORTİF FAALİYETLER",
+  "mac_id": 318087,
+  "score": "-",
+  "away": "FENERBAHÇE A.Ş."
+ },
+ {
+  "round": 34,
+  "home": "SAMSUNSPOR A.Ş.",
+  "mac_id": 318082,
+  "score": "-",
+  "away": "EYÜPSPOR"
+ },
+ {
+  "round": 34,
+  "home": "GALATASARAY A.Ş.",
+  "mac_id": 318081,
+  "score": "-",
+  "away": "GAZİANTEP FUTBOL KULÜBÜ A.Ş."
+ },
+ {
+  "round": 34,
+  "home": "GENÇLERBİRLİĞİ",
+  "mac_id": 318084,
+  "score": "-",
+  "away": "ÇAYKUR RİZESPOR A.Ş."
+ },
+ {
+  "round": 34,
+  "home": "TÜMOSAN KONYASPOR",
+  "mac_id": 318086,
+  "score": "-",
+  "away": "ARCA ÇORUM FK"
+ },
+ {
+  "round": 34,
+  "home": "TRABZONSPOR A.Ş.",
+  "mac_id": 318089,
+  "score": "-",
+  "away": "ERZURUMSPOR FK"
+ },
+ {
+  "round": 34,
+  "home": "BEŞİKTAŞ A.Ş.",
+  "mac_id": 318085,
+  "score": "-",
+  "away": "GÖZTEPE A.Ş."
+ },
+ {
+  "round": 34,
+  "home": "KASIMPAŞA A.Ş.",
+  "mac_id": 318088,
+  "score": "-",
+  "away": "KOCAELİSPOR"
+ },
+ {
+  "round": 34,
+  "home": "İSTANBUL BAŞAKŞEHİR FK",
+  "mac_id": 318083,
+  "score": "-",
+  "away": "CORENDON ALANYASPOR"
+ }
+]
