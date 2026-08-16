@@ -16,8 +16,9 @@ export function LeagueTable({ table }: { table: TableRow[] }) {
         <h2>Projected final table</h2>
       </header>
       <p className="panel-note">
-        The single most representative simulated season — the run whose
-        finishing order best matches the most common outcome in each position.
+        Each club's expected record, averaged over every simulated season and
+        ranked by expected points — the table the model considers most likely,
+        not one sampled run.
       </p>
       <div className="table-scroll">
         <table className="data-table">

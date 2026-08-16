@@ -75,7 +75,7 @@ Per trial (`simulate_one`):
 2. `league::apply_result` folds each result into both clubs' `TeamRecord`.
 3. `league::rank_table` ranks the final table (see below) and returns the finishing order.
 
-Across trials, `simulate` aggregates per-club position counts, title/UCL/UEL/UECL/Europe/relegation counts, points and GD sums, and a flat n×n `pairwise_above` matrix. It also picks a "representative" season — the trial whose finishing order best matches the per-position modal club — used for the projected-table view.
+Across trials, `simulate` aggregates per-club position counts, title/UCL/UEL/UECL/Europe/relegation counts, points and GD sums, and a flat n×n `pairwise_above` matrix. It also picks a "representative" season — the trial whose finishing order best matches the per-position modal club — retained as a determinism anchor in tests. The projected-table view is built from per-club **expected** records instead: positions 4-15 have nearly flat distributions, so any single sampled season is noise there and contradicts the aggregate odds beside it.
 
 **Home advantage is per fixture, not per club.** The World Cup version carried a `host: Vec<bool>` flag; `lam_pair(home, away)` now applies `HOME_ADV` to whichever club is at home in that fixture.
 

@@ -15,7 +15,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Uses Dixon–Coles joint score sampling, which represents low-scoring and drawn matches better than independent Poissons.
 - Locks confirmed results from the official TFF calendar and simulates only the remaining fixtures.
 - Applies the Süper Lig's own classification rules, in which **head-to-head decides before goal difference**.
-- Produces title odds, an 18×18 finishing-position grid, a projected final table, European-place and relegation odds, next-matchday home/draw/away forecasts, and pairwise "who finishes above whom" probabilities.
+- Produces title odds, an 18×18 finishing-position grid, a projected final table built from expected records, European-place and relegation odds, next-matchday home/draw/away forecasts, and pairwise "who finishes above whom" probabilities.
 - Converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season.
 - Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
 

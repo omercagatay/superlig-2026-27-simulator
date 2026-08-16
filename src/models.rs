@@ -160,27 +160,55 @@ pub fn build_response(
             .collect()
     };
 
-    let rep = &results.representative;
-    let table: Vec<TableRow> = rep
-        .order
-        .iter()
-        .enumerate()
-        .map(|(pos, &club)| {
-            let r = &rep.records[club];
-            TableRow {
-                position: pos + 1,
-                team: world.teams[club].clone(),
-                played: r.played(),
-                won: r.won,
-                drawn: r.drawn,
-                lost: r.lost,
-                gf: r.gf as u16,
-                ga: r.ga as u16,
-                gd: r.gd(),
-                points: r.points,
-            }
-        })
-        .collect();
+    // Projected table from per-club EXPECTED records, not a single sampled
+    // season. A representative trial looks plausible at the top, where the
+    // position distributions are sharp, but positions 4-15 are nearly flat —
+    // so any single season is Monte Carlo noise there and contradicts the
+    // aggregate odds shown right next to it (e.g. a club with a 7% relegation
+    // probability sampled into 17th). Averages are stable and self-consistent.
+    let table: Vec<TableRow> = {
+        let mut order: Vec<usize> = (0..n_teams).collect();
+        order.sort_by(|&a, &b| {
+            results.points_sum[b]
+                .partial_cmp(&results.points_sum[a])
+                .unwrap()
+                .then(mean_position(a).partial_cmp(&mean_position(b)).unwrap())
+        });
+        order
+            .into_iter()
+            .enumerate()
+            .map(|(pos, club)| {
+                // Points first: round(xPts) is monotone in xPts, so the Pts
+                // column can never read out of order down the table. Then fit
+                // integer W/D to those points — drawn must match points mod 3
+                // for 3W + D = points to have an integer solution, so nudge
+                // the rounded mean draw count to the nearest valid value.
+                let points = (results.points_sum[club] / n).round() as i64;
+                let mean_drawn = (results.drawn_sum[club] / n).round() as i64;
+                let drawn = (0..=2)
+                    .flat_map(|d| [mean_drawn - d, mean_drawn + d])
+                    .find(|&d| (0..=points).contains(&d) && (points - d) % 3 == 0)
+                    .unwrap_or(points % 3);
+                let won = ((points - drawn) / 3) as u16;
+                let drawn = drawn as u16;
+                let lost = crate::data::N_ROUNDS as u16 - won - drawn;
+                let gf = (results.gf_sum[club] / n).round() as u16;
+                let ga = (results.ga_sum[club] / n).round() as u16;
+                TableRow {
+                    position: pos + 1,
+                    team: world.teams[club].clone(),
+                    played: crate::data::N_ROUNDS as u16,
+                    won,
+                    drawn,
+                    lost,
+                    gf,
+                    ga,
+                    gd: gf as i64 - ga as i64,
+                    points,
+                }
+            })
+            .collect()
+    };
 
     // Title race: pairwise ordering among the six clubs with the best title
     // odds, most uncertain pairings first.
@@ -218,7 +246,14 @@ pub fn build_response(
         positions,
         table,
         rivalries,
-        consensus_champion: world.teams[rep.order[0]].clone(),
+        // The modal champion across all trials, not whoever happened to win
+        // the sampled season.
+        consensus_champion: {
+            let champ = (0..n_teams)
+                .max_by_key(|&i| results.title_counts[i])
+                .unwrap_or(0);
+            world.teams[champ].clone()
+        },
         elo_overrides: config.elo_overrides.clone(),
         scenario_applied: scenario,
     }
@@ -271,8 +306,32 @@ mod tests {
         assert_eq!(positions, (1..=crate::data::N_TEAMS).collect::<Vec<_>>());
         for row in &resp.table {
             assert_eq!(row.played, 34);
+            assert_eq!(row.won + row.drawn + row.lost, 34);
+            assert_eq!(row.points, 3 * row.won as i64 + row.drawn as i64);
             assert_eq!(row.gd, row.gf as i64 - row.ga as i64);
         }
-        assert_eq!(resp.consensus_champion, resp.table[0].team);
+        // Expected points strictly ordered down the table.
+        for pair in resp.table.windows(2) {
+            assert!(pair[0].points >= pair[1].points, "table must be sorted");
+        }
+
+        // The table is built from aggregates, so it must AGREE with them:
+        // each club's table position within one place of the rank of its
+        // mean position. A single sampled season cannot pass this.
+        let mut by_mean: Vec<&TeamRow> = resp.teams.iter().collect();
+        by_mean.sort_by(|a, b| a.mean_position.partial_cmp(&b.mean_position).unwrap());
+        for row in &resp.table {
+            let mean_rank = by_mean.iter().position(|t| t.team == row.team).unwrap() + 1;
+            assert!(
+                (row.position as i64 - mean_rank as i64).abs() <= 1,
+                "{} at table position {} but mean-position rank {}",
+                row.team,
+                row.position,
+                mean_rank
+            );
+        }
+
+        // Champion = modal champion = the top row of the odds table.
+        assert_eq!(resp.consensus_champion, resp.teams[0].team);
     }
 }

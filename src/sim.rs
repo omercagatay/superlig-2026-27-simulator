@@ -113,6 +113,10 @@ pub struct SimResults {
     pub relegation_counts: Vec<usize>,
     pub points_sum: Vec<f64>,
     pub gd_sum: Vec<f64>,
+    pub won_sum: Vec<f64>,
+    pub drawn_sum: Vec<f64>,
+    pub gf_sum: Vec<f64>,
+    pub ga_sum: Vec<f64>,
     /// `pairwise_above[a * n + b]` = trials where `a` finished above `b`.
     pub pairwise_above: Vec<usize>,
     pub representative: SeasonResult,
@@ -361,6 +365,10 @@ impl World {
         let mut relegation_counts = vec![0usize; n];
         let mut points_sum = vec![0.0f64; n];
         let mut gd_sum = vec![0.0f64; n];
+        let mut won_sum = vec![0.0f64; n];
+        let mut drawn_sum = vec![0.0f64; n];
+        let mut gf_sum = vec![0.0f64; n];
+        let mut ga_sum = vec![0.0f64; n];
         let mut pairwise_above = vec![0usize; n * n];
 
         let relegation_from = n - data::RELEGATION_SPOTS;
@@ -390,6 +398,10 @@ impl World {
             for club in 0..n {
                 points_sum[club] += s.records[club].points as f64;
                 gd_sum[club] += s.records[club].gd() as f64;
+                won_sum[club] += s.records[club].won as f64;
+                drawn_sum[club] += s.records[club].drawn as f64;
+                gf_sum[club] += s.records[club].gf as f64;
+                ga_sum[club] += s.records[club].ga as f64;
             }
         }
 
@@ -426,6 +438,10 @@ impl World {
             relegation_counts,
             points_sum,
             gd_sum,
+            won_sum,
+            drawn_sum,
+            gf_sum,
+            ga_sum,
             pairwise_above,
             representative,
         }
