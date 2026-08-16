@@ -1,56 +1,89 @@
-# Dünya Kupası 2026 Simülatörü
+# Süper Lig 2026-27 Simülatörü
 
 [English](README.md) | [Türkçe](README.tr.md)
 
 [![CI](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml)
 
-48 takımlı 2026 FIFA Dünya Kupası için geliştirilmiş tam kapsamlı bir Monte Carlo tahmin uygulaması. Rust tabanlı simülasyon motorunu, React panelini, canlı turnuva verilerini ve isteğe bağlı Kimi senaryo analizini bir araya getirir.
+2026-27 Trendyol Süper Lig sezonu için uçtan uca Monte Carlo tahmin uygulaması. Rust ile yazılmış bir simülasyon motoru, React tabanlı bir kontrol paneli, Türkiye Futbol Federasyonu'ndan canlı sonuçlar ve isteğe bağlı olarak Kimi destekli bir senaryo çözümleyicisi bir arada çalışır.
 
-> Bu projenin ürettiği olasılıklar ve adil oranlar model tahminidir; bahis ya da finansal tavsiye değildir.
+> Bu projenin ürettiği olasılıklar ve adil oranlar model tahminidir; bahis ya da yatırım tavsiyesi değildir.
 
 ## Öne çıkanlar
 
-- Rayon ile 100–200.000 turnuva simülasyonunu paralel çalıştırır; panelin varsayılanı 50.000'dir.
-- Beklenen gol tahminlerinde Elo, Dixon–Coles ve pi-rating modellerini harmanlar.
-- Düşük skorlu sonuçları daha iyi temsil etmek için Dixon–Coles ortak skor dağılımını kullanır.
-- Kesinleşmiş grup ve eleme sonuçlarını sabit tutar; yalnızca turnuvanın kalan yollarını simüle eder.
-- Açılışta ve ayarlanabilir aralıklarla herkese açık kaynaklardan reyting ve turnuva sonuçlarını yeniler.
-- Şampiyonluk, final, yarı final, çeyrek final, son 16, son 32 ve üçüncülük olasılıklarını hesaplar.
-- Grup sonuçlarını, temsili turnuva ağacını, olası final eşleşmelerini, yaklaşan maç tahminlerini ve adil ondalık oranları gösterir.
-- Doğal dilde yazılan senaryoları Kimi ile doğrulanmış Elo değişikliklerine dönüştürür ve turnuvayı yeniden simüle eder.
-- IP bazlı hız sınırları, istek doğrulama, tekrarlanabilir seed değerleri, açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
+- 18 kulübün tamamı arasındaki 306 maçlık, 34 haftalık çift devreli fikstürün tamamını simüle eder. Rayon ile paralel olarak 100–200.000 sezon; panelde varsayılan 50.000.
+- Beklenen gol tahminlerinde Elo, Dixon–Coles ve pi-rating modellerini harmanlar. Son ikisi 14 sezonluk gerçek Süper Lig sonuçları üzerine kalibre edilmiştir.
+- Skorları Dixon–Coles ortak dağılımından çeker; bu, az gollü ve berabere biten maçları bağımsız Poisson'lara göre daha iyi temsil eder.
+- TFF'nin resmî fikstüründeki oynanmış maçları sabitler ve yalnızca kalan maçları simüle eder.
+- Süper Lig'in kendi sıralama kurallarını uygular: **averaj değil, önce ikili averaj (head-to-head)** belirleyicidir.
+- Şampiyonluk oranları, 18×18 sıralama olasılık ızgarası, tahminî final puan durumu, Avrupa kupaları ve küme düşme olasılıkları, gelecek haftanın ev sahibi/beraberlik/deplasman tahminleri ve ikili "kim kimin üstünde bitirir" olasılıkları üretir.
+- Doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder.
+- IP başına hız sınırı, istek doğrulama, deterministik tohum (seed), açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
 
-## Teknolojiler
+## Teknoloji yığını
 
 | Katman | Teknoloji |
 |---|---|
-| Backend/API | Rust 1.75+, Axum, Tokio |
-| Simülasyon | Rayon, Rand, Dixon–Coles, pi-ratings, Elo/Poisson |
-| Frontend | React 18, TypeScript, Vite |
-| Canlı veri | World Football Elo Ratings ve İngilizce Wikipedia API'si |
+| Sunucu/API | Rust 1.75+, Axum, Tokio |
+| Simülasyon | Rayon, Rand, Dixon–Coles, pi-rating, Elo/Poisson |
+| Arayüz | React 18, TypeScript, Vite |
+| Canlı veri | Türkiye Futbol Federasyonu (tff.org) fikstür sayfası |
+| Geçmiş veri | İngilizce Vikipedi sezon sayfaları, 2012-13 – 2025-26 |
 | Senaryo analizi | Moonshot API üzerinden Kimi |
 | Dağıtım | Çok aşamalı Docker imajı; Railway uyumlu |
 
-## Model nasıl çalışır?
+## Model nasıl çalışıyor
 
-Saf Elo bileşeni, reyting farkını ve ev sahibi avantajını beklenen gole dönüştürür:
+Saf Elo bileşeni, puan farkını ve ev sahibi avantajını beklenen gole çevirir:
 
 ```text
-lambda_A = 1.35 × 10^((Elo_A - Elo_B + ev_sahibi_avantajı) / 1600)
-lambda_B = 1.35 × 10^(-(Elo_A - Elo_B + ev_sahibi_avantajı) / 1600)
+lambda_ev      = 1,35 × 10^(( Elo_ev - Elo_deplasman + 80) / 1600)
+lambda_deplasman = 1,35 × 10^((-Elo_ev + Elo_deplasman - 80) / 1600)
 ```
 
-Bu değerler varsayılan olarak geçmiş millî maç sonuçlarıyla eğitilen iki modelle harmanlanır:
+Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift devreli fikstürün her iki yarısında da her kulüp kendi sahasında bu avantajı alır. (Dünya Kupası sürümünde bu, kulüp başına sabit bir "ev sahibi ülke" bayrağıydı; ligde bu yapı anlamsız olduğu için maç başına role dönüştürüldü.)
 
-- **Elo (0,5):** Güncel takım gücü ve ev sahibi için 80 puanlık avantaj.
-- **Dixon–Coles (0,3):** Zaman ağırlıklı hücum/savunma güçleri ve düşük skor korelasyonu.
-- **Pi-ratings (0,2):** Maç geçmişinden sıralı olarak güncellenen iç/dış saha gücü.
+Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki modelle harmanlanır:
 
-Karışımı değiştirmek için `ENSEMBLE_WEIGHTS` değerini ayarlayın; `1,0,0` saf Elo modelini seçer. Dixon–Coles ağırlığı etkinken normal süre skorları bu modelin ortak dağılımıyla üretilir. Berabere biten eleme maçı bağımsız örneklenen uzatmaya, gerekirse Elo farkının etkisi azaltılmış penaltı atışlarına gider.
+- **Elo (0,5):** ClubElo ölçeğinde güncel kulüp gücü ve 80 puanlık ev sahibi düzeltmesi.
+- **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; 4.538 maç üzerinde kalibre edilmiştir.
+- **Pi-rating (0,2):** aynı geçmiş üzerinde ardışık ev/deplasman güç güncellemeleri.
 
-Canlı reytingler, elle girilen değişiklikler ve Kimi senaryoları Elo bileşenini günceller. Gömülü Dixon–Coles ve pi-rating parametreleri, geçmiş modeller açıkça yeniden eğitilene kadar değişmez.
+Harmanı değiştirmek için `ENSEMBLE_WEIGHTS` kullanılır; `1,0,0` saf Elo modelini seçer. Dixon–Coles ağırlığı etkinken skorlar onun ortak dağılımından örneklenir.
 
-Turnuva motoru gruplarda puan, averaj, atılan gol ve ikili averaj kurallarını uygular. Üçüncü sıradaki takımları sıralar ve FIFA'nın uygun son 32 yuvalarına kısıt eşleştirmesiyle yerleştirir. Kesinleşmiş sonuçlar korunduğu için elenen takımlar simüle edilmiş bir yola geri dönemez.
+1. Lig'den yükselen kulüplerin (2026-27 için Amedspor ve Çorum) üst lig geçmişi olmadığından Dixon–Coles ve pi-rating bileşenleri onlara lig ortalaması bir profil verir; ayrımı yalnızca Elo puanları yapar.
+
+Elle yapılan değişiklikler ve Kimi senaryoları yalnızca Elo bileşenini günceller. Gömülü Dixon–Coles ve pi-rating parametreleri, modeller açıkça yeniden kalibre edilene kadar değişmez.
+
+### Sıralama kuralları
+
+Puan durumu şu sırayla belirlenir:
+
+1. Puan
+2. İkili maçlardaki puan
+3. İkili maçlardaki averaj
+4. İkili maçlarda atılan gol
+5. Genel averaj
+6. Genel atılan gol
+7. Play-off
+
+İkili maç sonuçları averajdan **önce** gelir; bu, FIFA/UEFA grup aşaması sıralamasından farklıdır ve dönüşümün en kritik ayrıntısıdır.
+
+İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`).
+
+1-2. sıralar Şampiyonlar Ligi, 3. sıra Avrupa Ligi, 4. sıra Konferans Ligi biletini alır; son üç takım küme düşer.
+
+### Kalibrasyon
+
+Elo sabitleri devralınmaz, gerçek lig verisine karşı doğrulanır:
+
+| | Gerçek (14 sezon) | Simülasyon |
+|---|---:|---:|
+| Maç başına ev sahibi golü | 1,571 | — |
+| Maç başına deplasman golü | 1,225 | — |
+| Ev sahibi galibiyeti | %45,4 | %45,4 |
+| Beraberlik | %25,6 | %23,7 |
+
+Bu değerler birbirinden uzaklaşırsa `tests/calibration.rs` derlemeyi düşürür. Beraberlik oranındaki ~2 puanlık fark, bağımsız Poisson örneklemesinin bilinen bir zayıflığıdır; Dixon–Coles ağırlığı etkinken ρ düzeltmesi bunu telafi eder.
 
 ## Yerelde çalıştırma
 
@@ -59,11 +92,11 @@ Turnuva motoru gruplarda puan, averaj, atılan gol ve ikili averaj kurallarını
 - Rust 1.75 veya üzeri
 - Node.js 20 veya üzeri ve npm
 
-Temel simülasyon için API anahtarı gerekmez. `KIMI_API_KEY` yalnızca doğal dil senaryolarında gereklidir.
+Temel simülatör için API anahtarı gerekmez. `KIMI_API_KEY` yalnızca doğal dil senaryoları için gereklidir.
 
 ### Geliştirme modu
 
-Vite geliştirme sunucusu `/api` isteklerini `3001` portuna yönlendirdiği için backend'i bu portta çalıştırın.
+Vite geliştirme sunucusu `/api` isteklerini 3001 portuna yönlendirir; bu nedenle arka ucu o portta çalıştırın.
 
 Terminal 1:
 
@@ -82,11 +115,11 @@ npm ci
 npm run dev
 ```
 
-Tarayıcıda <http://localhost:5173> adresini açın. İlk tahmin otomatik başlar.
+<http://localhost:5173> adresini açın. İlk tahmin kendiliğinden başlar.
 
-### Üretime benzer yerel derleme
+### Üretime yakın yerel derleme
 
-Önce frontend'i derleyin; Axum daha sonra `frontend/dist` klasörünü API ile birlikte `3000` portundan sunar.
+Önce arayüzü derleyin; Axum `frontend/dist` klasörünü API ile birlikte 3000 portundan sunar.
 
 ```bash
 cd frontend
@@ -96,40 +129,40 @@ cd ..
 cargo run --release
 ```
 
-Tarayıcıda <http://localhost:3000> adresini açın.
+<http://localhost:3000> adresini açın.
 
 ## Yapılandırma
 
-`.env.example` dosyasını `.env` adıyla kopyalayın ve gereken değerleri düzenleyin:
+`.env.example` dosyasını `.env` olarak kopyalayın ve gerektiği gibi düzenleyin:
 
 | Değişken | Varsayılan | Amaç |
 |---|---:|---|
-| `KIMI_API_KEY` | ayarlanmamış | `/api/scenario` özelliğini açar; anahtar Moonshot platformundan alınır. |
-| `PORT` | `3000` | Backend HTTP portu. Vite geliştirme sunucusuyla `3001` kullanın. |
-| `RUST_LOG` | `wc2026_sim=info` | Rust günlük filtresi. |
-| `LIVE_REFRESH_MINUTES` | `30` | Canlı veri yenileme aralığı; `0` arka plan yenilemesini kapatır. |
+| `KIMI_API_KEY` | tanımsız | `/api/scenario` uç noktasını etkinleştirir; anahtarı Moonshot platformundan alın. |
+| `PORT` | `3000` | Arka uç HTTP portu. Vite geliştirme sunucusuyla `3001` kullanın. |
+| `RUST_LOG` | `superlig_sim=info` | Rust tracing filtresi. |
+| `LIVE_REFRESH_MINUTES` | `30` | TFF yenileme aralığı; `0` arka plan yenilemesini kapatır. |
 | `ENSEMBLE_WEIGHTS` | `0.5,0.3,0.2` | Virgülle ayrılmış Elo, Dixon–Coles ve pi-rating ağırlıkları. |
-| `TRUST_PROXY` | `0` | Hız sınırında `X-Forwarded-For` başlığına yalnızca temizleyen bir ters vekil arkasında güvenin. |
+| `TRUST_PROXY` | `0` | `X-Forwarded-For` başlığına yalnızca temizleyici bir ters vekil sunucu arkasında güvenin. |
 
-## Panel kullanımı
+## Panelin kullanımı
 
-1. Simülasyon sayısını ve seed değerini seçip **Run** düğmesine basın. Aynı seed, aynı yapılandırmanın tekrarlanabilmesini sağlar.
-2. Şampiyonluk tahminlerini, adil oranları, olası finalleri, temsili turnuva ağacını, grup sonuçlarını ve canlı turnuva verilerini inceleyin.
-3. Reytingleri ve kesinleşmiş sonuçları hemen yenilemek için **Update live data** düğmesini kullanın.
-4. `Fransa'nın as kalecisi finalde oynayamayacak` gibi bir senaryo girin. Kimi etkisini açıklar, doğrulanmış takım reytinglerini üretir ve yeni simülasyonu başlatır.
+1. Simülasyon sayısını ve tohumu seçip **Run** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
+2. Dört sekmeyi inceleyin: **Forecast** (şampiyonluk yarışı, sezon çıktıları, gelecek hafta), **Positions** (sıralama olasılık ızgarası), **Table** (tahminî final puan durumu) ve **Live** (şu ana kadarki sonuçlar).
+3. TFF'den en güncel sonuçları hemen çekmek için **Update live data** düğmesini kullanın.
+4. `Galatasaray'ın ilk kalecisi beş maç cezalı` gibi bir senaryo yazın. Kimi etkiyi açıklar, doğrulanmış kulüp puanları döndürür ve yeni bir simülasyon başlatır.
 
 ## API
 
-| Uç nokta | Metot | IP başına sınır | Açıklama |
+| Uç nokta | Yöntem | IP başına sınır | Açıklama |
 |---|---|---:|---|
 | `/api/health` | `GET` | — | Servis sürümü, model yapılandırması ve son canlı yenileme. |
-| `/api/simulate` | `POST` | 30/dk | İsteğe bağlı Elo değerleriyle temel simülasyonu çalıştırır. |
-| `/api/scenario` | `POST` | 10/dk | İstemi Kimi ile analiz eder ve üretilen Elo değerleriyle yeniden çalıştırır. |
-| `/api/refresh` | `POST` | 5/dk | Güncel reytingleri ve turnuva sonuçlarını indirip uygular. |
-| `/api/live` | `GET` | — | Önbellekteki en son canlı veri görüntüsünü döndürür. |
-| `/api/upcoming` | `GET` | 30/dk | Eşleşmesi belli, oynanmamış eleme maçlarını tahmin eder. |
+| `/api/simulate` | `POST` | 30/dk | İsteğe bağlı Elo değişiklikleriyle temel simülasyon. |
+| `/api/scenario` | `POST` | 10/dk | İstemi Kimi ile çözümler ve dönen Elo değişiklikleriyle yeniden çalıştırır. |
+| `/api/refresh` | `POST` | 5/dk | Güncel TFF sonuçlarını çeker ve uygular. |
+| `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
+| `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
 
-Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle sınırlıdır. Elo değişiklikleri bilinen bir takım adı kullanmalı ve 1.000–2.600 aralığında olmalıdır. İstek gövdesi sınırı 1 MiB'dir.
+Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla (ClubElo kulüp ölçeği, uluslararası Elo'ya göre daha dardır), istek gövdeleri 1 MiB ile sınırlıdır.
 
 ### Temel simülasyon
 
@@ -139,14 +172,14 @@ curl -X POST http://localhost:3000/api/simulate \
   -d '{"n_sims":50000,"seed":12345}'
 ```
 
-### Elle reyting değiştirerek simülasyon
+### Elle puan değişikliğiyle simülasyon
 
-`elo_overrides` puan farklarını değil, yeni reyting değerlerini içerir.
+`elo_overrides` fark değil, yerine geçecek mutlak puanları içerir.
 
 ```bash
 curl -X POST http://localhost:3000/api/simulate \
   -H 'Content-Type: application/json' \
-  -d '{"n_sims":50000,"seed":12345,"elo_overrides":{"Turkey":1825}}'
+  -d '{"n_sims":50000,"seed":12345,"elo_overrides":{"Trabzonspor":1720}}'
 ```
 
 ### Doğal dil senaryosu
@@ -154,30 +187,30 @@ curl -X POST http://localhost:3000/api/simulate \
 ```bash
 curl -X POST http://localhost:3000/api/scenario \
   -H 'Content-Type: application/json' \
-  -d '{"prompt":"Fransa’nın as kalecisi finalde oynayamayacak","n_sims":50000,"seed":12345}'
+  -d '{"prompt":"Osimhen sezon sonuna kadar sakatlandı","n_sims":50000,"seed":12345}'
 ```
 
 ## Docker
 
 ```bash
-docker build -t wc2026-sim .
+docker build -t superlig-sim .
 docker run --rm -p 3000:3000 \
-  -e KIMI_API_KEY=anahtarınız \
-  wc2026-sim
+  -e KIMI_API_KEY=anahtariniz \
+  superlig-sim
 ```
 
-Senaryo analizi gerekmiyorsa `KIMI_API_KEY` satırını kaldırın.
+Senaryo analizi gerekmiyorsa `KIMI_API_KEY` verilmeyebilir.
 
 ## Railway'e dağıtım
 
-1. Bu GitHub deposundan bir Railway servisi oluşturun.
-2. Railway kökteki `Dockerfile` dosyasını algılayıp Rust backend'i ve React frontend'i derler.
-3. Senaryo analizi açılacaksa `KIMI_API_KEY` ekleyin.
-4. Hız sınırının Railway'in temizleyen uç vekilinden gelen istemci adresini kullanması için `TRUST_PROXY=1` ayarlayın.
-5. İsterseniz `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS` ve `RUST_LOG` değerlerini özelleştirin.
+1. Bu GitHub deposundan bir Railway servisi oluşturun ya da bir klondan `railway init && railway up` çalıştırın.
+2. Railway kökteki `Dockerfile` dosyasını algılar; Rust arka ucunu ve React arayüzünü derler.
+3. Senaryo analizi isteniyorsa `KIMI_API_KEY` ekleyin.
+4. Hız sınırlamasının Railway'in temizleyici uç vekilinden gelen istemci adresini kullanması için `TRUST_PROXY=1` ayarlayın.
+5. İsteğe bağlı olarak `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS` ve `RUST_LOG` değerlerini özelleştirin.
 6. Sağlık kontrolü yolunu `/api/health` olarak ayarlayın.
 
-Uygulama Railway'in sağladığı `PORT` değerini otomatik okur.
+Uygulama, Railway'in enjekte ettiği `PORT` değerini kendiliğinden okur.
 
 ## Doğrulama
 
@@ -194,44 +227,64 @@ npm ci
 npm run build
 ```
 
-## Geçmiş model verilerini yenileme
+## Verileri yenileme
 
-Depoda derleme sırasında kullanılan geçmiş sonuçlar ve eğitilmiş Dixon–Coles parametreleri hazır bulunur. Bunları yenileyip modeli yeniden eğitmek için:
+Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibre edilmiş Dixon–Coles parametrelerini zaten içerir. Yenilemek için:
 
 ```bash
-./scripts/refresh_history.sh
+# tff.org'dan resmî 2026-27 fikstürü ve şu ana kadarki sonuçlar.
+# Çift devreli fikstürün yapısını baştan sona doğrular: 306 maç, 34 hafta,
+# hafta başına 9 maç, 153 eşleşmenin her biri tam olarak iki kez.
+python3 scripts/fetch_fixtures.py
+
+# İngilizce Vikipedi'den 14 sezonluk geçmiş sonuçlar.
+# İstekler arasında bekler: Vikipedi, action=raw isteklerini hata yerine
+# HTTP 200 ile ~2 KB'lık bir yer tutucu sayfa döndürerek sınırlar.
+python3 scripts/fetch_history.py
+
+# Yenilenen geçmişle Dixon–Coles'u yeniden kalibre et (~0,3 sn).
 cargo run --release --example fit_dc
 ```
 
-Yeni bir eğitimi commit etmeden önce `data/` altındaki değişiklikleri inceleyip doğrulayın.
+Yeni bir kalibrasyonu işlemeden önce `data/` altındaki değişiklikleri gözden geçirin.
+
+Veri kaynaklarına dair bilinmesi gereken iki tuzak:
+
+- **tff.org sayfalarını windows-1254 ile sunar**, UTF-8 ile değil. UTF-8 varsayarak çözmek bütün Türkçe kulüp adlarını bozar.
+- **tff.org eksik bir TLS zinciri sunar**: sertifikasını imzalayan GlobalSign ara sertifikasını göndermez. Tarayıcılar sertifikadaki AIA adresini kendiliğinden çekerek bunu telafi eder; `curl`, Python `urllib` ve `reqwest` etmez ve "unable to get local issuer certificate" hatası verir. Fikstür betiği bu AIA indirmesini kendisi yapar (SHA-256 ile sabitlenmiş), sunucu ise aynı ara sertifikayı `data/tff_intermediate.pem` içinde gömülü tutar. Sertifika doğrulaması hiçbir aşamada kapatılmaz.
 
 ## Proje yapısı
 
 ```text
 .
 ├── src/
-│   ├── main.rs           # Axum sunucusu, yapılandırma ve arka plan yenileme
-│   ├── sim.rs            # Turnuva ve paralel Monte Carlo motoru
-│   ├── dixoncoles.rs     # Dixon–Coles eğitimi ve ortak skor olasılıkları
-│   ├── piratings.rs      # Geçmiş veriye dayalı pi-rating modeli
-│   ├── history.rs        # Geçmiş sonuçları yükleme ve takım adı normalleştirme
-│   ├── scraper.rs        # Canlı reyting ve turnuva verisi alma
+│   ├── main.rs           # Axum sunucusu, yapılandırma ve arka plan yenilemesi
+│   ├── sim.rs            # Sezon simülasyonu ve paralel Monte Carlo motoru
+│   ├── league.rs         # Puan durumu kayıtları ve Süper Lig sıralama kuralları
+│   ├── data.rs           # Kulüpler, puanlar ve resmî fikstür
+│   ├── dixoncoles.rs     # Dixon–Coles kalibrasyonu ve ortak skor olasılıkları
+│   ├── piratings.rs      # Geçmişe dayalı pi-rating modeli
+│   ├── history.rs        # Geçmiş sonuçların yüklenmesi ve kulüp adı eşlemesi
+│   ├── scraper.rs        # TFF canlı sonuç alımı
 │   ├── handlers.rs       # API işleyicileri
 │   ├── llm.rs            # Kimi senaryo analizi
-│   ├── models.rs         # API istek ve yanıt türleri
+│   ├── models.rs         # API istek ve yanıt tipleri
 │   ├── validation.rs     # İstek doğrulama
-│   └── rate_limit.rs     # IP bazlı hız sınırı
-├── data/                 # Geçmiş sonuçlar ve eğitilmiş model parametreleri
+│   └── rate_limit.rs     # IP başına hız sınırı
+├── data/                 # Fikstür, geçmiş sonuçlar, kalibre edilmiş parametreler
 ├── frontend/             # React ve TypeScript paneli
-├── examples/             # Model eğitimi ve duman testi araçları
-├── scripts/              # Veri yenileme yardımcıları
+├── examples/             # Model kalibrasyon aracı
+├── scripts/              # Veri toplama betikleri
+├── tests/calibration.rs  # Elo sabitlerini gerçek lige karşı korur
 ├── .github/workflows/    # CI yapılandırması
-└── Dockerfile            # Çok aşamalı üretim imajı
+└── Dockerfile            # Üretim için çok aşamalı imaj
 ```
 
-## Veri ve model sınırlamaları
+## Veri ve model sınırlılıkları
 
-- Canlı yenileme üçüncü taraf uç noktalarına ve bunların güncel veri/sayfa biçimlerine bağlıdır; yenileme başarısız olursa gömülü temel veri kullanılmaya devam eder.
-- Adil oranlar yalnızca simüle edilen olasılıkların tersidir; bahis şirketi marjı, likidite veya piyasa bilgisi içermez.
-- Senaryo reytingleri model tarafından üretilen varsayımlardır. Dönen açıklamayı okuyun ve sonucu keşif amaçlı değerlendirin.
-- Tahmin kalitesi reytinglere, geçmiş veri kapsamına, model varsayımlarına ve deneme sayısına bağlıdır.
+- Canlı yenileme tff.org'a ve sayfanın güncel biçimine bağlıdır; yenileme başarısız olursa gömülü fikstür kullanılmaya devam eder.
+- Adil oranlar, simüle edilmiş olasılıkların tersidir; bahis marjı, likidite ya da piyasa bilgisi içermez.
+- En zayıf modellenen kulüpler yeni yükselenlerdir: Dixon–Coles ve pi-rating bileşenleri için üst lig geçmişleri olmadığından tahminleri tamamen Elo puanlarına dayanır.
+- Yukarıda anlatılan "ikili karşılaştırma bir kez uygulanır" kuralı yayımlanmış bir kural değil, açıkça belirtilmiş bir varsayımdır.
+- Senaryo puanları modelin ürettiği varsayımlardır. Dönen açıklamayı okuyun ve çıktıyı keşif amaçlı değerlendirin.
+- Tahmin kalitesi puanlara, geçmiş veri kapsamına, model varsayımlarına ve deneme sayısına bağlıdır.

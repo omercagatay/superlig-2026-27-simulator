@@ -1,11 +1,11 @@
 // Run a Dixon-Coles fit on the real Süper Lig results data and print a sample.
 use chrono::NaiveDate;
-use wc2026_sim::dixoncoles;
-use wc2026_sim::history;
+use superlig_sim::dixoncoles;
+use superlig_sim::history;
 
 fn main() {
     tracing_subscriber::fmt()
-        .with_env_filter("wc2026_sim=info")
+        .with_env_filter("superlig_sim=info")
         .try_init()
         .ok();
     let idx = history::TeamIndex::league();

@@ -8,8 +8,8 @@ RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs \
     && cargo build --release \
-    && rm -rf src target/release/deps/wc2026_sim* target/release/wc2026-sim* \
-           target/release/.fingerprint/wc2026_sim* target/release/incremental/wc2026_sim*
+    && rm -rf src target/release/deps/superlig_sim* target/release/superlig-sim* \
+           target/release/.fingerprint/superlig_sim* target/release/incremental/superlig_sim*
 
 # Real build: only our crate recompiles; dependencies come from the cached layer.
 COPY data/ ./data/
@@ -28,7 +28,7 @@ RUN npm run build
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY --from=backend-builder /app/target/release/wc2026-sim .
+COPY --from=backend-builder /app/target/release/superlig-sim .
 COPY --from=frontend-builder /app/dist ./frontend/dist
 EXPOSE 3000
-CMD ["./wc2026-sim"]
+CMD ["./superlig-sim"]

@@ -8,18 +8,18 @@ use axum::{
 use tower_http::{cors::CorsLayer, limit::RequestBodyLimitLayer, services::ServeDir};
 use tracing_subscriber::EnvFilter;
 
-use tokio::sync::RwLock;
-use wc2026_sim::{
+use superlig_sim::{
     handlers::{self, AppState},
     rate_limit::RateLimitLayer,
     sim::World,
 };
+use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("wc2026_sim=info".parse()?))
+        .with_env_filter(EnvFilter::from_default_env().add_directive("superlig_sim=info".parse()?))
         .init();
 
     let mut world = World::new();
@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
         }
     };
     if w_dc + w_pi > 0.0 {
-        match wc2026_sim::sim::Ensemble::from_embedded_data(w_elo, w_dc, w_pi) {
+        match superlig_sim::sim::Ensemble::from_embedded_data(w_elo, w_dc, w_pi) {
             Ok(ens) => {
                 tracing::info!(
                     "Model ensemble active: elo={w_elo} dc={w_dc} (fitted {}) pi={w_pi} ({} matches)",

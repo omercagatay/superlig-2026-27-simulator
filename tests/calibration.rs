@@ -2,10 +2,8 @@
 //! the real Süper Lig. These bounds are deliberately loose enough to survive
 //! ordinary model changes and tight enough to catch a mis-scaled Elo term.
 
-// The crate is renamed to `superlig-sim` in Task 18; this path is
-// updated there along with every other reference.
-use wc2026_sim::history;
-use wc2026_sim::sim::{SimConfig, World};
+use superlig_sim::history;
+use superlig_sim::sim::{SimConfig, World};
 
 /// Empirical home/away goal means and outcome split over the historical set.
 fn empirical() -> (f64, f64, f64, f64) {

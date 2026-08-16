@@ -1275,6 +1275,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
+name = "superlig-sim"
+version = "0.7.0"
+dependencies = [
+ "anyhow",
+ "argmin",
+ "argmin-math",
+ "axum",
+ "chrono",
+ "csv",
+ "dotenvy",
+ "encoding_rs",
+ "rand 0.8.6",
+ "rand_distr",
+ "rayon",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "syn"
 version = "2.0.118"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1699,33 +1726,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23939e44bb9a5d7576fa2b563dc2e136628f1224e88a8deed09e04858b77871f"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "wc2026-sim"
-version = "0.6.0"
-dependencies = [
- "anyhow",
- "argmin",
- "argmin-math",
- "axum",
- "chrono",
- "csv",
- "dotenvy",
- "encoding_rs",
- "rand 0.8.6",
- "rand_distr",
- "rayon",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
