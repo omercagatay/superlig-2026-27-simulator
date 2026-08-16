@@ -677,11 +677,12 @@ button {
 
 .split-bar {
   display: flex;
-  gap: 2px; /* surface gap between the two sides */
+  gap: 2px; /* surface gap between the segments */
   height: 6px;
 }
 
 .split-a,
+.split-d,
 .split-b {
   height: 100%;
 }
@@ -689,6 +690,12 @@ button {
 .split-a {
   background: var(--turf);
   border-radius: 3px 0 0 3px;
+}
+
+/* The draw. A league match can end level, so it needs its own segment —
+   a neutral track colour, since it favours neither side. */
+.split-d {
+  background: var(--ink-3);
 }
 
 .split-b {
@@ -715,6 +722,10 @@ button {
 
 .split-key.a {
   background: var(--turf);
+}
+
+.split-key.d {
+  background: var(--ink-3);
 }
 
 .split-key.b {
@@ -1328,4 +1339,142 @@ button {
   .race-team {
     font-size: 1.15rem;
   }
+}
+
+/* ---- Qualification zones ------------------------------------------------ */
+
+/* A 3px left rule on the rank cell, not a row tint: the table already uses
+   background for probability heat, and two competing backgrounds is mud.
+   The zone class sits on the <tr>, the rule paints on its first cell. */
+.data-table tr.zone-ucl td.cell-rank {
+  box-shadow: inset 3px 0 0 var(--turf);
+}
+.data-table tr.zone-uel td.cell-rank {
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+.data-table tr.zone-uecl td.cell-rank {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.data-table tr.zone-rel td.cell-rank {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.76rem;
+  color: var(--ink-3);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  border: 1px solid var(--chalk-2);
+  background: var(--pitch-3);
+}
+
+.swatch.zone-ucl {
+  background: var(--turf);
+}
+.swatch.zone-uel {
+  background: var(--sky);
+}
+.swatch.zone-uecl {
+  background: var(--gold);
+}
+.swatch.zone-rel {
+  background: var(--danger);
+}
+
+.panel-note {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-3);
+  max-width: 62ch;
+}
+
+/* ---- Finishing-position grid -------------------------------------------- */
+
+.grid-scroll {
+  /* 18 columns plus a club name is wider than the panel on most screens;
+     scroll the grid, never the page. */
+  overflow-x: auto;
+}
+
+.position-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  font-family: var(--data);
+}
+
+.position-grid th {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  padding: 0.35rem 0.3rem;
+  border-bottom: 1px solid var(--chalk-2);
+  white-space: nowrap;
+}
+
+/* Club names: left-aligned, sticky so they stay readable while scrolling
+   sideways through the position columns. */
+.position-grid tbody th[scope="row"] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: var(--pitch-1);
+  padding-right: 0.7rem;
+  border-bottom: 1px solid var(--chalk);
+}
+
+.position-grid td {
+  min-width: 1.85rem;
+  text-align: center;
+  padding: 0.35rem 0.25rem;
+  border-bottom: 1px solid var(--chalk);
+  color: var(--ink-2);
+}
+
+/* --i is set inline per cell (0..1) by PositionGrid's intensity(). */
+.grid-cell {
+  background: color-mix(in srgb, var(--turf) calc(var(--i, 0) * 55%), transparent);
+}
+
+/* Column tints mark the European and relegation cut lines. Applied to the
+   header cells only — tinting every body cell would fight the heat scale. */
+.position-grid th.col-europe {
+  color: var(--turf);
+  border-bottom-color: var(--turf);
+}
+
+.position-grid th.col-rel {
+  color: var(--danger);
+  border-bottom-color: var(--danger);
+}
+
+.swatch.col-europe {
+  background: var(--turf);
+}
+
+.swatch.col-rel {
+  background: var(--danger);
 }

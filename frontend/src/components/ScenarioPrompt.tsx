@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 const EXAMPLES = [
-  "Lamine Yamal gets injured in training",
-  "Mbappé is suspended for the semifinal",
-  "Argentina's entire defense has food poisoning",
+  "Osimhen sezon sonuna kadar sakatlandı",
+  "Fenerbahçe sacks its manager",
+  "Galatasaray's first-choice keeper is suspended for five matches",
 ];
 
 export function ScenarioPrompt({
@@ -24,7 +24,7 @@ export function ScenarioPrompt({
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe an injury, suspension, or upset — the model adjusts team ratings and re-simulates."
+          placeholder="Describe an injury, suspension, transfer or manager change — the model adjusts club ratings and re-simulates the season."
           rows={3}
           maxLength={2000}
           disabled={disabled}

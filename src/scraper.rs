@@ -106,10 +106,21 @@ pub fn parse_fixtures(html: &str) -> Vec<ScrapedMatch> {
     out
 }
 
+/// tff.org serves an incomplete TLS chain: the leaf only, without the
+/// GlobalSign intermediate that signs it. Browsers paper over this by chasing
+/// the certificate's AIA URL; reqwest does not, and every fetch fails with
+/// "unable to get local issuer certificate". Supplying the intermediate the
+/// server should have sent keeps full verification on — this is not a bypass.
+/// Refresh with `scripts/fetch_fixtures.py`'s pinned AIA URL if it rotates.
+const TFF_INTERMEDIATE_PEM: &[u8] = include_bytes!("../data/tff_intermediate.pem");
+
 pub async fn fetch_all() -> Result<LiveData> {
+    let intermediate = reqwest::Certificate::from_pem(TFF_INTERMEDIATE_PEM)
+        .context("parsing the embedded TFF intermediate certificate")?;
     let client = reqwest::Client::builder()
         .user_agent("superlig-sim/0.1 (educational project)")
         .timeout(std::time::Duration::from_secs(30))
+        .add_root_certificate(intermediate)
         .build()?;
 
     let bytes = client

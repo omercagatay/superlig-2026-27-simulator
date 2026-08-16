@@ -10,11 +10,11 @@ import {
   type UpcomingMatch,
 } from "./api";
 import { ForecastView } from "./components/ForecastView";
-import { GroupTables } from "./components/GroupTables";
-import { BracketView } from "./components/BracketView";
+import { LeagueTable } from "./components/LeagueTable";
+import { PositionGrid } from "./components/PositionGrid";
 import { LiveStats } from "./components/LiveStats";
 
-type DashboardView = "forecast" | "bracket" | "groups" | "live";
+type DashboardView = "forecast" | "positions" | "table" | "live";
 
 type Theme = "dark" | "light";
 
@@ -141,15 +141,12 @@ export default function App() {
     }
   }, [data]);
 
-  const liveMatchCount = liveData
-    ? liveData.played_matches.length + (liveData.knockout_matches?.length ?? 0)
-    : 0;
+  const liveMatchCount = liveData ? liveData.played_matches.length : 0;
   const lastUpdated = (() => {
-    const raw = liveData?.fetched_at;
-    if (!raw?.startsWith("unix:")) return null;
-    const secs = Number(raw.slice(5));
-    return Number.isFinite(secs) && secs > 0
-      ? new Date(secs * 1000).toLocaleString(undefined, {
+    // The scraper stamps RFC 3339 (chrono's to_rfc3339).
+    const t = Date.parse(liveData?.fetched_at ?? "");
+    return Number.isFinite(t)
+      ? new Date(t).toLocaleString(undefined, {
           month: "short",
           day: "numeric",
           hour: "2-digit",
@@ -160,8 +157,8 @@ export default function App() {
 
   const tabs: { id: DashboardView; label: string; disabled: boolean; count?: number }[] = [
     { id: "forecast", label: "Forecast", disabled: !data },
-    { id: "bracket", label: "Bracket", disabled: !data },
-    { id: "groups", label: "Groups", disabled: !data },
+    { id: "positions", label: "Positions", disabled: !data },
+    { id: "table", label: "Table", disabled: !data },
     { id: "live", label: "Live", disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
 
@@ -170,10 +167,10 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
-            <span className="brand-mark">26</span>
+            <span className="brand-mark">SL</span>
             <div>
-              <h1>World Cup Forecast</h1>
-              <span className="brand-sub">Monte Carlo tournament simulator</span>
+              <h1>Süper Lig Forecast</h1>
+              <span className="brand-sub">2026-27 Monte Carlo season simulator</span>
             </div>
           </div>
           <div className="topbar-status">
@@ -254,7 +251,7 @@ export default function App() {
           <div className="boot-state">
             <div className="boot-spinner" aria-hidden="true" />
             <span className="eyebrow">Simulating</span>
-            <p>{nSims.toLocaleString()} tournaments, in parallel. A few seconds.</p>
+            <p>{nSims.toLocaleString()} seasons, in parallel. A few seconds.</p>
           </div>
         )}
 
@@ -262,7 +259,7 @@ export default function App() {
           <div className="boot-state">
             <span className="eyebrow">No forecast yet</span>
             <p style={{ marginBottom: "1rem" }}>
-              Run the simulation to see who wins the World Cup.
+              Run the simulation to see how the 2026-27 season plays out.
             </p>
             <button className="btn btn-primary" onClick={handleSimulate}>
               Run simulation
@@ -282,11 +279,9 @@ export default function App() {
           />
         )}
 
-        {data && activeView === "bracket" && (
-          <BracketView bracket={data.bracket} champion={data.consensus_champion} />
-        )}
+        {data && activeView === "positions" && <PositionGrid positions={data.positions} />}
 
-        {data && activeView === "groups" && <GroupTables groups={data.groups} />}
+        {data && activeView === "table" && <LeagueTable table={data.table} />}
 
         {liveData && activeView === "live" && <LiveStats liveData={liveData} />}
       </main>
