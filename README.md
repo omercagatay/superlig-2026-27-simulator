@@ -83,6 +83,23 @@ The Elo constants are verified against the real league rather than inherited:
 
 `tests/calibration.rs` fails the build if these drift apart.
 
+### Model selection
+
+The blend was chosen by backtest, not by fiat. `cargo run --release --example arena` pits ten models against two held-out seasons (fit through 2023-24, tune on 2024-25; refit through 2024-25, judge on 2025-26), scored on log-loss, RPS, Brier, and accuracy. Test-season leaderboard (2025-26, 300 matches, log-loss per match):
+
+| model | log-loss | RPS |
+|---|---:|---:|
+| **ensemble 0.5/0.3/0.2** | **0.9985** | **0.1957** |
+| Dixon–Coles, 1.5y half-life | 1.0001 | 0.1959 |
+| ensemble, validation-fitted weights | 1.0029 | 0.1960 |
+| Dixon–Coles, 4y half-life | 1.0059 | 0.1979 |
+| pi-ratings | 1.0068 | 0.1976 |
+| Elo–Poisson | 1.0087 | 0.1976 |
+| Maher (Poisson, no ρ) | 1.0106 | 0.1982 |
+| home-advantage baseline | 1.0857 | 0.2249 |
+
+Every real model clears the baselines by a wide margin; the gaps *within* the top group are inside sampling noise for 300 matches. The production ensemble is the only model in the top group on both hold-out seasons — weights fitted to the validation season alone (0.6/0/0.4) did better there but worse on test, i.e. they overfit. The 0.5/0.3/0.2 blend stays.
+
 ## Run locally
 
 ### Prerequisites
