@@ -1,46 +1,25 @@
-import type { SimResponse, LiveData, UpcomingMatch } from "../api";
-import { ScenarioPrompt } from "./ScenarioPrompt";
+import type { SimResponse, LiveData, MatchesResponse } from "../api";
 import { ResultsTable } from "./ResultsTable";
+import { MatchesView } from "./MatchesView";
 
 export function ForecastView({
   data,
   liveData,
-  upcoming,
-  loading,
-  onScenario,
+  matchesData,
   liveMatchCount,
   onShowLive,
 }: {
   data: SimResponse;
   liveData: LiveData | null;
-  upcoming: UpcomingMatch[];
-  loading: boolean;
-  onScenario: (prompt: string) => void;
+  matchesData: MatchesResponse | null;
   liveMatchCount: number;
   onShowLive: () => void;
 }) {
   const contenders = data.teams.filter((t) => t.title_pct > 0).slice(0, 6);
   const maxTitle = contenders[0]?.title_pct ?? 1;
-  const overrides = Object.entries(data.elo_overrides);
-  const nextRound = upcoming[0]?.round;
 
   return (
     <div className="forecast">
-      {data.scenario_applied && (
-        <div className="scenario-note">
-          <strong>Scenario:</strong> {data.scenario_applied}
-          {overrides.length > 0 && (
-            <div className="elo-chips">
-              {overrides.map(([team, elo]) => (
-                <span key={team} className="elo-chip">
-                  {team} → {elo.toFixed(0)}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       <div className="forecast-grid">
         <div className="forecast-main">
           <section className="panel" aria-label="Title race">
@@ -77,58 +56,6 @@ export function ForecastView({
         </div>
 
         <aside className="rail">
-          <ScenarioPrompt onSubmit={onScenario} disabled={loading} />
-
-          {upcoming.length > 0 && (
-            <section className="panel" aria-label="Next matchday">
-              <header className="panel-head">
-                <h3>Matchday {nextRound}</h3>
-              </header>
-              {upcoming.map((m) => (
-                <div key={`${m.home}-${m.away}`} className="fixture">
-                  <div className="fixture-teams">
-                    <span
-                      className={`fixture-team${
-                        m.home_win_pct >= m.away_win_pct ? " favored" : ""
-                      }`}
-                    >
-                      {m.home}
-                    </span>
-                    <span className="fixture-vs">v</span>
-                    <span
-                      className={`fixture-team${
-                        m.away_win_pct > m.home_win_pct ? " favored" : ""
-                      }`}
-                    >
-                      {m.away}
-                    </span>
-                  </div>
-                  {/* Three-way split: home / draw / away. A league match can
-                      end level, so the draw gets its own segment. */}
-                  <div className="split-bar">
-                    <div className="split-a" style={{ width: `${m.home_win_pct}%` }} />
-                    <div className="split-d" style={{ width: `${m.draw_pct}%` }} />
-                    <div className="split-b" style={{ width: `${m.away_win_pct}%` }} />
-                  </div>
-                  <div className="split-labels">
-                    <span>
-                      <i className="split-key a" aria-hidden="true" />
-                      {m.home_win_pct.toFixed(1)}%
-                    </span>
-                    <span>
-                      <i className="split-key d" aria-hidden="true" />
-                      {m.draw_pct.toFixed(1)}%
-                    </span>
-                    <span>
-                      <i className="split-key b" aria-hidden="true" />
-                      {m.away_win_pct.toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </section>
-          )}
-
           {data.rivalries.length > 0 && (
             <section className="panel" aria-label="Head-to-head finishing order">
               <header className="panel-head">
@@ -171,6 +98,8 @@ export function ForecastView({
           )}
         </aside>
       </div>
+
+      {matchesData && <MatchesView data={matchesData} />}
     </div>
   );
 }

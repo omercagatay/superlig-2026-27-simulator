@@ -107,6 +107,18 @@ pub struct MatchForecast {
     pub btts_pct: f64,
     pub btts_odds: Option<f64>,
     pub btts_no_odds: Option<f64>,
+    /// The model's expected goals (λ) for each side.
+    pub home_xg: f64,
+    pub away_xg: f64,
+    /// The three most probable exact scorelines, most likely first.
+    pub likely_scores: Vec<LikelyScore>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct LikelyScore {
+    pub home: u8,
+    pub away: u8,
+    pub pct: f64,
 }
 
 /// One calendar fixture: the real score once played, the model's prices
@@ -163,6 +175,17 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
                 btts_pct: p.btts_pct,
                 btts_odds: odds(p.btts_pct),
                 btts_no_odds: odds(100.0 - p.btts_pct),
+                home_xg: p.home_xg,
+                away_xg: p.away_xg,
+                likely_scores: p
+                    .top_scores
+                    .iter()
+                    .map(|&(h, a, pct)| LikelyScore {
+                        home: h,
+                        away: a,
+                        pct,
+                    })
+                    .collect(),
             })
         };
         rounds
@@ -476,6 +499,10 @@ mod tests {
                         let o = odds.expect("all league outcomes are possible");
                         assert!((o - 100.0 / pct).abs() < 0.02, "odds {o} vs pct {pct}");
                     }
+                    assert!(f.home_xg > 0.0 && f.away_xg > 0.0);
+                    assert_eq!(f.likely_scores.len(), 3);
+                    assert!(f.likely_scores[0].pct >= f.likely_scores[1].pct);
+                    assert!(f.likely_scores[1].pct >= f.likely_scores[2].pct);
                 }
             }
         }

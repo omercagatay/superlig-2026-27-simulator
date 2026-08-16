@@ -1,23 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   runSimulation,
-  runScenario,
   refreshLiveData,
   getLiveData,
-  getUpcoming,
   getMatches,
   type SimResponse,
   type LiveData,
-  type UpcomingMatch,
   type MatchesResponse,
 } from "./api";
 import { ForecastView } from "./components/ForecastView";
 import { LeagueTable } from "./components/LeagueTable";
 import { PositionGrid } from "./components/PositionGrid";
 import { LiveStats } from "./components/LiveStats";
-import { MatchesView } from "./components/MatchesView";
 
-type DashboardView = "forecast" | "positions" | "table" | "matches" | "live";
+type DashboardView = "forecast" | "positions" | "table" | "live";
 
 type Theme = "dark" | "light";
 
@@ -65,7 +61,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [nSims, setNSims] = useState(50000);
   const [seed, setSeed] = useState(12345);
-  const [upcoming, setUpcoming] = useState<UpcomingMatch[]>([]);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
@@ -92,23 +87,6 @@ export default function App() {
     }
   }, [nSims, seed]);
 
-  const handleScenario = useCallback(
-    async (prompt: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await runScenario({ prompt, n_sims: nSims, seed });
-        setData(result);
-        setActiveView("forecast");
-      } catch (e) {
-        setError(String(e));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [nSims, seed]
-  );
-
   // On first load: hydrate cached live data (the backend refreshes it in
   // the background) and kick off an initial forecast so the dashboard is
   // populated without any clicks.
@@ -122,11 +100,6 @@ export default function App() {
       })
       .catch(() => {
         /* cached live data is optional; manual refresh still available */
-      });
-    getUpcoming()
-      .then((u) => setUpcoming(u.matches))
-      .catch(() => {
-        /* upcoming forecasts are optional decoration */
       });
     getMatches()
       .then(setMatchesData)
@@ -168,7 +141,6 @@ export default function App() {
     { id: "forecast", label: "Forecast", disabled: !data },
     { id: "positions", label: "Positions", disabled: !data },
     { id: "table", label: "Table", disabled: !data },
-    { id: "matches", label: "Matches", disabled: !matchesData },
     { id: "live", label: "Live", disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
 
@@ -191,7 +163,6 @@ export default function App() {
                 updated {lastUpdated}
               </span>
             )}
-            {data?.scenario_applied && <span className="badge-scenario">Scenario</span>}
           </div>
           <form
             className="run-controls"
@@ -281,9 +252,7 @@ export default function App() {
           <ForecastView
             data={data}
             liveData={liveData}
-            upcoming={upcoming}
-            loading={loading}
-            onScenario={handleScenario}
+            matchesData={matchesData}
             liveMatchCount={liveMatchCount}
             onShowLive={() => setActiveView("live")}
           />
@@ -292,8 +261,6 @@ export default function App() {
         {data && activeView === "positions" && <PositionGrid positions={data.positions} />}
 
         {data && activeView === "table" && <LeagueTable table={data.table} />}
-
-        {matchesData && activeView === "matches" && <MatchesView data={matchesData} />}
 
         {liveData && activeView === "live" && <LiveStats liveData={liveData} />}
       </main>

@@ -14,6 +14,9 @@ function ForecastRow({ m }: { m: MatchCard }) {
         <span className="fixture-vs">v</span>
         <span className={`fixture-team${homeFavored ? "" : " favored"}`}>{m.away}</span>
       </div>
+      <div className="xg-line">
+        xG {f.home_xg.toFixed(2)} – {f.away_xg.toFixed(2)}
+      </div>
       <div className="split-bar">
         <div className="split-a" style={{ width: `${f.home_win_pct}%` }} />
         <div className="split-d" style={{ width: `${f.draw_pct}%` }} />
@@ -44,6 +47,13 @@ function ForecastRow({ m }: { m: MatchCard }) {
           <span className="odds-label">BTTS</span>
           {f.btts_pct.toFixed(1)}% <em>{fmtOdds(f.btts_odds)}</em>
         </span>
+      </div>
+      <div className="score-chips">
+        {f.likely_scores.map((sc) => (
+          <span key={`${sc.home}-${sc.away}`} className="score-chip">
+            {sc.home}–{sc.away} <em>{sc.pct.toFixed(1)}%</em>
+          </span>
+        ))}
       </div>
     </div>
   );

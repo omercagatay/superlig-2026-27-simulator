@@ -101,6 +101,13 @@ pub struct FixtureProbs {
     pub over25_pct: f64,
     /// P(both sides score).
     pub btts_pct: f64,
+    /// Expected goals for the home side (the model's λ).
+    pub home_xg: f64,
+    /// Expected goals for the away side.
+    pub away_xg: f64,
+    /// The three most probable exact scorelines, `(home, away, pct)`,
+    /// most likely first.
+    pub top_scores: [(u8, u8, f64); 3],
 }
 
 /// One simulated season: finishing order plus each club's final record.
@@ -319,15 +326,32 @@ impl World {
                 }
             }
         }
+        // The three most probable exact scorelines.
+        let mut top = [(0u8, 0u8, 0.0f64); 3];
+        for (x, row) in t.iter().enumerate() {
+            for (y, &p) in row.iter().enumerate() {
+                if p > top[2].2 {
+                    top[2] = (x as u8, y as u8, p);
+                    top.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+                }
+            }
+        }
+
         // The table truncates at MAX_GOALS per side; normalize so the 1X2
         // triple sums to exactly 100 even for extreme-mismatch lambdas.
         let total = hw + dr + aw;
+        for score in &mut top {
+            score.2 = score.2 / total * 100.0;
+        }
         FixtureProbs {
             home_win_pct: hw / total * 100.0,
             draw_pct: dr / total * 100.0,
             away_win_pct: aw / total * 100.0,
             over25_pct: over25 / total * 100.0,
             btts_pct: btts / total * 100.0,
+            home_xg: lh,
+            away_xg: la,
+            top_scores: top,
         }
     }
 
@@ -726,6 +750,10 @@ mod tests {
         assert!(p.btts_pct > 0.0 && p.btts_pct < 100.0);
         // A mismatch this size should still clear typical market baselines.
         assert!(p.over25_pct > 30.0, "over 2.5 {} too low", p.over25_pct);
+        assert!(p.home_xg > p.away_xg, "stronger home side out-xGs the away");
+        assert!(p.top_scores[0].2 >= p.top_scores[1].2);
+        assert!(p.top_scores[1].2 >= p.top_scores[2].2);
+        assert!(p.top_scores[0].2 > 0.0 && p.top_scores[0].2 < 100.0);
     }
 
     #[test]

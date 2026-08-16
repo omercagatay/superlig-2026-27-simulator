@@ -138,6 +138,17 @@ export interface MatchForecast {
   btts_pct: number;
   btts_odds: number | null;
   btts_no_odds: number | null;
+  /** The model's expected goals (λ) for each side. */
+  home_xg: number;
+  away_xg: number;
+  /** The three most probable exact scorelines, most likely first. */
+  likely_scores: LikelyScore[];
+}
+
+export interface LikelyScore {
+  home: number;
+  away: number;
+  pct: number;
 }
 
 export interface MatchCard {

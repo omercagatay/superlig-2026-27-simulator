@@ -1503,6 +1503,8 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 0.7rem;
+  /* Played (FT) cards are short; don't stretch them to forecast height. */
+  align-items: start;
 }
 
 .match-card {
@@ -1559,4 +1561,35 @@ button {
   letter-spacing: 0.06em;
   color: var(--ink-3);
   min-width: 2.1rem;
+}
+
+/* Per-match detail: model expected goals and most likely scorelines. */
+.xg-line {
+  margin-top: 0.3rem;
+  font-family: var(--data);
+  font-size: 0.7rem;
+  color: var(--ink-3);
+}
+
+.score-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--chalk);
+}
+
+.score-chip {
+  font-family: var(--data);
+  font-size: 0.72rem;
+  color: var(--ink-2);
+  background: var(--pitch-3);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+
+.score-chip em {
+  font-style: normal;
+  color: var(--ink-3);
 }
