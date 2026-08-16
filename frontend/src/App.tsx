@@ -156,7 +156,6 @@ export default function App() {
             </div>
           </div>
           <div className="topbar-status">
-            {data && <span>{data.n_sims.toLocaleString()} simulations</span>}
             {lastUpdated && (
               <span>
                 <span className="live-dot" aria-hidden="true" />

@@ -22,13 +22,24 @@ const risk = (pct: number) =>
 const Pct = ({ v }: { v: number }) =>
   v > 0 ? <>{v.toFixed(1)}</> : <span className="cell-zero">–</span>;
 
-export function ResultsTable({ teams }: { teams: TeamRow[] }) {
+export function ResultsTable({
+  teams,
+  nSims,
+  seed,
+}: {
+  teams: TeamRow[];
+  nSims: number;
+  seed: number;
+}) {
   const maxTitle = Math.max(...teams.map((t) => t.title_pct), 0.001);
 
   return (
     <section className="panel table-panel" aria-label="Season outcome probabilities">
       <header className="panel-head">
         <h2>Season outcomes</h2>
+        <span className="eyebrow">
+          {nSims.toLocaleString()} seasons · seed {seed}
+        </span>
       </header>
       <div className="table-scroll">
         <table className="data-table">

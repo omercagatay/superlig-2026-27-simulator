@@ -86,17 +86,24 @@ function ForecastRow({ m }: { m: MatchCard }) {
   );
 }
 
-function PlayedRow({ m }: { m: MatchCard }) {
+/** Played fixtures collapse into one compact block — a result is a fact,
+ *  not a forecast, and should not compete with the priced cards. */
+function PlayedBlock({ matches }: { matches: MatchCard[] }) {
+  if (matches.length === 0) return null;
   return (
-    <div className="match-card match-played">
-      <div className="fixture-teams">
-        <span className="fixture-team">{m.home}</span>
-        <span className="result-score">
-          {m.home_score}–{m.away_score}
-        </span>
-        <span className="fixture-team">{m.away}</span>
+    <div className="ft-block">
+      <span className="ft-block-label">Final scores</span>
+      <div className="ft-rows">
+        {matches.map((m) => (
+          <span key={`${m.home}-${m.away}`} className="ft-row">
+            {m.home}{" "}
+            <span className="result-score">
+              {m.home_score}–{m.away_score}
+            </span>{" "}
+            {m.away}
+          </span>
+        ))}
       </div>
-      <span className="match-ft">FT</span>
     </div>
   );
 }
@@ -140,21 +147,19 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
           </button>
         </div>
       </header>
-      <p className="panel-note">
-        Every unplayed fixture is priced on match result (1X2), total goals and
-        both-teams-to-score: the probability of each outcome and its fair
-        decimal odds (100/probability, no bookmaker margin). Matches already
-        played show the final score instead of a forecast. Model estimates, not
-        betting advice.
-      </p>
-      <div className="match-list">
-        {current.matches.map((m) =>
-          m.played ? (
-            <PlayedRow key={`${m.home}-${m.away}`} m={m} />
-          ) : (
-            <ForecastRow key={`${m.home}-${m.away}`} m={m} />
-          )
-        )}
+      <div className="panel-body">
+        <p className="panel-note">
+          Fair odds are 100 / probability, with no bookmaker margin. Model
+          estimates, not betting advice.
+        </p>
+        <PlayedBlock matches={current.matches.filter((m) => m.played)} />
+        <div className="match-list">
+          {current.matches
+            .filter((m) => !m.played)
+            .map((m) => (
+              <ForecastRow key={`${m.home}-${m.away}`} m={m} />
+            ))}
+        </div>
       </div>
     </section>
   );

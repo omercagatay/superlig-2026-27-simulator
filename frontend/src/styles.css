@@ -118,7 +118,7 @@ button {
 
 .panel-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1.1rem 0.7rem;
@@ -259,18 +259,6 @@ button {
   background: var(--live);
   margin-right: 0.4rem;
   vertical-align: 1px;
-}
-
-.badge-scenario {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 0.74rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--gold-text);
-  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
-  border-radius: 999px;
-  padding: 0.1rem 0.55rem;
 }
 
 .run-controls {
@@ -435,6 +423,15 @@ button {
 
 /* ============ Forecast layout ============ */
 
+.forecast {
+  display: grid;
+  gap: 1rem;
+}
+
+.forecast .tiles {
+  margin-bottom: 0;
+}
+
 .forecast-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -492,10 +489,10 @@ button {
 
 .race-row {
   display: grid;
-  grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1.1rem;
+  gap: 0.8rem;
+  padding: 0.6rem 1.1rem;
 }
 
 .race-row + .race-row {
@@ -505,7 +502,7 @@ button {
 .race-rank {
   font-family: var(--display);
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 0.95rem;
   color: var(--ink-3);
   text-align: center;
   line-height: 1;
@@ -519,14 +516,14 @@ button {
   display: flex;
   align-items: baseline;
   gap: 0.7rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
 }
 
 .race-team {
   font-family: var(--display);
   font-weight: 600;
-  font-size: 1.45rem;
-  letter-spacing: 0.03em;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
 }
@@ -541,8 +538,8 @@ button {
 }
 
 .race-meter {
-  height: 8px;
-  border-radius: 4px;
+  height: 5px;
+  border-radius: 3px;
   background: var(--pitch-3);
   overflow: hidden;
 }
@@ -555,101 +552,30 @@ button {
 }
 
 .race-pct {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 2rem;
+  font-family: var(--data);
+  font-weight: 600;
+  font-size: 0.95rem;
   line-height: 1;
-  min-width: 4.6rem;
+  min-width: 3.2rem;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .race-pct .pct-sign {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: 0.75rem;
   color: var(--ink-3);
   margin-left: 0.1rem;
 }
 
+.race-row.race-leader .race-pct {
+  color: var(--gold-text);
+}
+
 /* --- Scenario prompt --- */
-
-.scenario-panel textarea {
-  width: 100%;
-  resize: vertical;
-  min-height: 3.4rem;
-  font: inherit;
-  font-size: 0.9rem;
-  color: var(--ink);
-  background: var(--pitch-2);
-  border: 1px solid var(--chalk);
-  border-radius: var(--radius);
-  padding: 0.55rem 0.7rem;
-}
-
-.scenario-panel textarea:focus {
-  outline: none;
-  border-color: var(--turf);
-}
-
-.scenario-panel textarea::placeholder {
-  color: var(--ink-3);
-}
-
-.scenario-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.55rem;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.7rem;
-}
-
-.chip {
-  font-size: 0.78rem;
-  color: var(--ink-2);
-  border: 1px solid var(--chalk);
-  border-radius: 999px;
-  padding: 0.22rem 0.65rem;
-  text-align: left;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.chip:hover:not(:disabled) {
-  border-color: var(--turf);
-  color: var(--ink);
-}
-
-.chip:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
 
 /* --- Fixtures (upcoming) --- */
 
-.fixture {
-  padding: 0.7rem 1.1rem 0.85rem;
-}
-
-.fixture + .fixture {
-  border-top: 1px solid var(--chalk);
-}
-
-.fixture-round {
-  display: block;
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-bottom: 0.35rem;
-}
-
-.fixture-teams {
+.fixture + .fixture-teams {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -671,8 +597,11 @@ button {
 }
 
 .fixture-vs {
+  font-family: var(--display);
   font-size: 0.72rem;
   color: var(--ink-3);
+  margin: 0 0.55rem;
+  flex: 0 0 auto;
 }
 
 .split-bar {
@@ -804,30 +733,6 @@ button {
 
 /* ============ Results table ============ */
 
-.table-toggle {
-  display: flex;
-  gap: 0.2rem;
-  border: 1px solid var(--chalk);
-  border-radius: var(--radius);
-  padding: 2px;
-}
-
-.table-toggle button {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  padding: 0.25rem 0.7rem;
-  border-radius: 4px;
-}
-
-.table-toggle button[aria-pressed="true"] {
-  background: var(--pitch-3);
-  color: var(--ink);
-}
-
 .table-scroll {
   overflow-x: auto;
 }
@@ -882,15 +787,6 @@ button {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink);
-}
-
-.data-table tr.row-out td {
-  color: var(--ink-3);
-}
-
-.data-table tr.row-out td.cell-team {
-  color: var(--ink-3);
-  font-weight: 500;
 }
 
 .cell-title {
@@ -1172,10 +1068,44 @@ button {
 }
 
 .tile-value {
+  display: block;
   font-family: var(--display);
   font-weight: 700;
   font-size: 1.9rem;
   line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-dim {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.tile-sub {
+  display: block;
+  margin-top: 0.3rem;
+  font-family: var(--data);
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+
+.tile-bar {
+  display: block;
+  margin-top: 0.55rem;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--pitch-3);
+  overflow: hidden;
+}
+
+.tile-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 0 3px 3px 0;
+  background: var(--turf);
 }
 
 .live-grid {
@@ -1402,7 +1332,16 @@ button {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--ink-3);
-  max-width: 62ch;
+  max-width: 72ch;
+}
+
+/* Direct children of a panel (outside .panel-body) share the head inset. */
+.panel > .panel-note {
+  margin: 0.8rem 1.1rem 0.2rem;
+}
+
+.panel > .legend {
+  margin: 0.7rem 1.1rem 0.9rem;
 }
 
 /* ---- Finishing-position grid -------------------------------------------- */
@@ -1502,9 +1441,42 @@ button {
 .match-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-  gap: 0.7rem;
-  /* Played (FT) cards are short; don't stretch them to forecast height. */
+  gap: 0.9rem;
   align-items: start;
+}
+
+/* Played fixtures: one quiet block of facts above the priced cards. */
+.ft-block {
+  margin-bottom: 0.9rem;
+  padding: 0.6rem 0.8rem 0.65rem;
+  border: 1px solid var(--chalk);
+  border-radius: var(--radius);
+  background: var(--pitch-2);
+}
+
+.ft-block-label {
+  display: block;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 0.35rem;
+}
+
+.ft-rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.25rem 1.4rem;
+}
+
+.ft-row {
+  font-size: 0.84rem;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .match-card {
@@ -1516,20 +1488,6 @@ button {
 
 .match-card .split-bar {
   margin: 0.45rem 0 0.55rem;
-}
-
-.match-played {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.match-ft {
-  font-family: var(--display);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  color: var(--ink-3);
 }
 
 /* Per-market pricing table: one labeled row per outcome. */
