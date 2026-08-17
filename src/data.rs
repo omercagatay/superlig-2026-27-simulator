@@ -5,7 +5,19 @@ pub const BASE: f64 = 1.35;
 /// Elo points corresponding to one decade of scoring-rate ratio.
 pub const D_DIV: f64 = 1600.0;
 /// Home-ground advantage, in Elo points, applied to the fixture's home side.
+/// Used both when converting a rating gap to expected goals (via `D_DIV`) and
+/// when forming a win expectancy for in-season rating updates (via `ELO_DIV`)
+/// — it is the same quantity in rating points, only the conversion differs.
 pub const HOME_ADV: f64 = 80.0;
+
+/// Classic Elo denominator: a `ELO_DIV`-point edge is a 10:1 win expectancy.
+/// Distinct from `D_DIV`, which maps a rating gap to a *scoring-rate* ratio.
+pub const ELO_DIV: f64 = 400.0;
+
+/// Elo update rate for one league match, before the goal-difference
+/// multiplier. 20 is the usual club-football value and is what ClubElo-scale
+/// ratings expect; larger values chase form, smaller ones ignore it.
+pub const ELO_K: f64 = 20.0;
 
 pub const N_TEAMS: usize = 18;
 pub const N_ROUNDS: usize = 34;

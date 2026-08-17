@@ -79,6 +79,8 @@ Per trial (`simulate_one`):
 
 Across trials, `simulate` aggregates per-club position counts, title/UCL/UEL/UECL/Europe/relegation counts, points and GD sums, and a flat n×n `pairwise_above` matrix. It also picks a "representative" season — the trial whose finishing order best matches the per-position modal club — retained as a determinism anchor in tests. The projected-table view is built from per-club **expected** records instead: positions 4-15 have nearly flat distributions, so any single sampled season is noise there and contradicts the aggregate odds beside it.
 
+**Ratings are recomputed, never accumulated.** `World.elo_baseline` holds the preseason `data::elo()` ratings; `World::elo` is `refresh_ratings()` replaying every played result over that baseline in kick-off order. `update_from_live` calls it after inserting results. Doing it any other way (mutating `elo` in place) double-counts on the timer-driven refresh — there is a test for this.
+
 **Home advantage is per fixture, not per club.** The World Cup version carried a `host: Vec<bool>` flag; `lam_pair(home, away)` now applies `HOME_ADV` to whichever club is at home in that fixture.
 
 ### League rules (`src/league.rs`)

@@ -27,7 +27,13 @@ pub struct FixtureDate {
 pub struct World {
     pub teams: Vec<String>,
     pub idx: HashMap<String, usize>,
+    /// Current club ratings: the preseason baseline walked forward through
+    /// every result played so far. Never mutate directly — set
+    /// `elo_baseline` or `played` and call `refresh_ratings`.
     pub elo: Vec<f64>,
+    /// Preseason ratings from `data::elo()`, kept so in-season updates can be
+    /// recomputed from scratch instead of compounding on themselves.
+    pub elo_baseline: Vec<f64>,
     /// The official 306-fixture calendar, in round order.
     pub fixtures: Vec<LeagueFixture>,
     /// Kick-off dates, indexed alongside `fixtures`.
@@ -203,14 +209,53 @@ impl World {
             }
         }
 
-        World {
+        let mut world = World {
             teams,
             idx,
-            elo,
+            elo: elo.clone(),
+            elo_baseline: elo,
             fixtures,
             dates,
             played,
             ensemble: None,
+        };
+        world.refresh_ratings();
+        world
+    }
+
+    /// Replay every played result over the preseason ratings, in kick-off
+    /// order, so club strength reflects the season so far rather than August.
+    ///
+    /// Recomputed from `elo_baseline` each time — calling this twice is the
+    /// same as calling it once, which matters because `/api/refresh` runs on a
+    /// timer and re-sends results already applied.
+    pub fn refresh_ratings(&mut self) {
+        self.elo.clone_from(&self.elo_baseline);
+
+        let mut order: Vec<usize> = (0..self.fixtures.len()).collect();
+        order.sort_by(|&a, &b| {
+            (&self.dates[a].date, self.fixtures[a].round)
+                .cmp(&(&self.dates[b].date, self.fixtures[b].round))
+        });
+
+        for i in order {
+            let f = self.fixtures[i];
+            let Some(&(hs, as_)) = self.played.get(&(f.home, f.away)) else {
+                continue;
+            };
+            let dr = self.elo[f.home] - self.elo[f.away] + data::HOME_ADV;
+            let expected = 1.0 / (1.0 + 10f64.powf(-dr / data::ELO_DIV));
+            let actual = match hs.cmp(&as_) {
+                std::cmp::Ordering::Greater => 1.0,
+                std::cmp::Ordering::Equal => 0.5,
+                std::cmp::Ordering::Less => 0.0,
+            };
+            // Margin of victory matters, with diminishing returns — a 4-0 is
+            // stronger evidence than a 1-0, but not four times stronger.
+            let margin = ((hs as f64 - as_ as f64).abs()).max(1.0).sqrt();
+            let delta = data::ELO_K * margin * (actual - expected);
+            self.elo[f.home] += delta;
+            self.elo[f.away] -= delta;
         }
     }
 
@@ -562,6 +607,76 @@ mod tests {
         assert!(la_away > lb_away);
         for l in [la_home, lb_away, lb_home, la_away] {
             assert!((0.15..=5.0).contains(&l), "lambda {l} out of clamp range");
+        }
+    }
+
+    #[test]
+    fn ratings_move_with_results_and_stay_zero_sum() {
+        let mut w = World::new();
+        w.played.clear();
+        w.refresh_ratings();
+        assert_eq!(w.elo, w.elo_baseline, "no results, no movement");
+
+        let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
+        let f = *w
+            .fixtures
+            .iter()
+            .find(|f| f.home == gaz && f.away == gs)
+            .expect("Gaziantep host Galatasaray once");
+        w.played.insert((f.home, f.away), (4, 0));
+        w.refresh_ratings();
+
+        // A big upset lifts the winner and drops the loser...
+        assert!(w.elo[gaz] > w.elo_baseline[gaz]);
+        assert!(w.elo[gs] < w.elo_baseline[gs]);
+        // ...by the same amount: rating is only ever transferred.
+        let moved = w.elo[gaz] - w.elo_baseline[gaz];
+        assert!((moved + (w.elo[gs] - w.elo_baseline[gs])).abs() < 1e-9);
+        // An underdog beating a favourite 4-0 is worth a real chunk of rating.
+        assert!(moved > 20.0, "upset moved only {moved}");
+
+        let total_before: f64 = w.elo_baseline.iter().sum();
+        let total_after: f64 = w.elo.iter().sum();
+        assert!((total_before - total_after).abs() < 1e-9);
+    }
+
+    #[test]
+    fn refreshing_ratings_twice_changes_nothing() {
+        let mut w = World::new();
+        let once = w.elo.clone();
+        w.refresh_ratings();
+        assert_eq!(w.elo, once, "recompute must not compound");
+
+        // The same holds through the live path, which re-sends known results.
+        let live = crate::scraper::LiveData {
+            played_matches: vec![crate::scraper::ScrapedMatch {
+                round: 1,
+                home: "Galatasaray".to_string(),
+                home_score: 2,
+                away: "Çorum".to_string(),
+                away_score: 2,
+            }],
+            fetched_at: "2026-08-17T00:00:00Z".to_string(),
+        };
+        w.update_from_live(&live);
+        let after_first = w.elo.clone();
+        w.update_from_live(&live);
+        assert_eq!(w.elo, after_first, "re-applying a result must be a no-op");
+    }
+
+    #[test]
+    fn matchday_one_results_are_already_reflected_in_ratings() {
+        // The shipped calendar carries real played results, so a fresh World
+        // must not still be sitting on preseason ratings.
+        let w = World::new();
+        assert!(!w.played.is_empty(), "baseline has played fixtures");
+        assert_ne!(w.elo, w.elo_baseline, "ratings must reflect results played");
+        for (i, r) in w.elo.iter().enumerate() {
+            assert!(
+                (1000.0..=2200.0).contains(r),
+                "{} drifted to {r}",
+                w.teams[i]
+            );
         }
     }
 
