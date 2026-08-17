@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { PositionRow } from "../api";
+import { useT } from "../i18n";
 
 function intensity(pct: number): number {
   // Square-root ramp so small but real probabilities stay visible.
@@ -18,23 +19,23 @@ function ordinal(n: number): string {
 }
 
 export function PositionGrid({ positions }: { positions: PositionRow[] }) {
+  const tr = useT();
   const total = positions.length;
   const columns = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
     <section className="panel" aria-label="Finishing position probabilities">
       <header className="panel-head">
-        <h2>Finishing position probabilities</h2>
+        <h2>{tr("finishingPositions")}</h2>
       </header>
       <p className="panel-note">
-        Each cell is the share of simulated seasons in which a club finished in
-        that position. Rows are ordered by average finish.
+        {tr("finishingNote")}
       </p>
       <div className="grid-scroll">
         <table className="position-grid">
           <thead>
             <tr>
-              <th scope="col">Club</th>
+              <th scope="col">{tr("club")}</th>
               {columns.map((c) => (
                 <th
                   scope="col"
@@ -69,10 +70,10 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="swatch col-europe" /> European places (1-4)
+          <span className="swatch col-europe" /> {tr("europeanPlaces")}
         </li>
         <li>
-          <span className="swatch col-rel" /> Relegation (16-18)
+          <span className="swatch col-rel" /> {tr("relegationZone")}
         </li>
       </ul>
     </section>

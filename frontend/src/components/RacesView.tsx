@@ -1,34 +1,35 @@
 import type { TeamRow, RaceThreshold } from "../api";
+import { useT, type Key } from "../i18n";
 
 type Race = {
-  title: string;
-  note: string;
+  title: Key;
+  note: Key;
   pick: (t: TeamRow) => number;
   tone: string;
 };
 
 const RACES: Race[] = [
   {
-    title: "Title",
-    note: "Finishes 1st",
+    title: "title",
+    note: "raceTitleNote",
     pick: (t) => t.title_pct,
     tone: "tone-turf",
   },
   {
-    title: "Champions League",
-    note: "Finishes 1st or 2nd",
+    title: "championsLeague",
+    note: "raceUclNote",
     pick: (t) => t.ucl_pct,
     tone: "tone-turf",
   },
   {
-    title: "Any European place",
-    note: "Finishes in the top 4",
+    title: "anyEuropeanPlace",
+    note: "raceEuropeNote",
     pick: (t) => t.europe_pct,
     tone: "tone-sky",
   },
   {
-    title: "Relegation",
-    note: "Finishes in the bottom 3",
+    title: "relegation",
+    note: "raceRelNote",
     pick: (t) => t.relegation_pct,
     tone: "tone-danger",
   },
@@ -37,6 +38,7 @@ const RACES: Race[] = [
 /** One race: the clubs still meaningfully involved, biggest share first.
  *  Clubs with no realistic stake are dropped rather than listed at 0.0%. */
 function RaceColumn({ race, teams }: { race: Race; teams: TeamRow[] }) {
+  const tr = useT();
   const rows = teams
     .map((t) => ({ team: t.team, pct: race.pick(t) }))
     .filter((r) => r.pct >= 0.5)
@@ -44,13 +46,13 @@ function RaceColumn({ race, teams }: { race: Race; teams: TeamRow[] }) {
     .slice(0, 8);
 
   return (
-    <section className="panel" aria-label={`${race.title} race`}>
+    <section className="panel" aria-label={tr(race.title)}>
       <header className="panel-head">
-        <h3>{race.title}</h3>
-        <span className="eyebrow">{race.note}</span>
+        <h3>{tr(race.title)}</h3>
+        <span className="eyebrow">{tr(race.note)}</span>
       </header>
       {rows.length === 0 ? (
-        <p className="panel-note">No club is above 0.5%.</p>
+        <p className="panel-note">{tr("noClubAbove")}</p>
       ) : (
         rows.map((r) => (
           <div key={r.team} className="finals-row">
@@ -73,31 +75,36 @@ export function RacesView({
   teams: TeamRow[];
   thresholds: RaceThreshold[];
 }) {
+  const tr = useT();
+  const LABELS: Record<string, Key> = {
+    Champion: "champion",
+    "Last Champions League place": "lastUclPlace",
+    "Last European place": "lastEuropeanPlace",
+    "Last safe place": "lastSafePlace",
+  };
   return (
     <div className="races">
       <section className="panel" aria-label="Points thresholds">
         <header className="panel-head">
-          <h2>What it takes</h2>
+          <h2>{tr("whatItTakes")}</h2>
         </header>
         <p className="panel-note">
-          Points held by the club that actually finished in each place, across
-          every simulated season. Read a row as: reach the 90% column and you
-          would have taken that place in nine seasons out of ten.
+          {tr("whatItTakesNote")}
         </p>
         <div className="table-scroll">
           <table className="data-table">
             <thead>
               <tr>
-                <th scope="col" className="col-team">Place</th>
-                <th scope="col">Half the time</th>
-                <th scope="col">3 in 4</th>
-                <th scope="col">9 in 10</th>
+                <th scope="col" className="col-team">{tr("place")}</th>
+                <th scope="col">{tr("halfTheTime")}</th>
+                <th scope="col">{tr("threeInFour")}</th>
+                <th scope="col">{tr("nineInTen")}</th>
               </tr>
             </thead>
             <tbody>
               {thresholds.map((t) => (
                 <tr key={t.position}>
-                  <td className="cell-team">{t.label}</td>
+                  <td className="cell-team">{LABELS[t.label] ? tr(LABELS[t.label]) : t.label}</td>
                   <td>{t.p50}</td>
                   <td>{t.p75}</td>
                   <td>

@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
 import type { TeamRow, PositionRow, MatchesResponse, MatchCard } from "../api";
+import { useT, useLocale } from "../i18n";
 
 const ZONE = (pos: number, total: number) =>
   pos <= 2 ? "zone-ucl" : pos === 3 ? "zone-uel" : pos === 4 ? "zone-uecl" : pos > total - 3 ? "zone-rel" : "";
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, locale?: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return new Date(y, m - 1, d).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 /** The club's own view of a fixture: who it plays, where, and its chances. */
@@ -57,6 +58,8 @@ export function ClubDetail({
   matches: MatchesResponse | null;
   onClose: () => void;
 }) {
+  const tr = useT();
+  const locale = useLocale();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -99,37 +102,37 @@ export function ClubDetail({
         <header className="panel-head">
           <h2>{team.team}</h2>
           <button ref={closeRef} type="button" className="btn" onClick={onClose}>
-            Close
+            {tr("close")}
           </button>
         </header>
 
         <div className="panel-body">
           <div className="club-stats">
             <div className="club-stat">
-              <span className="tile-label">Title</span>
+              <span className="tile-label">{tr("title")}</span>
               <span className="club-stat-val">{team.title_pct.toFixed(1)}%</span>
             </div>
             <div className="club-stat">
-              <span className="tile-label">Europe</span>
+              <span className="tile-label">{tr("europe")}</span>
               <span className="club-stat-val">{team.europe_pct.toFixed(1)}%</span>
             </div>
             <div className="club-stat">
-              <span className="tile-label">Relegation</span>
+              <span className="tile-label">{tr("relegation")}</span>
               <span className="club-stat-val">{team.relegation_pct.toFixed(1)}%</span>
             </div>
             <div className="club-stat">
-              <span className="tile-label">Expected points</span>
+              <span className="tile-label">{tr("expectedPoints")}</span>
               <span className="club-stat-val">{team.exp_points.toFixed(1)}</span>
             </div>
             <div className="club-stat">
-              <span className="tile-label">Average finish</span>
+              <span className="tile-label">{tr("averageFinish")}</span>
               <span className="club-stat-val">{team.mean_position.toFixed(1)}</span>
             </div>
           </div>
 
           {position && (
             <>
-              <span className="score-chips-label">Where it finishes</span>
+              <span className="score-chips-label">{tr("whereItFinishes")}</span>
               <div className="posbars">
                 {position.position_pct.map((pct, i) => (
                   <span
@@ -147,16 +150,18 @@ export function ClubDetail({
 
           {runIn != null && (
             <p className="panel-note">
-              Run-in: {remaining.length} to play, average win probability{" "}
+              {tr("runIn")}: {remaining.length} {tr("toPlayAvg")}{" "}
               <strong>{runIn.toFixed(0)}%</strong>.
-              {hardest && ` Hardest: ${hardest.atHome ? "" : "at "}${hardest.opponent} (${hardest.winPct?.toFixed(0)}%).`}
-              {easiest && ` Easiest: ${easiest.atHome ? "" : "at "}${easiest.opponent} (${easiest.winPct?.toFixed(0)}%).`}
+              {hardest &&
+                ` ${tr("hardest")}: ${hardest.atHome ? "" : "@ "}${hardest.opponent} (${hardest.winPct?.toFixed(0)}%).`}
+              {easiest &&
+                ` ${tr("easiest")}: ${easiest.atHome ? "" : "@ "}${easiest.opponent} (${easiest.winPct?.toFixed(0)}%).`}
             </p>
           )}
 
           {playedSoFar.length > 0 && (
             <>
-              <span className="score-chips-label">Played</span>
+              <span className="score-chips-label">{tr("played")}</span>
               <div className="club-form">
                 {playedSoFar.map((f, i) => (
                   <span key={i} className={`form-chip form-${f.result}`}>
@@ -167,23 +172,23 @@ export function ClubDetail({
             </>
           )}
 
-          <span className="score-chips-label">Remaining fixtures</span>
+          <span className="score-chips-label">{tr("remainingFixtures")}</span>
           <div className="table-scroll">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th scope="col">MD</th>
-                  <th scope="col">Date</th>
-                  <th scope="col" className="col-team">Opponent</th>
-                  <th scope="col">Win</th>
-                  <th scope="col">Draw</th>
+                  <th scope="col">{tr("md")}</th>
+                  <th scope="col">{tr("date")}</th>
+                  <th scope="col" className="col-team">{tr("opponent")}</th>
+                  <th scope="col">{tr("winCol")}</th>
+                  <th scope="col">{tr("drawCol")}</th>
                 </tr>
               </thead>
               <tbody>
                 {remaining.map((f, i) => (
                   <tr key={i}>
                     <td className="cell-rank">{matchRound(f, matches)}</td>
-                    <td>{fmtDate(f.m.date)}</td>
+                    <td>{fmtDate(f.m.date, locale)}</td>
                     <td className="cell-team">
                       {f.atHome ? "" : "@ "}
                       {f.opponent}

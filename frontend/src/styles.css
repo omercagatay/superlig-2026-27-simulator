@@ -1846,3 +1846,12 @@ button {
   align-items: center;
   gap: 0.6rem;
 }
+
+/* Language toggle sits beside the theme toggle; text, not an icon. */
+.lang-toggle {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}

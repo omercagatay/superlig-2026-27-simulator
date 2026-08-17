@@ -4,6 +4,7 @@ import { ResultsTable } from "./ResultsTable";
 import { MatchesView } from "./MatchesView";
 import { AccuracyPanel } from "./AccuracyPanel";
 import { ClubDetail } from "./ClubDetail";
+import { useT } from "../i18n";
 
 const TOTAL_FIXTURES = 306;
 
@@ -22,6 +23,7 @@ export function ForecastView({
   liveMatchCount: number;
   onShowLive: () => void;
 }) {
+  const tr = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const selectedTeam = data.teams.find((t) => t.team === selected);
   const contenders = data.teams.filter((t) => t.title_pct > 0).slice(0, 6);
@@ -38,20 +40,21 @@ export function ForecastView({
       {/* One summary strip; every number below it earns its own panel. */}
       <div className="tiles">
         <div className="tile">
-          <span className="tile-label">Title favorite</span>
+          <span className="tile-label">{tr("titleFavorite")}</span>
           <span className="tile-value">{favorite.team}</span>
           <span className="tile-sub">
-            {favorite.title_pct.toFixed(1)}% of seasons
-            {favorite.title_odds != null && ` · fair odds ${favorite.title_odds.toFixed(2)}`}
+            {favorite.title_pct.toFixed(1)}% {tr("ofSeasons")}
+            {favorite.title_odds != null &&
+              ` · ${tr("fairOddsShort")} ${favorite.title_odds.toFixed(2)}`}
           </span>
         </div>
         <div className="tile">
-          <span className="tile-label">Relegation risk</span>
+          <span className="tile-label">{tr("relegationRisk")}</span>
           <span className="tile-value">{riskiest.team}</span>
-          <span className="tile-sub">{riskiest.relegation_pct.toFixed(1)}% of seasons</span>
+          <span className="tile-sub">{riskiest.relegation_pct.toFixed(1)}% {tr("ofSeasons")}</span>
         </div>
         <div className="tile">
-          <span className="tile-label">Season progress</span>
+          <span className="tile-label">{tr("seasonProgress")}</span>
           <span className="tile-value">
             {liveMatchCount}
             <span className="tile-dim"> / {TOTAL_FIXTURES}</span>
@@ -64,12 +67,12 @@ export function ForecastView({
           </span>
         </div>
         <div className="tile">
-          <span className="tile-label">Next matchday</span>
-          <span className="tile-value">{nextRound != null ? `MD ${nextRound}` : "—"}</span>
+          <span className="tile-label">{tr("nextMatchday")}</span>
+          <span className="tile-value">{nextRound != null ? `${tr("mdShort")} ${nextRound}` : "—"}</span>
           <span className="tile-sub">
             {nextUnplayed != null
-              ? `${nextUnplayed} fixture${nextUnplayed === 1 ? "" : "s"} to play`
-              : "calendar loading"}
+              ? `${nextUnplayed} ${nextUnplayed === 1 ? tr("fixtureToPlay") : tr("fixturesToPlay")}`
+              : tr("calendarLoading")}
           </span>
         </div>
       </div>
@@ -87,7 +90,7 @@ export function ForecastView({
         <aside className="rail">
           <section className="panel" aria-label="Title race">
             <header className="panel-head">
-              <h2>Title race</h2>
+              <h2>{tr("titleRace")}</h2>
             </header>
             {contenders.map((t, i) => (
               <div key={t.team} className={`race-row${i === 0 ? " race-leader" : ""}`}>
@@ -116,19 +119,19 @@ export function ForecastView({
           {data.rivalries.length > 0 && (
             <section className="panel" aria-label="Head-to-head finishing order">
               <header className="panel-head">
-                <h3>Who finishes above whom</h3>
+                <h3>{tr("aboveWhom")}</h3>
               </header>
               {data.rivalries.slice(0, 5).map((r, i) => (
                 <div key={i} className="finals-row">
                   <span className="finals-pair">
-                    <strong>{r.a}</strong> above <strong>{r.b}</strong>
+                    <strong>{r.a}</strong> {tr("above")} <strong>{r.b}</strong>
                   </span>
                   <span className="finals-pct">{r.a_above_pct.toFixed(1)}%</span>
                 </div>
               ))}
               {liveData && (
                 <button type="button" className="panel-foot-link" onClick={onShowLive}>
-                  All live results →
+                  {tr("allLiveResults")}
                 </button>
               )}
             </section>

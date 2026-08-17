@@ -1,4 +1,5 @@
 import type { TableRow } from "../api";
+import { useT } from "../i18n";
 
 /** Marks the European and relegation cut lines in the projected table. */
 function zoneClass(position: number, total: number): string {
@@ -10,15 +11,14 @@ function zoneClass(position: number, total: number): string {
 }
 
 export function LeagueTable({ table }: { table: TableRow[] }) {
+  const tr = useT();
   return (
     <section className="panel" aria-label="Projected final table">
       <header className="panel-head">
-        <h2>Projected final table</h2>
+        <h2>{tr("projectedTable")}</h2>
       </header>
       <p className="panel-note">
-        Each club's expected record, averaged over every simulated season and
-        ranked by expected points — the table the model considers most likely,
-        not one sampled run.
+        {tr("projectedNote")}
       </p>
       <div className="table-scroll">
         <table className="data-table">
@@ -26,7 +26,7 @@ export function LeagueTable({ table }: { table: TableRow[] }) {
             <tr>
               <th scope="col">#</th>
               <th scope="col" className="col-team">
-                Club
+                {tr("club")}
               </th>
               <th scope="col">P</th>
               <th scope="col">W</th>
@@ -60,16 +60,16 @@ export function LeagueTable({ table }: { table: TableRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="swatch zone-ucl" /> Champions League
+          <span className="swatch zone-ucl" /> {tr("championsLeague")}
         </li>
         <li>
-          <span className="swatch zone-uel" /> Europa League
+          <span className="swatch zone-uel" /> {tr("europaLeague")}
         </li>
         <li>
-          <span className="swatch zone-uecl" /> Conference League
+          <span className="swatch zone-uecl" /> {tr("conferenceLeague")}
         </li>
         <li>
-          <span className="swatch zone-rel" /> Relegation
+          <span className="swatch zone-rel" /> {tr("relegation")}
         </li>
       </ul>
     </section>

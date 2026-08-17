@@ -1,4 +1,5 @@
 import type { TeamRow } from "../api";
+import { useT } from "../i18n";
 
 /* Heat tint for probability cells: one sequential hue (turf), opacity scaled
    by the value so magnitude reads at a glance. Mixed from the token so it
@@ -33,15 +34,16 @@ export function ResultsTable({
   seed: number;
   onSelect: (team: string) => void;
 }) {
+  const tr = useT();
   const maxTitle = Math.max(...teams.map((t) => t.title_pct), 0.001);
 
   return (
     <section className="panel table-panel" aria-label="Season outcome probabilities">
       <header className="panel-head">
-        <h2>Season outcomes</h2>
-        <span className="eyebrow">Click a club</span>
+        <h2>{tr("seasonOutcomes")}</h2>
+        <span className="eyebrow">{tr("clickAClub")}</span>
         <span className="eyebrow">
-          {nSims.toLocaleString()} seasons · seed {seed}
+          {nSims.toLocaleString()} {tr("seasonsSeed")} {seed}
         </span>
       </header>
       <div className="table-scroll">
@@ -49,16 +51,16 @@ export function ResultsTable({
           <thead>
             <tr>
               <th aria-label="Rank">#</th>
-              <th className="col-team">Club</th>
-              <th className="cell-title">Title</th>
-              <th title="Decimal odds">Odds</th>
-              <th title="Champions League (1st-2nd)">UCL</th>
-              <th title="Europa League (3rd)">UEL</th>
-              <th title="Conference League (4th)">UECL</th>
-              <th title="Any European place (1st-4th)">Europe</th>
-              <th title="Finishes in the bottom three">Relegation</th>
-              <th title="Expected points over 34 matches">xPts</th>
-              <th title="Expected goal difference">xGD</th>
+              <th className="col-team">{tr("club")}</th>
+              <th className="cell-title">{tr("title")}</th>
+              <th title={tr("tipDecimalOdds")}>{tr("odds")}</th>
+              <th title={tr("tipUcl")}>UCL</th>
+              <th title={tr("tipUel")}>UEL</th>
+              <th title={tr("tipUecl")}>UECL</th>
+              <th title={tr("tipEurope")}>{tr("europe")}</th>
+              <th title={tr("tipRelegation")}>{tr("relegation")}</th>
+              <th title={tr("tipXpts")}>{tr("xPts")}</th>
+              <th title={tr("tipXgd")}>{tr("xGD")}</th>
             </tr>
           </thead>
           <tbody>

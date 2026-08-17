@@ -15,6 +15,7 @@ import { LeagueTable } from "./components/LeagueTable";
 import { PositionGrid } from "./components/PositionGrid";
 import { RacesView } from "./components/RacesView";
 import { LiveStats } from "./components/LiveStats";
+import { useT, useLang } from "./i18n";
 
 type DashboardView = "forecast" | "positions" | "races" | "table" | "live";
 
@@ -68,6 +69,8 @@ export default function App() {
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
+  const t = useT();
+  const { lang, setLang } = useLang();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -147,11 +150,11 @@ export default function App() {
   })();
 
   const tabs: { id: DashboardView; label: string; disabled: boolean; count?: number }[] = [
-    { id: "forecast", label: "Forecast", disabled: !data },
-    { id: "positions", label: "Positions", disabled: !data },
-    { id: "races", label: "Races", disabled: !data },
-    { id: "table", label: "Table", disabled: !data },
-    { id: "live", label: "Live", disabled: !liveData, count: liveData ? liveMatchCount : undefined },
+    { id: "forecast", label: t("tabForecast"), disabled: !data },
+    { id: "positions", label: t("tabPositions"), disabled: !data },
+    { id: "races", label: t("tabRaces"), disabled: !data },
+    { id: "table", label: t("tabTable"), disabled: !data },
+    { id: "live", label: t("tabLive"), disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
 
   return (
@@ -162,14 +165,14 @@ export default function App() {
             <span className="brand-mark">SL</span>
             <div>
               <h1>Süper Lig Forecast</h1>
-              <span className="brand-sub">2026-27 Monte Carlo season simulator</span>
+              <span className="brand-sub">{t("brandSub")}</span>
             </div>
           </div>
           <div className="topbar-status">
             {lastUpdated && (
               <span>
                 <span className="live-dot" aria-hidden="true" />
-                updated {lastUpdated}
+                {t("updated")} {lastUpdated}
               </span>
             )}
           </div>
@@ -181,7 +184,7 @@ export default function App() {
             }}
           >
             <label>
-              Sims
+              {t("sims")}
               <input
                 type="number"
                 value={nSims}
@@ -192,22 +195,31 @@ export default function App() {
               />
             </label>
             <label>
-              Seed
+              {t("seed")}
               <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} />
             </label>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? "Running…" : "Run"}
+              {loading ? t("running") : t("run")}
             </button>
             <button type="button" className="btn" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? "Updating…" : "Update live data"}
+              {refreshing ? t("updating") : t("updateLive")}
             </button>
           </form>
           <button
             type="button"
+            className="theme-toggle lang-toggle"
+            onClick={() => setLang(lang === "tr" ? "en" : "tr")}
+            aria-label={lang === "tr" ? "Switch to English" : "Türkçe'ye geç"}
+            title={lang === "tr" ? "Switch to English" : "Türkçe'ye geç"}
+          >
+            {lang === "tr" ? "EN" : "TR"}
+          </button>
+          <button
+            type="button"
             className="theme-toggle"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-            title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            aria-label={theme === "dark" ? t("toLight") : t("toDark")}
+            title={theme === "dark" ? t("toLight") : t("toDark")}
           >
             {theme === "dark" ? sunIcon : moonIcon}
           </button>
@@ -240,19 +252,19 @@ export default function App() {
         {!data && loading && (
           <div className="boot-state">
             <div className="boot-spinner" aria-hidden="true" />
-            <span className="eyebrow">Simulating</span>
-            <p>{nSims.toLocaleString()} seasons, in parallel. A few seconds.</p>
+            <span className="eyebrow">{t("simulating")}</span>
+            <p>{nSims.toLocaleString()} {t("simulatingBody")}</p>
           </div>
         )}
 
         {!data && !loading && (
           <div className="boot-state">
-            <span className="eyebrow">No forecast yet</span>
+            <span className="eyebrow">{t("noForecast")}</span>
             <p style={{ marginBottom: "1rem" }}>
-              Run the simulation to see how the 2026-27 season plays out.
+              {t("noForecastBody")}
             </p>
             <button className="btn btn-primary" onClick={handleSimulate}>
-              Run simulation
+              {t("runSimulation")}
             </button>
           </div>
         )}

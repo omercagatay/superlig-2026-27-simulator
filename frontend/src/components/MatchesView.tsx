@@ -1,14 +1,15 @@
 import { useState } from "react";
 import type { MatchesResponse, MatchCard } from "../api";
+import { useT, useLocale } from "../i18n";
 
 const fmtOdds = (o: number | null) => (o != null ? o.toFixed(2) : "–");
 
 /** "Sat 22 Aug" in the reader's locale; the ISO date is date-only, so parse
  *  it as local midnight rather than letting UTC shift it a day. */
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, locale?: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -16,15 +17,17 @@ function fmtDate(iso: string): string {
 }
 
 /** The date span a matchday covers — Süper Lig rounds run Fri to Mon. */
-function roundSpan(matches: { date: string }[]): string {
+function roundSpan(matches: { date: string }[], locale?: string): string {
   const dates = [...new Set(matches.map((m) => m.date))].sort();
   if (dates.length === 0) return "";
-  const first = fmtDate(dates[0]);
-  const last = fmtDate(dates[dates.length - 1]);
+  const first = fmtDate(dates[0], locale);
+  const last = fmtDate(dates[dates.length - 1], locale);
   return first === last ? first : `${first} – ${last}`;
 }
 
 function ForecastRow({ m }: { m: MatchCard }) {
+  const tr = useT();
+  const locale = useLocale();
   const f = m.forecast;
   if (!f) return null;
   const homeFavored = f.home_win_pct >= f.away_win_pct;
@@ -38,7 +41,7 @@ function ForecastRow({ m }: { m: MatchCard }) {
       </div>
       <div className="xg-line">
         <span className="match-when">
-          {fmtDate(m.date)}
+          {fmtDate(m.date, locale)}
           {m.kickoff ? ` · ${m.kickoff}` : ""}
         </span>
         xG {f.home_xg.toFixed(2)} – {f.away_xg.toFixed(2)}
@@ -52,18 +55,18 @@ function ForecastRow({ m }: { m: MatchCard }) {
         <thead>
           <tr>
             <th scope="col" className="mt-label">
-              Market
+              {tr("market")}
             </th>
-            <th scope="col">Probability</th>
-            <th scope="col">Fair odds</th>
-            {mk && <th scope="col">Bookmaker</th>}
+            <th scope="col">{tr("probability")}</th>
+            <th scope="col">{tr("fairOdds")}</th>
+            {mk && <th scope="col">{tr("bookmaker")}</th>}
           </tr>
         </thead>
         <tbody>
           <tr>
             <td className="mt-label">
               <i className="split-key a" aria-hidden="true" />
-              {m.home} win <span className="mt-code">1</span>
+              {m.home} {tr("win")} <span className="mt-code">1</span>
             </td>
             <td>{f.home_win_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.home_odds)}</td>
@@ -72,7 +75,7 @@ function ForecastRow({ m }: { m: MatchCard }) {
           <tr>
             <td className="mt-label">
               <i className="split-key d" aria-hidden="true" />
-              Draw <span className="mt-code">X</span>
+              {tr("draw")} <span className="mt-code">X</span>
             </td>
             <td>{f.draw_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.draw_odds)}</td>
@@ -81,26 +84,26 @@ function ForecastRow({ m }: { m: MatchCard }) {
           <tr className="mt-group-end">
             <td className="mt-label">
               <i className="split-key b" aria-hidden="true" />
-              {m.away} win <span className="mt-code">2</span>
+              {m.away} {tr("win")} <span className="mt-code">2</span>
             </td>
             <td>{f.away_win_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.away_odds)}</td>
             {mk && <td className="mt-book">{mk.away_odds.toFixed(2)}</td>}
           </tr>
           <tr>
-            <td className="mt-label">Over 2.5 goals</td>
+            <td className="mt-label">{tr("over25")}</td>
             <td>{f.over25_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.over25_odds)}</td>
             {mk && <td />}
           </tr>
           <tr>
-            <td className="mt-label">Under 2.5 goals</td>
+            <td className="mt-label">{tr("under25")}</td>
             <td>{(100 - f.over25_pct).toFixed(1)}%</td>
             <td>{fmtOdds(f.under25_odds)}</td>
             {mk && <td />}
           </tr>
           <tr>
-            <td className="mt-label">Both teams score</td>
+            <td className="mt-label">{tr("btts")}</td>
             <td>{f.btts_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.btts_odds)}</td>
             {mk && <td />}
@@ -109,16 +112,16 @@ function ForecastRow({ m }: { m: MatchCard }) {
       </table>
       {mk && (
         <div className="edge-line">
-          <span className="edge-label">vs bookmaker</span>
+          <span className="edge-label">{tr("vsBookmaker")}</span>
           <span className={`edge-val${mk.edge_pct >= 0 ? " edge-up" : " edge-down"}`}>
             {mk.edge_pct >= 0 ? "+" : ""}
-            {mk.edge_pct.toFixed(1)} pts on {mk.edge_outcome}
+            {mk.edge_pct.toFixed(1)} {tr("ptsOn")} {mk.edge_outcome}
           </span>
-          <span className="edge-margin">book margin {((mk.overround - 1) * 100).toFixed(1)}%</span>
+          <span className="edge-margin">{tr("bookMargin")} {((mk.overround - 1) * 100).toFixed(1)}%</span>
         </div>
       )}
       <div className="score-chips">
-        <span className="score-chips-label">Most likely scores</span>
+        <span className="score-chips-label">{tr("mostLikelyScores")}</span>
         {f.likely_scores.map((sc) => (
           <span key={`${sc.home}-${sc.away}`} className="score-chip">
             {sc.home}–{sc.away} <em>{sc.pct.toFixed(1)}%</em>
@@ -132,14 +135,16 @@ function ForecastRow({ m }: { m: MatchCard }) {
 /** Played fixtures collapse into one compact block — a result is a fact,
  *  not a forecast, and should not compete with the priced cards. */
 function PlayedBlock({ matches }: { matches: MatchCard[] }) {
+  const tr = useT();
+  const locale = useLocale();
   if (matches.length === 0) return null;
   return (
     <div className="ft-block">
-      <span className="ft-block-label">Final scores</span>
+      <span className="ft-block-label">{tr("finalScores")}</span>
       <div className="ft-rows">
         {matches.map((m) => (
           <span key={`${m.home}-${m.away}`} className="ft-row">
-            <span className="ft-date">{fmtDate(m.date)}</span> {m.home}{" "}
+            <span className="ft-date">{fmtDate(m.date, locale)}</span> {m.home}{" "}
             <span className="result-score">
               {m.home_score}–{m.away_score}
             </span>{" "}
@@ -152,6 +157,8 @@ function PlayedBlock({ matches }: { matches: MatchCard[] }) {
 }
 
 export function MatchesView({ data }: { data: MatchesResponse }) {
+  const tr = useT();
+  const locale = useLocale();
   const [round, setRound] = useState(data.current_round);
   const total = data.rounds.length;
   const current = data.rounds.find((r) => r.round === round) ?? data.rounds[0];
@@ -159,15 +166,15 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
   return (
     <section className="panel" aria-label="Match predictions">
       <header className="panel-head">
-        <h2>Match predictions</h2>
-        <span className="eyebrow">{roundSpan(current.matches)}</span>
-        <div className="round-nav" role="group" aria-label="Matchday">
+        <h2>{tr("matchPredictions")}</h2>
+        <span className="eyebrow">{roundSpan(current.matches, locale)}</span>
+        <div className="round-nav" role="group" aria-label={tr("matchday")}>
           <button
             type="button"
             className="btn"
             onClick={() => setRound(Math.max(1, round - 1))}
             disabled={round <= 1}
-            aria-label="Previous matchday"
+            aria-label={tr("prevMatchday")}
           >
             ‹
           </button>
@@ -175,7 +182,7 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
             <select value={round} onChange={(e) => setRound(Number(e.target.value))}>
               {data.rounds.map((r) => (
                 <option key={r.round} value={r.round}>
-                  Matchday {r.round}
+                  {tr("matchday")} {r.round}
                 </option>
               ))}
             </select>
@@ -185,7 +192,7 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
             className="btn"
             onClick={() => setRound(Math.min(total, round + 1))}
             disabled={round >= total}
-            aria-label="Next matchday"
+            aria-label={tr("nextMatchdayAria")}
           >
             ›
           </button>
@@ -193,8 +200,7 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
       </header>
       <div className="panel-body">
         <p className="panel-note">
-          Fair odds are 100 / probability, with no bookmaker margin. Model
-          estimates, not betting advice.
+          {tr("matchesNote")}
         </p>
         <PlayedBlock matches={current.matches.filter((m) => m.played)} />
         <div className="match-list">
