@@ -53,7 +53,20 @@ Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. 
 
 Clubs promoted from the 1. Lig (Amedspor and Çorum for 2026-27) have no top-flight record, so the Dixon–Coles and pi-rating components give them league-average profiles; their Elo rating still distinguishes them.
 
-**Ratings are uncertain, and the simulation says so.** Each simulated season draws every club's true strength once from a normal around its current rating (`RATING_SIGMA`, 45 Elo points), held fixed for that season. Treating ratings as exact makes favourites' odds run hot and the tails too thin; with uncertainty every club keeps a non-zero path and the field's chances widen. The sigma is a stated assumption, not a fitted value — validating it needs many seasons of outcomes rather than per-match calibration.
+**Ratings are uncertain, and the simulation says so.** Each simulated season draws every club's true strength once from a normal around its current rating (`RATING_SIGMA`, 75 Elo points), held fixed for that season. Treating ratings as exact makes favourites' odds run hot and the tails too thin.
+
+The sigma is calibrated, not guessed. The arena replays each held-out season from the model's own match probabilities and compares the spread of the resulting points table with the real one:
+
+| | 2024-25 | 2025-26 |
+|---|---:|---:|
+| Actual champion points | 88 | 69 |
+| Actual points spread (sd) | 16.5 | 13.6 |
+| Model spread, σ=0 | 12.1 | 11.7 |
+| Model spread, σ=75 | ~13.6 | ~13.2 |
+
+Independent match sampling cannot generate season-long dominance; a shared per-season strength draw can, and σ≈75 is where simulated spread meets observed. It costs nothing per match — the analytic fixture probabilities use the point estimate, and per-match calibration is unchanged.
+
+**A known residual:** even at this sigma the model under-produces runaway champions. Galatasaray's 88-point 2024-25 remains a ~2% event, and the model's median champion (70) sits well below the two most recent real ones (95 and 102). Read the title odds as "who is most likely to win", not as a forecast of the winning points total.
 
 **Ratings move with the season.** The Elo component starts from the preseason ClubElo baseline and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 

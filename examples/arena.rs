@@ -15,6 +15,8 @@
 use std::collections::HashMap;
 
 use chrono::{Datelike, NaiveDate};
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
 
 use superlig_sim::dixoncoles::{self, DcParams};
 use superlig_sim::history::{self, HistoricalMatch, TeamIndex};
@@ -401,6 +403,147 @@ fn temper(p: [f64; 3], t: f64) -> [f64; 3] {
     [q[0] / s, q[1] / s, q[2] / s]
 }
 
+// ------------------------------------------------- season-level diagnostics ---
+
+/// Per-match calibration: does a "60% home win" happen 60% of the time?
+/// League-wide log-loss can look healthy while the confident end is badly
+/// priced, because mid-table coin-flips dominate the average.
+fn calibration_by_band(
+    eval: &[HistoricalMatch],
+    mut predict: impl FnMut(&HistoricalMatch) -> [f64; 3],
+) -> Vec<(f64, f64, usize, f64, f64)> {
+    let mut points: Vec<(f64, bool)> = Vec::new();
+    for m in eval {
+        let p = predict(m);
+        let o = outcome(m);
+        for (k, &pk) in p.iter().enumerate() {
+            points.push((pk, k == o));
+        }
+    }
+    let mut out = Vec::new();
+    for band in 0..5 {
+        let (lo, hi) = (band as f64 * 0.2, (band + 1) as f64 * 0.2);
+        let inb: Vec<&(f64, bool)> = points
+            .iter()
+            .filter(|(p, _)| *p >= lo && (*p < hi || (band == 4 && *p <= 1.0)))
+            .collect();
+        if inb.is_empty() {
+            continue;
+        }
+        let n = inb.len() as f64;
+        let said = inb.iter().map(|(p, _)| p).sum::<f64>() / n * 100.0;
+        let happened = inb.iter().filter(|(_, h)| *h).count() as f64 / n * 100.0;
+        out.push((lo * 100.0, hi * 100.0, inb.len(), said, happened));
+    }
+    out
+}
+
+/// Replay a real season many times from the model's own match probabilities
+/// and compare the resulting points table with what actually happened.
+///
+/// This is the test league-wide log-loss cannot make: a model can be well
+/// calibrated per match and still fail to produce the *dominance* real
+/// leagues show, because points totals compound 34 correlated matches.
+/// Natural-log odds shift per Elo point: the classic /400 scale expressed
+/// for `exp` rather than `10^`.
+const LOGIT_PER_ELO: f64 = std::f64::consts::LN_10 / 400.0;
+
+fn season_points_dispersion(
+    eval: &[HistoricalMatch],
+    mut predict: impl FnMut(&HistoricalMatch) -> [f64; 3],
+    trials: usize,
+    // One-sigma uncertainty in a club's true strength, in Elo points, drawn
+    // once per simulated season. 0 reproduces plain independent sampling.
+    rating_sigma: f64,
+) -> (i64, f64, i64, i64, f64, f64) {
+    // Actual table from the real results.
+    let mut actual: HashMap<&str, i64> = HashMap::new();
+    let mut probs: Vec<([f64; 3], &str, &str)> = Vec::new();
+    for m in eval {
+        let p = predict(m);
+        probs.push((p, m.home_team.as_str(), m.away_team.as_str()));
+        let e = actual.entry(m.home_team.as_str()).or_insert(0);
+        match outcome(m) {
+            0 => *e += 3,
+            1 => {
+                *e += 1;
+                *actual.entry(m.away_team.as_str()).or_insert(0) += 1;
+            }
+            _ => {
+                *actual.entry(m.away_team.as_str()).or_insert(0) += 3;
+            }
+        }
+        actual.entry(m.away_team.as_str()).or_insert(0);
+    }
+    let actual_champ = *actual.values().max().unwrap_or(&0);
+    let actual_sd = sd(&actual.values().map(|&v| v as f64).collect::<Vec<_>>());
+
+    let clubs: Vec<&str> = {
+        let mut c: Vec<&str> = actual.keys().copied().collect();
+        c.sort_unstable();
+        c
+    };
+    let normal = rand_distr::Normal::new(0.0, rating_sigma.max(1e-9)).expect("finite sigma");
+
+    let mut rng = SmallRng::seed_from_u64(20260817);
+    let mut champs: Vec<i64> = Vec::with_capacity(trials);
+    let mut sds: Vec<f64> = Vec::with_capacity(trials);
+    for _ in 0..trials {
+        // One draw of what the clubs are really worth, held for the season.
+        let shock: HashMap<&str, f64> = clubs
+            .iter()
+            .map(|&c| {
+                let s = if rating_sigma > 0.0 {
+                    rng.sample(normal)
+                } else {
+                    0.0
+                };
+                (c, s)
+            })
+            .collect();
+
+        let mut pts: HashMap<&str, i64> = HashMap::new();
+        for (p0, h, a) in &probs {
+            pts.entry(h).or_insert(0);
+            pts.entry(a).or_insert(0);
+            // Tilt the tie's odds by the strength gap this season drew,
+            // leaving the draw share alone and renormalizing.
+            let s = (shock[h] - shock[a]) * LOGIT_PER_ELO;
+            let (wh, wa) = (p0[0] * (s / 2.0).exp(), p0[2] * (-s / 2.0).exp());
+            let z = wh + p0[1] + wa;
+            let p = [wh / z, p0[1] / z, wa / z];
+            let u: f64 = rng.gen();
+            if u < p[0] {
+                *pts.get_mut(h).expect("inserted") += 3;
+            } else if u < p[0] + p[1] {
+                *pts.get_mut(h).expect("inserted") += 1;
+                *pts.get_mut(a).expect("inserted") += 1;
+            } else {
+                *pts.get_mut(a).expect("inserted") += 3;
+            }
+        }
+        champs.push(*pts.values().max().unwrap_or(&0));
+        sds.push(sd(&pts.values().map(|&v| v as f64).collect::<Vec<_>>()));
+    }
+    champs.sort_unstable();
+    let q = |v: &[i64], f: f64| v[(((v.len() - 1) as f64) * f).round() as usize];
+    let mean_sd = sds.iter().sum::<f64>() / sds.len() as f64;
+    (
+        actual_champ,
+        actual_sd,
+        q(&champs, 0.5),
+        q(&champs, 0.9),
+        mean_sd,
+        champs.iter().filter(|&&c| c >= actual_champ).count() as f64 / trials as f64 * 100.0,
+    )
+}
+
+fn sd(v: &[f64]) -> f64 {
+    let n = v.len() as f64;
+    let mean = v.iter().sum::<f64>() / n;
+    (v.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / n).sqrt()
+}
+
 // ----------------------------------------------------------------- arena ---
 
 fn main() {
@@ -569,6 +712,46 @@ fn main() {
             ),
         ]
     }
+
+    // --- season-level diagnostics -----------------------------------------
+    println!("=== does the model reproduce real dominance? ===");
+    println!(
+        "{:<14} {:>10} {:>10} {:>10} {:>9} {:>9} {:>9}",
+        "season", "champ pts", "model p50", "model p90", "P(>=act)", "actual sd", "model sd"
+    );
+    for (split, fitted) in [(&val, &fv), (&test, &ft)] {
+        for sigma in [0.0, 30.0, 45.0, 60.0, 80.0, 100.0] {
+            let (act, act_sd, p50, p90, model_sd, pct_ge) = season_points_dispersion(
+                &split.eval,
+                |m| fitted.blend_probs(m, 0.5, 0.3, 0.2, elo_cfg),
+                4000,
+                sigma,
+            );
+            println!(
+                "{:<14} {:>10} {:>10} {:>10} {:>8.1}% {:>9.1} {:>9.1}   sigma={sigma:.0}",
+                split.name, act, p50, p90, pct_ge, act_sd, model_sd
+            );
+        }
+    }
+    println!();
+
+    println!("=== per-match calibration, test season (production blend) ===");
+    println!(
+        "{:<12} {:>7} {:>10} {:>12}",
+        "band", "n", "said", "happened"
+    );
+    for (lo, hi, n, said, happened) in
+        calibration_by_band(&test.eval, |m| ft.blend_probs(m, 0.5, 0.3, 0.2, elo_cfg))
+    {
+        println!(
+            "{:<12} {:>7} {:>9.1}% {:>11.1}%",
+            format!("{lo:.0}-{hi:.0}%"),
+            n,
+            said,
+            happened
+        );
+    }
+    println!();
 
     for (split, fitted, stack) in [(&val, &fv, &stack_v), (&test, &ft, &stack_t)] {
         println!("=== {} ({} matches) ===", split.name, split.eval.len());

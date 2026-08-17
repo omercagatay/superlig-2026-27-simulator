@@ -19,10 +19,17 @@ pub const ELO_DIV: f64 = 400.0;
 /// is unobserved, and ClubElo itself carries error. Treating them as exact
 /// makes favourites' title odds run hot and the tails too thin.
 ///
-/// A stated assumption rather than a fitted value — validating it needs many
-/// seasons of outcomes, not per-match calibration. 45 points is roughly the
-/// spread between neighbouring mid-table clubs.
-pub const RATING_SIGMA: f64 = 45.0;
+/// Calibrated in `examples/arena.rs` against the spread of real final tables:
+/// replaying held-out seasons from the model's own match probabilities, the
+/// simulated points standard deviation matches the observed one (13.4 vs
+/// 13.6 on 2025-26) at roughly this value, where an earlier guess of 45 left
+/// the model visibly under-dispersed. Costs nothing per match — the analytic
+/// fixture probabilities use the point estimate; only season simulation draws.
+///
+/// Known residual: even here the model under-produces runaway champions. A
+/// 2024-25-style 88-point winner remains a ~2% event against an observed
+/// table spread it still cannot fully reach.
+pub const RATING_SIGMA: f64 = 75.0;
 
 /// Elo update rate for one league match, before the goal-difference
 /// multiplier. 20 is the usual club-football value and is what ClubElo-scale

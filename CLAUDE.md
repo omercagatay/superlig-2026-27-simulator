@@ -125,6 +125,12 @@ Nesine's public pre-match bulletin (`cdnbulten.nesine.com`, league code 584 = S�
 
 Every failure degrades to "no market data" rather than an error: a failed fetch keeps the previous snapshot, and an unmapped club name drops that fixture. Bookmaker club names carry shifting corporate suffixes, so `canonical_club` compares on an ASCII-folded, suffix-stripped form and refuses ambiguous matches — attaching real prices to the wrong fixture is worse than showing none.
 
+### Season dispersion (`examples/arena.rs`)
+
+The arena also answers a question per-match log-loss cannot: replaying a held-out season from the model's own probabilities, does the simulated points table spread as wide as the real one? With independent sampling it does not (sd 12 vs 13.6-16.5 observed) — 34 matches of independent coin flips cannot produce a runaway champion. `data::RATING_SIGMA` (a per-season shared strength draw, applied in `simulate_one`) is calibrated against that comparison; the arena prints a sigma scan. It is deliberately free per match: `fixture_probs` uses the point estimate, so per-match calibration is untouched.
+
+Residual known limitation: even at the calibrated sigma, an 88-point champion is a ~2% event. Do not read the title odds as a prediction of the winning points total.
+
 ### Calibration (`tests/calibration.rs`)
 
 ClubElo's scale is compressed relative to international Elo, so `BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. Current fit: 45.4% home wins (empirical 45.4%), 23.7% draws (empirical 25.6%).
