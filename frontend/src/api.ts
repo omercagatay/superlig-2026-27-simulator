@@ -204,3 +204,40 @@ export async function getUpcoming(): Promise<UpcomingResponse> {
   if (!resp.ok) throw new Error(await resp.text());
   return resp.json();
 }
+
+export interface ScoredMatch {
+  round: number;
+  date: string;
+  home: string;
+  away: string;
+  home_score: number;
+  away_score: number;
+  /** Probability the model gave the outcome that actually happened. */
+  outcome_pct: number;
+  outcome: string;
+  hit: boolean;
+}
+
+export interface CalibrationBucket {
+  band_from_pct: number;
+  band_to_pct: number;
+  predictions: number;
+  mean_predicted_pct: number;
+  actual_pct: number;
+}
+
+export interface AccuracyReport {
+  scored: number;
+  hit_rate_pct: number;
+  log_loss: number;
+  baseline_log_loss: number;
+  calibration: CalibrationBucket[];
+  matches: ScoredMatch[];
+}
+
+/** How the model has done against predictions frozen before kick-off. */
+export async function getAccuracy(): Promise<AccuracyReport> {
+  const resp = await fetch(`${API_BASE}/api/accuracy`);
+  if (!resp.ok) throw new Error(await resp.text());
+  return resp.json();
+}

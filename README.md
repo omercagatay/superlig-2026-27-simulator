@@ -182,6 +182,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `/api/scenario` | `POST` | 10/min | Analyze a prompt with Kimi and rerun with its Elo overrides. |
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
+| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest, plus bookmaker prices and the model-vs-market gap where available. |
 

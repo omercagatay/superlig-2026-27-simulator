@@ -26,19 +26,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Strength-model ensemble: "elo,dc,pi" weights, e.g. "0.5,0.3,0.2".
     // "1,0,0" (or a failed build) falls back to pure Elo.
-    let weights_raw =
-        std::env::var("ENSEMBLE_WEIGHTS").unwrap_or_else(|_| "0.5,0.3,0.2".to_string());
-    let weights: Vec<f64> = weights_raw
-        .split(',')
-        .filter_map(|w| w.trim().parse().ok())
-        .collect();
-    let (w_elo, w_dc, w_pi) = match weights.as_slice() {
-        [e, d, p] if *e >= 0.0 && *d >= 0.0 && *p >= 0.0 && e + d + p > 0.0 => (*e, *d, *p),
-        _ => {
-            tracing::warn!("Invalid ENSEMBLE_WEIGHTS {weights_raw:?}, using 0.5,0.3,0.2");
-            (0.5, 0.3, 0.2)
-        }
-    };
+    let (w_elo, w_dc, w_pi) = superlig_sim::ensemble_weights();
     if w_dc + w_pi > 0.0 {
         match superlig_sim::sim::Ensemble::from_embedded_data(w_elo, w_dc, w_pi) {
             Ok(ens) => {
@@ -121,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
             Router::new()
                 .route("/api/upcoming", get(handlers::upcoming))
                 .route("/api/matches", get(handlers::matches))
+                .route("/api/accuracy", get(handlers::accuracy))
                 .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
         )
         .merge(

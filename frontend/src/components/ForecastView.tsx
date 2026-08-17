@@ -1,6 +1,7 @@
-import type { SimResponse, LiveData, MatchesResponse } from "../api";
+import type { SimResponse, LiveData, MatchesResponse, AccuracyReport } from "../api";
 import { ResultsTable } from "./ResultsTable";
 import { MatchesView } from "./MatchesView";
+import { AccuracyPanel } from "./AccuracyPanel";
 
 const TOTAL_FIXTURES = 306;
 
@@ -8,12 +9,14 @@ export function ForecastView({
   data,
   liveData,
   matchesData,
+  accuracy,
   liveMatchCount,
   onShowLive,
 }: {
   data: SimResponse;
   liveData: LiveData | null;
   matchesData: MatchesResponse | null;
+  accuracy: AccuracyReport | null;
   liveMatchCount: number;
   onShowLive: () => void;
 }) {
@@ -98,6 +101,8 @@ export function ForecastView({
               </div>
             ))}
           </section>
+
+          {accuracy && <AccuracyPanel report={accuracy} />}
 
           {data.rivalries.length > 0 && (
             <section className="panel" aria-label="Head-to-head finishing order">

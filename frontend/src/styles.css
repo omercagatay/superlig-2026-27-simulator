@@ -1641,3 +1641,53 @@ button {
   font-style: normal;
   color: var(--ink-3);
 }
+
+/* ---- Forecast accuracy -------------------------------------------------- */
+
+.calib {
+  padding: 0.7rem 1.1rem 0.9rem;
+  border-top: 1px solid var(--chalk);
+}
+
+.calib-row {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  font-family: var(--data);
+  font-size: 0.7rem;
+  color: var(--ink-3);
+}
+
+.calib-band {
+  white-space: nowrap;
+}
+
+/* Two stacked bars: what the model said, and what actually happened. */
+.calib-bar {
+  display: block;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--pitch-3);
+  overflow: hidden;
+}
+
+.calib-pred,
+.calib-act {
+  display: block;
+  height: 5px;
+}
+
+.calib-pred {
+  background: var(--ink-3);
+}
+
+.calib-act {
+  background: var(--turf);
+}
+
+.calib-val {
+  grid-column: 2;
+  color: var(--ink-3);
+}

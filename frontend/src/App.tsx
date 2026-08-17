@@ -4,9 +4,11 @@ import {
   refreshLiveData,
   getLiveData,
   getMatches,
+  getAccuracy,
   type SimResponse,
   type LiveData,
   type MatchesResponse,
+  type AccuracyReport,
 } from "./api";
 import { ForecastView } from "./components/ForecastView";
 import { LeagueTable } from "./components/LeagueTable";
@@ -62,6 +64,7 @@ export default function App() {
   const [nSims, setNSims] = useState(50000);
   const [seed, setSeed] = useState(12345);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
+  const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
@@ -105,6 +108,11 @@ export default function App() {
       .then(setMatchesData)
       .catch(() => {
         /* per-match forecasts are optional decoration */
+      });
+    getAccuracy()
+      .then(setAccuracy)
+      .catch(() => {
+        /* the accuracy tracker is optional decoration */
       });
     void handleSimulate();
   }, [handleSimulate]);
@@ -252,6 +260,7 @@ export default function App() {
             data={data}
             liveData={liveData}
             matchesData={matchesData}
+            accuracy={accuracy}
             liveMatchCount={liveMatchCount}
             onShowLive={() => setActiveView("live")}
           />

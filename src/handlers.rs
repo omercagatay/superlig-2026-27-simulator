@@ -195,6 +195,22 @@ pub async fn matches(
     Ok(Json(resp))
 }
 
+/// How the model has actually done against its own frozen predictions.
+pub async fn accuracy(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<crate::accuracy::AccuracyReport>, (StatusCode, String)> {
+    let world = state.world.read().await.clone();
+    let report = tokio::task::spawn_blocking(move || crate::accuracy::report(&world))
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Accuracy report failed: {e}"),
+            )
+        })?;
+    Ok(Json(report))
+}
+
 pub async fn health(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let live_fetched_at = state
         .live_data
