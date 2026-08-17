@@ -1,7 +1,9 @@
+import { useState } from "react";
 import type { SimResponse, LiveData, MatchesResponse, AccuracyReport } from "../api";
 import { ResultsTable } from "./ResultsTable";
 import { MatchesView } from "./MatchesView";
 import { AccuracyPanel } from "./AccuracyPanel";
+import { ClubDetail } from "./ClubDetail";
 
 const TOTAL_FIXTURES = 306;
 
@@ -20,6 +22,8 @@ export function ForecastView({
   liveMatchCount: number;
   onShowLive: () => void;
 }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedTeam = data.teams.find((t) => t.team === selected);
   const contenders = data.teams.filter((t) => t.title_pct > 0).slice(0, 6);
   const maxTitle = contenders[0]?.title_pct ?? 1;
   const favorite = data.teams[0];
@@ -72,7 +76,12 @@ export function ForecastView({
 
       <div className="forecast-grid">
         <div className="forecast-main">
-          <ResultsTable teams={data.teams} nSims={data.n_sims} seed={data.seed} />
+          <ResultsTable
+            teams={data.teams}
+            nSims={data.n_sims}
+            seed={data.seed}
+            onSelect={setSelected}
+          />
         </div>
 
         <aside className="rail">
@@ -128,6 +137,15 @@ export function ForecastView({
       </div>
 
       {matchesData && <MatchesView data={matchesData} />}
+
+      {selectedTeam && (
+        <ClubDetail
+          team={selectedTeam}
+          position={data.positions.find((p) => p.team === selectedTeam.team)}
+          matches={matchesData}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }

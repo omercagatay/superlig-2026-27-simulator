@@ -26,10 +26,12 @@ export function ResultsTable({
   teams,
   nSims,
   seed,
+  onSelect,
 }: {
   teams: TeamRow[];
   nSims: number;
   seed: number;
+  onSelect: (team: string) => void;
 }) {
   const maxTitle = Math.max(...teams.map((t) => t.title_pct), 0.001);
 
@@ -37,6 +39,7 @@ export function ResultsTable({
     <section className="panel table-panel" aria-label="Season outcome probabilities">
       <header className="panel-head">
         <h2>Season outcomes</h2>
+        <span className="eyebrow">Click a club</span>
         <span className="eyebrow">
           {nSims.toLocaleString()} seasons · seed {seed}
         </span>
@@ -60,7 +63,20 @@ export function ResultsTable({
           </thead>
           <tbody>
             {teams.map((t, i) => (
-              <tr key={t.team}>
+              <tr
+                key={t.team}
+                className="row-clickable"
+                tabIndex={0}
+                role="button"
+                aria-label={`${t.team} detail`}
+                onClick={() => onSelect(t.team)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(t.team);
+                  }
+                }}
+              >
                 <td className="cell-rank">{i + 1}</td>
                 <td className="cell-team">{t.team}</td>
                 <td className="cell-title">
