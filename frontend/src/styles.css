@@ -1805,3 +1805,44 @@ button {
 .form-chip.form-W { box-shadow: inset 2px 0 0 var(--turf); }
 .form-chip.form-D { box-shadow: inset 2px 0 0 var(--ink-3); }
 .form-chip.form-L { box-shadow: inset 2px 0 0 var(--danger); }
+
+/* ---- Races -------------------------------------------------------------- */
+
+.races {
+  display: grid;
+  gap: 1rem;
+}
+
+.race-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Inline meter inside a race row, between club name and percentage. */
+.race-mini {
+  display: block;
+  height: 5px;
+  min-width: 60px;
+  border-radius: 3px;
+  background: var(--pitch-3);
+  overflow: hidden;
+}
+
+.race-mini-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.tone-turf { background: var(--turf); }
+.tone-sky { background: var(--sky); }
+.tone-danger { background: var(--danger); }
+
+.races .finals-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem 3.4rem;
+  align-items: center;
+  gap: 0.6rem;
+}

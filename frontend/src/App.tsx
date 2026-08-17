@@ -13,9 +13,10 @@ import {
 import { ForecastView } from "./components/ForecastView";
 import { LeagueTable } from "./components/LeagueTable";
 import { PositionGrid } from "./components/PositionGrid";
+import { RacesView } from "./components/RacesView";
 import { LiveStats } from "./components/LiveStats";
 
-type DashboardView = "forecast" | "positions" | "table" | "live";
+type DashboardView = "forecast" | "positions" | "races" | "table" | "live";
 
 type Theme = "dark" | "light";
 
@@ -148,6 +149,7 @@ export default function App() {
   const tabs: { id: DashboardView; label: string; disabled: boolean; count?: number }[] = [
     { id: "forecast", label: "Forecast", disabled: !data },
     { id: "positions", label: "Positions", disabled: !data },
+    { id: "races", label: "Races", disabled: !data },
     { id: "table", label: "Table", disabled: !data },
     { id: "live", label: "Live", disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
@@ -267,6 +269,10 @@ export default function App() {
         )}
 
         {data && activeView === "positions" && <PositionGrid positions={data.positions} />}
+
+        {data && activeView === "races" && (
+          <RacesView teams={data.teams} thresholds={data.thresholds} />
+        )}
 
         {data && activeView === "table" && <LeagueTable table={data.table} />}
 

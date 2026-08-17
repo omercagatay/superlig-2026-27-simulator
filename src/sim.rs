@@ -153,6 +153,10 @@ pub struct SimResults {
     pub ga_sum: Vec<f64>,
     /// `pairwise_above[a * n + b]` = trials where `a` finished above `b`.
     pub pairwise_above: Vec<usize>,
+    /// Per-trial points of the club that finished in each position, so the
+    /// league's own cut lines can be read off ("how many points has actually
+    /// been enough for the top two?"). Indexed by position, 0 = champion.
+    pub cutoff_points: Vec<Vec<i64>>,
     pub representative: SeasonResult,
 }
 
@@ -504,11 +508,13 @@ impl World {
         let mut gf_sum = vec![0.0f64; n];
         let mut ga_sum = vec![0.0f64; n];
         let mut pairwise_above = vec![0usize; n * n];
+        let mut cutoff_points: Vec<Vec<i64>> = vec![Vec::with_capacity(n_sims); n];
 
         let relegation_from = n - data::RELEGATION_SPOTS;
         for s in &seasons {
             for (pos, &club) in s.order.iter().enumerate() {
                 position_counts[club][pos] += 1;
+                cutoff_points[pos].push(s.records[club].points);
                 if pos == 0 {
                     title_counts[club] += 1;
                 }
@@ -577,6 +583,7 @@ impl World {
             gf_sum,
             ga_sum,
             pairwise_above,
+            cutoff_points,
             representative,
         }
     }

@@ -39,6 +39,15 @@ export interface RivalryPair {
   count: number;
 }
 
+export interface RaceThreshold {
+  position: number;
+  label: string;
+  /** Points that took the place in 50 / 75 / 90% of simulated seasons. */
+  p50: number;
+  p75: number;
+  p90: number;
+}
+
 export interface SimResponse {
   n_sims: number;
   seed: number;
@@ -47,6 +56,7 @@ export interface SimResponse {
   table: TableRow[];
   rivalries: RivalryPair[];
   consensus_champion: string;
+  thresholds: RaceThreshold[];
   elo_overrides: Record<string, number>;
   scenario_applied: string | null;
 }

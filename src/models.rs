@@ -273,6 +273,19 @@ pub fn build_matches_response(
     }
 }
 
+/// What a points total has actually been worth: the distribution of the
+/// points held by the club finishing in a given position. Read as "reach this
+/// many points and you'd have taken this place in N% of simulated seasons".
+#[derive(Serialize, Clone, Debug)]
+pub struct RaceThreshold {
+    pub position: usize,
+    pub label: String,
+    /// Points that took the place in 50 / 75 / 90% of seasons.
+    pub p50: i64,
+    pub p75: i64,
+    pub p90: i64,
+}
+
 #[derive(Serialize, Clone)]
 pub struct SimResponse {
     pub n_sims: usize,
@@ -282,6 +295,7 @@ pub struct SimResponse {
     pub table: Vec<TableRow>,
     pub rivalries: Vec<RivalryPair>,
     pub consensus_champion: String,
+    pub thresholds: Vec<RaceThreshold>,
     pub elo_overrides: HashMap<String, f64>,
     pub scenario_applied: Option<String>,
 }
@@ -422,6 +436,34 @@ pub fn build_response(
     });
     rivalries.truncate(8);
 
+    // The league's own cut lines: champion, last Champions League place, last
+    // European place, and the last safe spot.
+    let last_safe = n_teams - crate::data::RELEGATION_SPOTS;
+    let marks: [(usize, &str); 4] = [
+        (1, "Champion"),
+        (crate::data::UCL_SPOTS, "Last Champions League place"),
+        (crate::data::EUROPE_SPOTS, "Last European place"),
+        (last_safe, "Last safe place"),
+    ];
+    let thresholds: Vec<RaceThreshold> = marks
+        .iter()
+        .filter_map(|&(position, label)| {
+            let mut pts = results.cutoff_points.get(position - 1)?.clone();
+            if pts.is_empty() {
+                return None;
+            }
+            pts.sort_unstable();
+            let at = |q: f64| pts[(((pts.len() - 1) as f64) * q).round() as usize];
+            Some(RaceThreshold {
+                position,
+                label: label.to_string(),
+                p50: at(0.5),
+                p75: at(0.75),
+                p90: at(0.9),
+            })
+        })
+        .collect();
+
     SimResponse {
         n_sims: results.n_sims,
         seed: config.seed,
@@ -431,6 +473,7 @@ pub fn build_response(
         rivalries,
         // The modal champion across all trials, not whoever happened to win
         // the sampled season.
+        thresholds,
         consensus_champion: {
             let champ = (0..n_teams)
                 .max_by_key(|&i| results.title_counts[i])
@@ -516,6 +559,23 @@ mod tests {
 
         // Champion = modal champion = the top row of the odds table.
         assert_eq!(resp.consensus_champion, resp.teams[0].team);
+
+        // Cut lines must be ordered by position and by demand: taking a
+        // higher place needs more points, and being surer needs more still.
+        assert_eq!(resp.thresholds.len(), 4);
+        for t in &resp.thresholds {
+            assert!(t.p50 <= t.p75 && t.p75 <= t.p90, "{}: {t:?}", t.label);
+            assert!((0..=102).contains(&t.p90));
+        }
+        for pair in resp.thresholds.windows(2) {
+            assert!(pair[0].position < pair[1].position);
+            assert!(
+                pair[0].p50 >= pair[1].p50,
+                "{} should need at least as many points as {}",
+                pair[0].label,
+                pair[1].label
+            );
+        }
     }
 
     #[test]
