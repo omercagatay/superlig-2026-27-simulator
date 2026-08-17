@@ -1569,6 +1569,45 @@ button {
   margin-right: 0.15rem;
 }
 
+/* Model-vs-market line: the most informative row on the card. */
+.edge-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--chalk);
+  font-family: var(--data);
+  font-size: 0.72rem;
+}
+
+.edge-label {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.edge-val.edge-up {
+  color: var(--turf);
+}
+
+.edge-val.edge-down {
+  color: var(--sky);
+}
+
+.edge-margin {
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+.market-table .mt-book {
+  color: var(--ink-3);
+}
+
 .score-chips {
   display: flex;
   flex-wrap: wrap;

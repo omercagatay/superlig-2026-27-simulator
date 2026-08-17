@@ -114,6 +114,26 @@ pub struct MatchForecast {
     pub likely_scores: Vec<LikelyScore>,
 }
 
+/// Bookmaker prices beside the model's, plus the gap between them. The model
+/// does not see these — they are shown so a reader can judge it.
+#[derive(Serialize, Clone)]
+pub struct MarketComparison {
+    pub home_odds: f64,
+    pub draw_odds: f64,
+    pub away_odds: f64,
+    /// Margin-free implied probabilities, comparable to the model's.
+    pub home_pct: f64,
+    pub draw_pct: f64,
+    pub away_pct: f64,
+    /// The book's overround: 1.10 means 10% margin baked into the prices.
+    pub overround: f64,
+    /// Largest model-minus-market probability gap, in points, and which
+    /// outcome it falls on ("1", "X" or "2"). Positive means the model rates
+    /// that outcome higher than the market does.
+    pub edge_pct: f64,
+    pub edge_outcome: String,
+}
+
 #[derive(Serialize, Clone)]
 pub struct LikelyScore {
     pub home: u8,
@@ -136,6 +156,7 @@ pub struct MatchCard {
     pub home_score: Option<u16>,
     pub away_score: Option<u16>,
     pub forecast: Option<MatchForecast>,
+    pub market: Option<MarketComparison>,
 }
 
 #[derive(Serialize, Clone)]
@@ -151,7 +172,10 @@ pub struct MatchesResponse {
     pub current_round: u8,
 }
 
-pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
+pub fn build_matches_response(
+    world: &crate::sim::World,
+    market: Option<&crate::market::MarketSnapshot>,
+) -> MatchesResponse {
     let odds = crate::odds::decimal_odds_from_pct;
     let mut rounds: Vec<RoundMatches> = Vec::new();
     for (i, f) in world.fixtures.iter().enumerate() {
@@ -162,6 +186,8 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
             });
         }
         let played = world.played.get(&(f.home, f.away)).copied();
+        let home_name = world.teams[f.home].as_str();
+        let away_name = world.teams[f.away].as_str();
         let forecast = if played.is_some() {
             None
         } else {
@@ -192,6 +218,34 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
                     .collect(),
             })
         };
+        // Only price unplayed fixtures: a settled match has no market.
+        let market_cmp = match (&forecast, market.and_then(|m| m.get(home_name, away_name))) {
+            (Some(f), Some(p)) => {
+                let (mh, md, ma) = p.implied_pct();
+                let gaps = [
+                    (f.home_win_pct - mh, "1"),
+                    (f.draw_pct - md, "X"),
+                    (f.away_win_pct - ma, "2"),
+                ];
+                let (edge_pct, edge_outcome) = gaps
+                    .iter()
+                    .max_by(|a, b| a.0.abs().partial_cmp(&b.0.abs()).unwrap())
+                    .map(|&(g, o)| (g, o.to_string()))
+                    .expect("three outcomes");
+                Some(MarketComparison {
+                    home_odds: p.home_odds,
+                    draw_odds: p.draw_odds,
+                    away_odds: p.away_odds,
+                    home_pct: mh,
+                    draw_pct: md,
+                    away_pct: ma,
+                    overround: p.overround(),
+                    edge_pct,
+                    edge_outcome,
+                })
+            }
+            _ => None,
+        };
         rounds
             .last_mut()
             .expect("round pushed above")
@@ -205,6 +259,7 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
                 home_score: played.map(|(h, _)| h),
                 away_score: played.map(|(_, a)| a),
                 forecast,
+                market: market_cmp,
             });
     }
     let current_round = rounds
@@ -466,7 +521,7 @@ mod tests {
     #[test]
     fn matches_response_covers_the_whole_calendar() {
         let w = World::new();
-        let resp = build_matches_response(&w);
+        let resp = build_matches_response(&w, None);
 
         assert_eq!(resp.rounds.len(), crate::data::N_ROUNDS);
         let total: usize = resp.rounds.iter().map(|r| r.matches.len()).sum();

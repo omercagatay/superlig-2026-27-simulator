@@ -112,6 +112,12 @@ Elo overrides from scenarios act through the Elo component only. `GET /api/healt
 
 The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. ML has been tried and lost: a walk-forward logistic stacker (in the arena, `logit-stack`) and sklearn GBM/RF/MLP (side experiment, `ARENA_DUMP_DIR=<dir>` dumps the feature CSV) all scored behind the ensemble on the 2025-26 test season — results-only features don't give ML room to win here. The arena's Elo is self-computed from the match history (ClubElo snapshots are unreachable), so its Elo component is the same family as production's, not identical ratings.
 
+### Market odds (`src/market.rs`)
+
+Nesine's public pre-match bulletin (`cdnbulten.nesine.com`, league code 584 = Süper Lig, market type 1 = 1X2) is fetched on the same timer as the TFF scrape and cached in `AppState.market`. It is **comparison only** — nothing from it feeds the simulation, and `/api/matches` reports the model-minus-market probability gap per fixture.
+
+Every failure degrades to "no market data" rather than an error: a failed fetch keeps the previous snapshot, and an unmapped club name drops that fixture. Bookmaker club names carry shifting corporate suffixes, so `canonical_club` compares on an ASCII-folded, suffix-stripped form and refuses ambiguous matches — attaching real prices to the wrong fixture is worse than showing none.
+
 ### Calibration (`tests/calibration.rs`)
 
 ClubElo's scale is compressed relative to international Elo, so `BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. Current fit: 45.4% home wins (empirical 45.4%), 23.7% draws (empirical 25.6%).

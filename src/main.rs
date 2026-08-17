@@ -66,6 +66,7 @@ async fn main() -> anyhow::Result<()> {
         world: Arc::new(RwLock::new(world)),
         kimi_api_key,
         live_data: Arc::new(RwLock::new(None)),
+        market: Arc::new(RwLock::new(None)),
     });
 
     // Keep the simulation current with the real tournament: refresh live

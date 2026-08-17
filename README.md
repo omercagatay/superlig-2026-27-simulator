@@ -27,6 +27,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 | Simulation | Rayon, Rand, Dixon–Coles, pi-ratings, Elo/Poisson |
 | Frontend | React 18, TypeScript, Vite |
 | Live data | Türkiye Futbol Federasyonu (tff.org) fixture page |
+| Market odds | Nesine pre-match bulletin (comparison only, never a model input) |
 | Historical data | English Wikipedia season pages, 2012-13 to 2025-26 |
 | Scenario analysis | Kimi via the Moonshot API |
 | Deployment | Multi-stage Docker image; Railway-compatible |
@@ -182,7 +183,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
-| `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
+| `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest, plus bookmaker prices and the model-vs-market gap where available. |
 
 Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000 (the ClubElo club scale is compressed relative to international Elo), and request bodies are limited to 1 MiB.
 

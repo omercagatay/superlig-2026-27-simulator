@@ -4,6 +4,7 @@ pub mod handlers;
 pub mod history;
 pub mod league;
 pub mod llm;
+pub mod market;
 pub mod models;
 pub mod odds;
 pub mod piratings;

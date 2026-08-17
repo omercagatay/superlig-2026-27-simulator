@@ -151,6 +151,21 @@ export interface LikelyScore {
   pct: number;
 }
 
+export interface MarketComparison {
+  home_odds: number;
+  draw_odds: number;
+  away_odds: number;
+  /** Margin-free implied probabilities, comparable to the model's. */
+  home_pct: number;
+  draw_pct: number;
+  away_pct: number;
+  /** The book's overround: 1.10 means a 10% margin. */
+  overround: number;
+  /** Largest model-minus-market probability gap, in points. */
+  edge_pct: number;
+  edge_outcome: string;
+}
+
 export interface MatchCard {
   home: string;
   away: string;
@@ -162,6 +177,7 @@ export interface MatchCard {
   home_score: number | null;
   away_score: number | null;
   forecast: MatchForecast | null;
+  market: MarketComparison | null;
 }
 
 export interface RoundMatches {
