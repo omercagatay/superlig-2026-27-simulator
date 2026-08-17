@@ -52,6 +52,8 @@ Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. 
 
 Clubs promoted from the 1. Lig (Amedspor and Çorum for 2026-27) have no top-flight record, so the Dixon–Coles and pi-rating components give them league-average profiles; their Elo rating still distinguishes them.
 
+**Ratings are uncertain, and the simulation says so.** Each simulated season draws every club's true strength once from a normal around its current rating (`RATING_SIGMA`, 45 Elo points), held fixed for that season. Treating ratings as exact makes favourites' odds run hot and the tails too thin; with uncertainty every club keeps a non-zero path and the field's chances widen. The sigma is a stated assumption, not a fitted value — validating it needs many seasons of outcomes rather than per-match calibration.
+
 **Ratings move with the season.** The Elo component starts from the preseason ClubElo baseline and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 
 Manual overrides and Kimi scenarios update the Elo component. The embedded Dixon–Coles and pi-rating parameters stay unchanged until the historical models are explicitly refitted.

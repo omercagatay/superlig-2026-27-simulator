@@ -14,6 +14,16 @@ pub const HOME_ADV: f64 = 80.0;
 /// Distinct from `D_DIV`, which maps a rating gap to a *scoring-rate* ratio.
 pub const ELO_DIV: f64 = 400.0;
 
+/// One-sigma uncertainty in a club's true strength, in Elo points, resampled
+/// per simulated season. Ratings are estimates, not facts: squads change, form
+/// is unobserved, and ClubElo itself carries error. Treating them as exact
+/// makes favourites' title odds run hot and the tails too thin.
+///
+/// A stated assumption rather than a fitted value — validating it needs many
+/// seasons of outcomes, not per-match calibration. 45 points is roughly the
+/// spread between neighbouring mid-table clubs.
+pub const RATING_SIGMA: f64 = 45.0;
+
 /// Elo update rate for one league match, before the goal-difference
 /// multiplier. 20 is the usual club-football value and is what ClubElo-scale
 /// ratings expect; larger values chase form, smaller ones ignore it.

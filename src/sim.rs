@@ -302,7 +302,13 @@ impl World {
     /// Expected goals `(λ_home, λ_away)` for a fixture. The home-ground
     /// boost goes to `home`, not to a per-team host flag.
     fn lam_pair(&self, home: usize, away: usize) -> (f64, f64) {
-        let dr = self.elo[home] - self.elo[away] + data::HOME_ADV;
+        self.lam_pair_with(&self.elo, home, away)
+    }
+
+    /// As `lam_pair`, but against a supplied rating vector — used by
+    /// `simulate_one`, which draws a season's ratings from their uncertainty.
+    fn lam_pair_with(&self, elo: &[f64], home: usize, away: usize) -> (f64, f64) {
+        let dr = elo[home] - elo[away] + data::HOME_ADV;
         let lh_elo = data::BASE * (10.0_f64).powf(dr / data::D_DIV);
         let la_elo = data::BASE * (10.0_f64).powf(-dr / data::D_DIV);
 
@@ -437,6 +443,21 @@ impl World {
 
     pub fn simulate_one(&self, rng: &mut SmallRng) -> SeasonResult {
         let n = self.teams.len();
+
+        // Each trial commits to one draw of what the clubs are actually
+        // worth, held fixed for the whole season. Drawn per trial rather than
+        // per match: a club's true strength does not resample every weekend,
+        // and per-match noise would wash out in the aggregate instead of
+        // widening the season-outcome distribution the way real uncertainty
+        // does.
+        let season_elo: Vec<f64> = if data::RATING_SIGMA > 0.0 {
+            let normal = rand_distr::Normal::new(0.0, data::RATING_SIGMA)
+                .expect("RATING_SIGMA is finite and non-negative");
+            self.elo.iter().map(|e| e + rng.sample(normal)).collect()
+        } else {
+            self.elo.clone()
+        };
+
         let mut records = vec![TeamRecord::default(); n];
         let mut results: HashMap<(usize, usize), (i64, i64)> =
             HashMap::with_capacity(self.fixtures.len());
@@ -445,7 +466,7 @@ impl World {
             let (hg, ag) = match self.played.get(&(f.home, f.away)) {
                 Some(&(hs, as_)) => (hs as i64, as_ as i64),
                 None => {
-                    let (lh, la) = self.lam_pair(f.home, f.away);
+                    let (lh, la) = self.lam_pair_with(&season_elo, f.home, f.away);
                     self.sample_match_score(lh, la, rng)
                 }
             };
@@ -846,6 +867,35 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// Rating uncertainty must widen season outcomes without breaking the
+    /// ordering: the favourite stays the favourite, but is less of a lock.
+    /// (`RATING_SIGMA > 0` is what makes this a real test; if it is ever set
+    /// to zero the bounds below simply become a plain over-confidence check.)
+    #[test]
+    fn rating_uncertainty_widens_the_title_distribution() {
+        let w = World::new();
+        let cfg = SimConfig {
+            n_sims: 4000,
+            seed: 77,
+            elo_overrides: HashMap::new(),
+        };
+        let r = w.simulate(&cfg);
+        let gs = w.idx["Galatasaray"];
+        let gaz = w.idx["Gaziantep"];
+
+        // Ordering survives.
+        assert!(r.title_counts[gs] > r.title_counts[gaz]);
+
+        // The favourite is short of certainty and the field keeps real
+        // chances: an over-confident model would push these to the extremes.
+        let fav = r.title_counts[gs] as f64 / cfg.n_sims as f64;
+        assert!((0.2..0.75).contains(&fav), "favourite title share {fav}");
+        let with_a_chance = (0..data::N_TEAMS)
+            .filter(|&c| r.title_counts[c] > 0)
+            .count();
+        assert!(with_a_chance >= 6, "only {with_a_chance} clubs ever win");
     }
 
     #[test]
