@@ -16,6 +16,13 @@ pub struct LeagueFixture {
     pub away: usize,
 }
 
+/// Calendar metadata for a fixture, parallel to `World.fixtures` by index.
+#[derive(Clone, Debug)]
+pub struct FixtureDate {
+    pub date: String,
+    pub kickoff: Option<String>,
+}
+
 #[derive(Clone)]
 pub struct World {
     pub teams: Vec<String>,
@@ -23,6 +30,8 @@ pub struct World {
     pub elo: Vec<f64>,
     /// The official 306-fixture calendar, in round order.
     pub fixtures: Vec<LeagueFixture>,
+    /// Kick-off dates, indexed alongside `fixtures`.
+    pub dates: Vec<FixtureDate>,
     /// Real results, keyed `(home_idx, away_idx)`. Fixtures present here are
     /// never simulated.
     pub played: HashMap<(usize, usize), (u16, u16)>,
@@ -175,6 +184,7 @@ impl World {
         let elo: Vec<f64> = data::elo().iter().map(|(_, e)| *e).collect();
 
         let mut fixtures = Vec::with_capacity(data::N_FIXTURES);
+        let mut dates = Vec::with_capacity(data::N_FIXTURES);
         let mut played = HashMap::new();
         for f in data::fixtures() {
             let home = idx[&f.home];
@@ -183,6 +193,10 @@ impl World {
                 round: f.round,
                 home,
                 away,
+            });
+            dates.push(FixtureDate {
+                date: f.date.clone(),
+                kickoff: f.kickoff.clone(),
             });
             if let (Some(hs), Some(as_)) = (f.home_score, f.away_score) {
                 played.insert((home, away), (hs, as_));
@@ -194,6 +208,7 @@ impl World {
             idx,
             elo,
             fixtures,
+            dates,
             played,
             ensemble: None,
         }

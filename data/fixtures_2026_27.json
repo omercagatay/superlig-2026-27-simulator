@@ -4,2141 +4,2753 @@
   "home": "Amedspor",
   "away": "Erzurumspor",
   "home_score": 3,
-  "away_score": 0
+  "away_score": 0,
+  "date": "2026-08-16",
+  "kickoff": "21:30"
  },
  {
   "round": 1,
   "home": "Başakşehir",
   "away": "Kocaelispor",
   "home_score": 2,
-  "away_score": 0
+  "away_score": 0,
+  "date": "2026-08-16",
+  "kickoff": "19:00"
  },
  {
   "round": 1,
   "home": "Beşiktaş",
   "away": "Eyüpspor",
   "home_score": 1,
-  "away_score": 0
+  "away_score": 0,
+  "date": "2026-08-16",
+  "kickoff": "21:30"
  },
  {
   "round": 1,
   "home": "Galatasaray",
   "away": "Çorum",
   "home_score": 2,
-  "away_score": 2
+  "away_score": 2,
+  "date": "2026-08-14",
+  "kickoff": "21:30"
  },
  {
   "round": 1,
   "home": "Gaziantep",
   "away": "Alanyaspor",
   "home_score": 1,
-  "away_score": 1
+  "away_score": 1,
+  "date": "2026-08-15",
+  "kickoff": "21:30"
  },
  {
   "round": 1,
   "home": "Gençlerbirliği",
   "away": "Fenerbahçe",
   "home_score": 2,
-  "away_score": 1
+  "away_score": 1,
+  "date": "2026-08-15",
+  "kickoff": "21:30"
  },
  {
   "round": 1,
   "home": "Kasımpaşa",
   "away": "Trabzonspor",
   "home_score": 1,
-  "away_score": 1
+  "away_score": 1,
+  "date": "2026-08-15",
+  "kickoff": "19:00"
  },
  {
   "round": 1,
   "home": "Konyaspor",
   "away": "Rizespor",
   "home_score": 0,
-  "away_score": 1
+  "away_score": 1,
+  "date": "2026-08-15",
+  "kickoff": "19:00"
  },
  {
   "round": 1,
   "home": "Samsunspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-17",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Alanyaspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-23",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Erzurumspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-21",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Eyüpspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-23",
+  "kickoff": "19:00"
  },
  {
   "round": 2,
   "home": "Fenerbahçe",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-22",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Göztepe",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-23",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Kocaelispor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-24",
+  "kickoff": "21:30"
  },
  {
   "round": 2,
   "home": "Rizespor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-22",
+  "kickoff": "19:00"
  },
  {
   "round": 2,
   "home": "Trabzonspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-23",
+  "kickoff": "19:00"
  },
  {
   "round": 2,
   "home": "Çorum",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-22",
+  "kickoff": "19:00"
  },
  {
   "round": 3,
   "home": "Amedspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-31",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Başakşehir",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-30",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Beşiktaş",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-31",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Eyüpspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-30",
+  "kickoff": "19:00"
  },
  {
   "round": 3,
   "home": "Galatasaray",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-29",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Gaziantep",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-29",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Gençlerbirliği",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-28",
+  "kickoff": "21:30"
  },
  {
   "round": 3,
   "home": "Konyaspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-29",
+  "kickoff": "19:00"
  },
  {
   "round": 3,
   "home": "Samsunspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-08-30",
+  "kickoff": "21:30"
  },
  {
   "round": 4,
   "home": "Başakşehir",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Erzurumspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Fenerbahçe",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Göztepe",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Kasımpaşa",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Kocaelispor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Rizespor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Trabzonspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 4,
   "home": "Çorum",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-06",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Alanyaspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Amedspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Beşiktaş",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Eyüpspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Galatasaray",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Gaziantep",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Gençlerbirliği",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Konyaspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 5,
   "home": "Samsunspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-13",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Amedspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Başakşehir",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Erzurumspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Fenerbahçe",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Göztepe",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Kasımpaşa",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Kocaelispor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Trabzonspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 6,
   "home": "Çorum",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-09-20",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Alanyaspor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Beşiktaş",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Eyüpspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Galatasaray",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Gaziantep",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Gençlerbirliği",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Konyaspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Rizespor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 7,
   "home": "Samsunspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-11",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Amedspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Başakşehir",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Erzurumspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Fenerbahçe",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Gençlerbirliği",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Kasımpaşa",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Kocaelispor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Trabzonspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 8,
   "home": "Çorum",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-18",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Alanyaspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Beşiktaş",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Eyüpspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Galatasaray",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Gaziantep",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Göztepe",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Konyaspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Rizespor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 9,
   "home": "Samsunspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-10-25",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Amedspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Başakşehir",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Erzurumspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Fenerbahçe",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Gençlerbirliği",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Kasımpaşa",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Kocaelispor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Konyaspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 10,
   "home": "Trabzonspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-01",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Alanyaspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Beşiktaş",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Eyüpspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Galatasaray",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Gaziantep",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Göztepe",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Rizespor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Samsunspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 11,
   "home": "Çorum",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-08",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Amedspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Başakşehir",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Erzurumspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Galatasaray",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Gençlerbirliği",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Kasımpaşa",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Kocaelispor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Konyaspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 12,
   "home": "Trabzonspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-22",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Alanyaspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Beşiktaş",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Eyüpspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Fenerbahçe",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Gaziantep",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Göztepe",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Rizespor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Samsunspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 13,
   "home": "Çorum",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-11-29",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Amedspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Başakşehir",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Beşiktaş",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Erzurumspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Galatasaray",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Gençlerbirliği",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Kasımpaşa",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Konyaspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 14,
   "home": "Trabzonspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-06",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Alanyaspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Erzurumspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Eyüpspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Fenerbahçe",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Gaziantep",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Göztepe",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Kocaelispor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Rizespor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 15,
   "home": "Çorum",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-13",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Amedspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Başakşehir",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Beşiktaş",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Galatasaray",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Gençlerbirliği",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Kasımpaşa",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Konyaspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Samsunspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 16,
   "home": "Trabzonspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2026-12-20",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Alanyaspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Erzurumspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Eyüpspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Fenerbahçe",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Gaziantep",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Göztepe",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Kocaelispor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Rizespor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 17,
   "home": "Çorum",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-17",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Alanyaspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Erzurumspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Eyüpspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Fenerbahçe",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Göztepe",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Kocaelispor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Rizespor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Trabzonspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 18,
   "home": "Çorum",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-24",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Amedspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Başakşehir",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Beşiktaş",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Galatasaray",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Gaziantep",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Gençlerbirliği",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Kasımpaşa",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Konyaspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 19,
   "home": "Samsunspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-01-31",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Alanyaspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Erzurumspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Fenerbahçe",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Göztepe",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Kasımpaşa",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Kocaelispor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Rizespor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Trabzonspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 20,
   "home": "Çorum",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-07",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Alanyaspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Amedspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Beşiktaş",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Eyüpspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Galatasaray",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Gaziantep",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Gençlerbirliği",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Konyaspor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 21,
   "home": "Samsunspor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-14",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Başakşehir",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Erzurumspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Fenerbahçe",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Göztepe",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Kasımpaşa",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Kocaelispor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Rizespor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Trabzonspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 22,
   "home": "Çorum",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-21",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Alanyaspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Beşiktaş",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Eyüpspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Galatasaray",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Gaziantep",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Gençlerbirliği",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Konyaspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Rizespor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 23,
   "home": "Samsunspor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-02-28",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Amedspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Başakşehir",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Erzurumspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Fenerbahçe",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Göztepe",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Kasımpaşa",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Kocaelispor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Trabzonspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 24,
   "home": "Çorum",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-07",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Alanyaspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Beşiktaş",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Eyüpspor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Galatasaray",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Gaziantep",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Göztepe",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Konyaspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Rizespor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 25,
   "home": "Samsunspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-14",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Amedspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Başakşehir",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Erzurumspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Fenerbahçe",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Gençlerbirliği",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Kasımpaşa",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Kocaelispor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Trabzonspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 26,
   "home": "Çorum",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-03-21",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Alanyaspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Beşiktaş",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Eyüpspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Galatasaray",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Gaziantep",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Göztepe",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Rizespor",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Samsunspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 27,
   "home": "Çorum",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-04",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Amedspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Başakşehir",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Erzurumspor",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Fenerbahçe",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Gençlerbirliği",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Kasımpaşa",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Kocaelispor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Konyaspor",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 28,
   "home": "Trabzonspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-11",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Alanyaspor",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Beşiktaş",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Eyüpspor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Fenerbahçe",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Gaziantep",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Göztepe",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Rizespor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Samsunspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 29,
   "home": "Çorum",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-18",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Amedspor",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Başakşehir",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Erzurumspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Galatasaray",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Gençlerbirliği",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Kasımpaşa",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Kocaelispor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Konyaspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 30,
   "home": "Trabzonspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-04-25",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Alanyaspor",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Eyüpspor",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Fenerbahçe",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Gaziantep",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Göztepe",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Kocaelispor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Rizespor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Samsunspor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 31,
   "home": "Çorum",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-02",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Amedspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Başakşehir",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Beşiktaş",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Galatasaray",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Gençlerbirliği",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Kasımpaşa",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Konyaspor",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Samsunspor",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 32,
   "home": "Trabzonspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-09",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Alanyaspor",
   "away": "Galatasaray",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Erzurumspor",
   "away": "Başakşehir",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Eyüpspor",
   "away": "Konyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Fenerbahçe",
   "away": "Kasımpaşa",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Gaziantep",
   "away": "Samsunspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Göztepe",
   "away": "Amedspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Kocaelispor",
   "away": "Trabzonspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Rizespor",
   "away": "Beşiktaş",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 33,
   "home": "Çorum",
   "away": "Gençlerbirliği",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-16",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Amedspor",
   "away": "Fenerbahçe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Başakşehir",
   "away": "Alanyaspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Beşiktaş",
   "away": "Göztepe",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Galatasaray",
   "away": "Gaziantep",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Gençlerbirliği",
   "away": "Rizespor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Kasımpaşa",
   "away": "Kocaelispor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Konyaspor",
   "away": "Çorum",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Samsunspor",
   "away": "Eyüpspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  },
  {
   "round": 34,
   "home": "Trabzonspor",
   "away": "Erzurumspor",
   "home_score": null,
-  "away_score": null
+  "away_score": null,
+  "date": "2027-05-23",
+  "kickoff": null
  }
 ]

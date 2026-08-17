@@ -60,6 +60,11 @@ pub struct Fixture {
     pub away: String,
     pub home_score: Option<u16>,
     pub away_score: Option<u16>,
+    /// Kick-off date, ISO `YYYY-MM-DD`. TFF publishes the whole calendar up
+    /// front, so this is present for every fixture.
+    pub date: String,
+    /// Kick-off time `HH:MM`; TFF fills it in only once a matchday is close.
+    pub kickoff: Option<String>,
 }
 
 /// The official TFF 2026-27 calendar, refreshed by `scripts/fetch_fixtures.py`.
@@ -122,6 +127,39 @@ mod tests {
         );
         assert_eq!(per_round.len(), N_ROUNDS);
         assert!(per_round.values().all(|&c| c == 9), "9 fixtures per round");
+    }
+
+    #[test]
+    fn every_fixture_has_a_calendar_date_in_season_order() {
+        let f = fixtures();
+        for fx in &f {
+            assert_eq!(fx.date.len(), 10, "ISO date for {} v {}", fx.home, fx.away);
+            assert!(fx.date.starts_with("2026-") || fx.date.starts_with("2027-"));
+        }
+        // Rounds run in calendar order: each round's earliest date is no
+        // earlier than the previous round's earliest.
+        let mut first: Vec<(u8, &str)> = Vec::new();
+        for fx in &f {
+            match first.iter_mut().find(|(r, _)| *r == fx.round) {
+                Some(slot) => {
+                    if fx.date.as_str() < slot.1 {
+                        slot.1 = &fx.date;
+                    }
+                }
+                None => first.push((fx.round, &fx.date)),
+            }
+        }
+        first.sort_by_key(|(r, _)| *r);
+        for pair in first.windows(2) {
+            assert!(
+                pair[0].1 <= pair[1].1,
+                "round {} starts {} but round {} starts {}",
+                pair[0].0,
+                pair[0].1,
+                pair[1].0,
+                pair[1].1
+            );
+        }
     }
 
     #[test]

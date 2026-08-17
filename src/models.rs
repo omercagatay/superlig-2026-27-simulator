@@ -128,6 +128,10 @@ pub struct LikelyScore {
 pub struct MatchCard {
     pub home: String,
     pub away: String,
+    /// Kick-off date, ISO `YYYY-MM-DD`.
+    pub date: String,
+    /// Kick-off time `HH:MM`, once TFF publishes it.
+    pub kickoff: Option<String>,
     pub played: bool,
     pub home_score: Option<u16>,
     pub away_score: Option<u16>,
@@ -150,7 +154,7 @@ pub struct MatchesResponse {
 pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
     let odds = crate::odds::decimal_odds_from_pct;
     let mut rounds: Vec<RoundMatches> = Vec::new();
-    for f in &world.fixtures {
+    for (i, f) in world.fixtures.iter().enumerate() {
         if rounds.last().map(|r| r.round) != Some(f.round) {
             rounds.push(RoundMatches {
                 round: f.round,
@@ -195,6 +199,8 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
             .push(MatchCard {
                 home: world.teams[f.home].clone(),
                 away: world.teams[f.away].clone(),
+                date: world.dates[i].date.clone(),
+                kickoff: world.dates[i].kickoff.clone(),
                 played: played.is_some(),
                 home_score: played.map(|(h, _)| h),
                 away_score: played.map(|(_, a)| a),

@@ -154,6 +154,10 @@ export interface LikelyScore {
 export interface MatchCard {
   home: string;
   away: string;
+  /** Kick-off date, ISO YYYY-MM-DD. */
+  date: string;
+  /** Kick-off time HH:MM, once TFF publishes it. */
+  kickoff: string | null;
   played: boolean;
   home_score: number | null;
   away_score: number | null;

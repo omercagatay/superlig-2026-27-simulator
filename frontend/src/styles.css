@@ -1548,10 +1548,25 @@ button {
 
 /* Per-match detail: model expected goals and most likely scorelines. */
 .xg-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
   margin-top: 0.3rem;
   font-family: var(--data);
   font-size: 0.7rem;
   color: var(--ink-3);
+}
+
+.match-when {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.ft-date {
+  font-family: var(--data);
+  font-size: 0.72rem;
+  color: var(--ink-3);
+  margin-right: 0.15rem;
 }
 
 .score-chips {

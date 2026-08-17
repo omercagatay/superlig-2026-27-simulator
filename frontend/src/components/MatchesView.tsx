@@ -3,6 +3,27 @@ import type { MatchesResponse, MatchCard } from "../api";
 
 const fmtOdds = (o: number | null) => (o != null ? o.toFixed(2) : "–");
 
+/** "Sat 22 Aug" in the reader's locale; the ISO date is date-only, so parse
+ *  it as local midnight rather than letting UTC shift it a day. */
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/** The date span a matchday covers — Süper Lig rounds run Fri to Mon. */
+function roundSpan(matches: { date: string }[]): string {
+  const dates = [...new Set(matches.map((m) => m.date))].sort();
+  if (dates.length === 0) return "";
+  const first = fmtDate(dates[0]);
+  const last = fmtDate(dates[dates.length - 1]);
+  return first === last ? first : `${first} – ${last}`;
+}
+
 function ForecastRow({ m }: { m: MatchCard }) {
   const f = m.forecast;
   if (!f) return null;
@@ -15,6 +36,10 @@ function ForecastRow({ m }: { m: MatchCard }) {
         <span className={`fixture-team${homeFavored ? "" : " favored"}`}>{m.away}</span>
       </div>
       <div className="xg-line">
+        <span className="match-when">
+          {fmtDate(m.date)}
+          {m.kickoff ? ` · ${m.kickoff}` : ""}
+        </span>
         xG {f.home_xg.toFixed(2)} – {f.away_xg.toFixed(2)}
       </div>
       <div className="split-bar">
@@ -96,7 +121,7 @@ function PlayedBlock({ matches }: { matches: MatchCard[] }) {
       <div className="ft-rows">
         {matches.map((m) => (
           <span key={`${m.home}-${m.away}`} className="ft-row">
-            {m.home}{" "}
+            <span className="ft-date">{fmtDate(m.date)}</span> {m.home}{" "}
             <span className="result-score">
               {m.home_score}–{m.away_score}
             </span>{" "}
@@ -117,6 +142,7 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
     <section className="panel" aria-label="Match predictions">
       <header className="panel-head">
         <h2>Match predictions</h2>
+        <span className="eyebrow">{roundSpan(current.matches)}</span>
         <div className="round-nav" role="group" aria-label="Matchday">
           <button
             type="button"
