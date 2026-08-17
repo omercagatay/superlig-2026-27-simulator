@@ -1,12 +1,16 @@
 //! Freeze the current model probabilities for every unplayed fixture.
 //!
-//! A forecast is only testable if it was written down before the match. This
-//! appends today's predictions to `data/forecast_log.json` and **never
-//! overwrites an existing entry**: the first prediction recorded for a fixture
-//! is the one it is judged on, and the file is committed, so the git history
-//! is the audit trail.
+//! A forecast is only testable if it was written down before the match, so
+//! this writes today's predictions to `data/forecast_log.json`, which is
+//! committed — the git history is the audit trail.
 //!
-//! Run before each matchday: `cargo run --release --example log_forecast`
+//! An entry is refreshed only while its fixture is still in the future and
+//! unplayed. Once a match is played (or its date has arrived), its prediction
+//! is frozen forever. That gives the honest thing to score: the model's most
+//! recent view *before* kick-off, rather than a preseason guess about matchday
+//! 34 that no one would have relied on.
+//!
+//! Run weekly, before each matchday: `cargo run --release --example log_forecast`
 
 use std::collections::HashMap;
 
@@ -32,13 +36,19 @@ fn main() {
     let before = by_key.len();
 
     let today = chrono::Utc::now().date_naive().to_string();
+    let mut refreshed = 0usize;
     for (i, f) in world.fixtures.iter().enumerate() {
         if world.played.contains_key(&(f.home, f.away)) {
             continue;
         }
+        // Only ever touch fixtures still ahead of us. A match played today
+        // whose result has not been scraped yet must not be re-forecast.
+        if world.dates[i].date.as_str() <= today.as_str() {
+            continue;
+        }
         let key = (world.teams[f.home].clone(), world.teams[f.away].clone());
         if by_key.contains_key(&key) {
-            continue; // Already forecast: leave the original prediction alone.
+            refreshed += 1;
         }
         let p = world.fixture_probs(f.home, f.away);
         by_key.insert(
@@ -61,9 +71,10 @@ fn main() {
     let json = serde_json::to_string_pretty(&out).expect("serialize forecasts");
     std::fs::write(FORECAST_LOG_PATH, json).expect("write forecast log");
     println!(
-        "forecast log: {} entries ({} new), written to {}",
+        "forecast log: {} entries ({} new, {} refreshed), written to {}",
         out.len(),
         out.len() - before,
+        refreshed,
         FORECAST_LOG_PATH
     );
 }

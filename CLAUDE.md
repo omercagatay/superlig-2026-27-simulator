@@ -114,11 +114,15 @@ Elo overrides from scenarios act through the Elo component only. `GET /api/healt
 
 The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. ML has been tried and lost: a walk-forward logistic stacker (in the arena, `logit-stack`) and sklearn GBM/RF/MLP (side experiment, `ARENA_DUMP_DIR=<dir>` dumps the feature CSV) all scored behind the ensemble on the 2025-26 test season — results-only features don't give ML room to win here. The arena's Elo is self-computed from the match history (ClubElo snapshots are unreachable), so its Elo component is the same family as production's, not identical ratings.
 
+### Scheduled refresh and scraper canary (`.github/workflows/refresh-data.yml`)
+
+A weekly job (Fridays 06:00 UTC, before the weekend's matches) re-runs `scripts/fetch_fixtures.py` and `log_forecast`, runs the test suite, and commits any data changes. Its real job is the canary: the fetch script's structural assertions fail loudly if TFF changes its markup, instead of the app quietly serving a stale calendar. The deploy step is skipped unless a `RAILWAY_TOKEN` secret exists, since this project normally deploys by CLI.
+
 ### Forecast accuracy (`src/accuracy.rs`, `examples/log_forecast.rs`)
 
 `log_forecast` writes the model's current 1X2 probabilities for every *unplayed* fixture into `data/forecast_log.json` and **never overwrites an existing entry** — the first prediction recorded is the one the model is judged on, and the committed file plus git history is the audit trail. `accuracy::report` joins that log against played results and reports hit rate, log-loss, the base-rate baseline, and calibration bands; `GET /api/accuracy` serves it.
 
-Run `log_forecast` before each matchday, or the season's predictions are never captured. A fixture already played when the log is written is deliberately skipped, so the tracker reads 0 scored until a logged matchday completes — that is the honest state, not a bug.
+`log_forecast` refreshes an entry only while its fixture is still in the future and unplayed; once the match date arrives, that prediction is frozen forever. So the thing being scored is the model's most recent view *before* kick-off, not a preseason guess about matchday 34. The weekly workflow runs it; a fixture already played when the log is written is skipped, so the tracker reads 0 scored until a logged matchday completes — the honest state, not a bug.
 
 ### Market odds (`src/market.rs`)
 
