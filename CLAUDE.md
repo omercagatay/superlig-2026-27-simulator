@@ -60,6 +60,7 @@ The dummy-layer `rm -rf` globs and the binary copy path both key on the **packag
 - `kimi_api_key: Option<String>`
 
 Routes (`src/handlers.rs`), each with its own per-IP rate limit (`src/rate_limit.rs`, sliding window):
+- `POST /api/simulate` (30/min) — also accepts `what_if`, up to 20 pinned outcomes for unplayed fixtures. Pins fix the *outcome*, not the scoreline: `simulate_one_with` redraws (bounded at 64 attempts, then a minimal fallback scoreline) until the result matches, so forcing a win does not dictate 1-0 and flatten goal difference.
 - `POST /api/simulate` (30/min) — takes optional `elo_overrides`, clones the current `World`, applies overrides **to the clone only** (does not mutate shared state), runs `World::simulate`.
 - `POST /api/scenario` (10/min) — sends the prompt to Kimi (`src/llm.rs`), validates the returned Elo adjustments against club names/bounds (`src/validation.rs`), applies them to a cloned `World`, simulates, returns results plus the LLM's `analysis` text.
 - `POST /api/refresh` (5/min) — scrapes the TFF fixture page (`src/scraper.rs`) for played results, then **does** mutate the shared `World` (`world.update_from_live`) and caches the raw scrape in `live_data`. This is the only path that changes state for subsequent requests.

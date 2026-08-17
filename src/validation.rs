@@ -35,6 +35,48 @@ pub fn validate_n_sims(n: usize) -> Result<usize, String> {
     }
 }
 
+/// A generous cap: enough to pin a whole matchday and then some, low enough
+/// that rejection sampling for improbable pins cannot dominate a run.
+pub const MAX_WHAT_IF: usize = 20;
+
+/// Resolve pinned outcomes to fixture indices, rejecting anything that is not
+/// a real, still-unplayed fixture. A pin on a played match would silently do
+/// nothing, which is worse than an error.
+pub fn validate_what_if(
+    world: &World,
+    what_if: &[crate::models::WhatIf],
+) -> Result<HashMap<(usize, usize), crate::sim::ForcedOutcome>, String> {
+    if what_if.len() > MAX_WHAT_IF {
+        return Err(format!(
+            "At most {MAX_WHAT_IF} what-if results, got {}",
+            what_if.len()
+        ));
+    }
+    let mut out = HashMap::new();
+    for w in what_if {
+        let (Some(&h), Some(&a)) = (world.idx.get(&w.home), world.idx.get(&w.away)) else {
+            return Err(format!("Unknown club in what-if: {} v {}", w.home, w.away));
+        };
+        if !world.fixtures.iter().any(|f| f.home == h && f.away == a) {
+            return Err(format!(
+                "{} v {} is not a fixture this season",
+                w.home, w.away
+            ));
+        }
+        if world.played.contains_key(&(h, a)) {
+            return Err(format!("{} v {} has already been played", w.home, w.away));
+        }
+        let outcome = match w.outcome.as_str() {
+            "home" => crate::sim::ForcedOutcome::Home,
+            "draw" => crate::sim::ForcedOutcome::Draw,
+            "away" => crate::sim::ForcedOutcome::Away,
+            other => return Err(format!("Unknown outcome {other:?}; use home, draw or away")),
+        };
+        out.insert((h, a), outcome);
+    }
+    Ok(out)
+}
+
 pub fn validate_elo_overrides(
     world: &World,
     overrides: &HashMap<String, f64>,

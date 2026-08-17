@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { MatchesResponse, MatchCard } from "../api";
+import type { MatchesResponse, MatchCard, WhatIf } from "../api";
 import { useT, useLocale } from "../i18n";
 
 const fmtOdds = (o: number | null) => (o != null ? o.toFixed(2) : "–");
@@ -25,7 +25,48 @@ function roundSpan(matches: { date: string }[], locale?: string): string {
   return first === last ? first : `${first} – ${last}`;
 }
 
-function ForecastRow({ m }: { m: MatchCard }) {
+function PinButtons({
+  m,
+  pinned,
+  onPin,
+}: {
+  m: MatchCard;
+  pinned: string | null;
+  onPin: (outcome: string | null) => void;
+}) {
+  const tr = useT();
+  const opts: [string, string, string][] = [
+    ["home", "1", tr("pinHome")],
+    ["draw", "X", tr("pinDraw")],
+    ["away", "2", tr("pinAway")],
+  ];
+  return (
+    <div className="pin-row" role="group" aria-label={`${m.home} v ${m.away}`}>
+      {opts.map(([value, glyph, label]) => (
+        <button
+          key={value}
+          type="button"
+          className={`pin-btn${pinned === value ? " pin-on" : ""}`}
+          aria-pressed={pinned === value}
+          title={label}
+          onClick={() => onPin(pinned === value ? null : value)}
+        >
+          {glyph}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ForecastRow({
+  m,
+  pinned,
+  onPin,
+}: {
+  m: MatchCard;
+  pinned: string | null;
+  onPin: (outcome: string | null) => void;
+}) {
   const tr = useT();
   const locale = useLocale();
   const f = m.forecast;
@@ -120,6 +161,7 @@ function ForecastRow({ m }: { m: MatchCard }) {
           <span className="edge-margin">{tr("bookMargin")} {((mk.overround - 1) * 100).toFixed(1)}%</span>
         </div>
       )}
+      <PinButtons m={m} pinned={pinned} onPin={onPin} />
       <div className="score-chips">
         <span className="score-chips-label">{tr("mostLikelyScores")}</span>
         {f.likely_scores.map((sc) => (
@@ -156,7 +198,15 @@ function PlayedBlock({ matches }: { matches: MatchCard[] }) {
   );
 }
 
-export function MatchesView({ data }: { data: MatchesResponse }) {
+export function MatchesView({
+  data,
+  whatIf,
+  onWhatIf,
+}: {
+  data: MatchesResponse;
+  whatIf: WhatIf[];
+  onWhatIf: (next: WhatIf[]) => void;
+}) {
   const tr = useT();
   const locale = useLocale();
   const [round, setRound] = useState(data.current_round);
@@ -200,14 +250,37 @@ export function MatchesView({ data }: { data: MatchesResponse }) {
       </header>
       <div className="panel-body">
         <p className="panel-note">
-          {tr("matchesNote")}
+          {tr("matchesNote")} {tr("whatIfNote")}
         </p>
+        {whatIf.length > 0 && (
+          <div className="pin-summary">
+            <span className="score-chips-label">{tr("assuming")}</span>
+            {whatIf.map((w) => (
+              <span key={`${w.home}-${w.away}`} className="score-chip">
+                {w.home} {w.outcome === "home" ? ">" : w.outcome === "away" ? "<" : "="} {w.away}
+              </span>
+            ))}
+            <button type="button" className="btn" onClick={() => onWhatIf([])}>
+              {tr("clearPins")}
+            </button>
+          </div>
+        )}
         <PlayedBlock matches={current.matches.filter((m) => m.played)} />
         <div className="match-list">
           {current.matches
             .filter((m) => !m.played)
             .map((m) => (
-              <ForecastRow key={`${m.home}-${m.away}`} m={m} />
+              <ForecastRow
+                key={`${m.home}-${m.away}`}
+                m={m}
+                pinned={
+                  whatIf.find((w) => w.home === m.home && w.away === m.away)?.outcome ?? null
+                }
+                onPin={(outcome) => {
+                  const rest = whatIf.filter((w) => !(w.home === m.home && w.away === m.away));
+                  onWhatIf(outcome ? [...rest, { home: m.home, away: m.away, outcome }] : rest);
+                }}
+              />
             ))}
         </div>
       </div>

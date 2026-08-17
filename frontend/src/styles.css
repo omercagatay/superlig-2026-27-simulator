@@ -1855,3 +1855,48 @@ button {
   letter-spacing: 0.08em;
   color: var(--ink-2);
 }
+
+/* ---- What-if pins ------------------------------------------------------- */
+
+.pin-row {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--chalk);
+}
+
+.pin-btn {
+  flex: 1;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  background: var(--pitch-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 0.18rem 0;
+  cursor: pointer;
+}
+
+.pin-btn:hover {
+  color: var(--ink);
+}
+
+.pin-btn.pin-on {
+  color: var(--pitch-0);
+  background: var(--turf);
+}
+
+:root[data-theme="light"] .pin-btn.pin-on {
+  color: #fff;
+}
+
+.pin-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}

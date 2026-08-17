@@ -8,6 +8,16 @@ pub struct SimRequest {
     pub n_sims: Option<usize>,
     pub seed: Option<u64>,
     pub elo_overrides: Option<HashMap<String, f64>>,
+    /// "Suppose these results happen" — pinned outcomes for unplayed fixtures.
+    pub what_if: Option<Vec<WhatIf>>,
+}
+
+/// A pinned outcome: `outcome` is "home", "draw" or "away".
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct WhatIf {
+    pub home: String,
+    pub away: String,
+    pub outcome: String,
 }
 
 #[derive(Deserialize, Clone)]
@@ -296,6 +306,8 @@ pub struct SimResponse {
     pub rivalries: Vec<RivalryPair>,
     pub consensus_champion: String,
     pub thresholds: Vec<RaceThreshold>,
+    /// Echoed back so the client can show what the forecast assumed.
+    pub what_if: Vec<WhatIf>,
     pub elo_overrides: HashMap<String, f64>,
     pub scenario_applied: Option<String>,
 }
@@ -306,6 +318,20 @@ pub fn build_response(
     config: &SimConfig,
     scenario: Option<String>,
 ) -> SimResponse {
+    let what_if: Vec<WhatIf> = config
+        .forced
+        .iter()
+        .map(|(&(h, a), &o)| WhatIf {
+            home: world.teams[h].clone(),
+            away: world.teams[a].clone(),
+            outcome: match o {
+                crate::sim::ForcedOutcome::Home => "home",
+                crate::sim::ForcedOutcome::Draw => "draw",
+                crate::sim::ForcedOutcome::Away => "away",
+            }
+            .to_string(),
+        })
+        .collect();
     let n = results.n_sims as f64;
     let n_teams = world.teams.len();
     let pct = |c: usize| c as f64 / n * 100.0;
@@ -474,6 +500,7 @@ pub fn build_response(
         // The modal champion across all trials, not whoever happened to win
         // the sampled season.
         thresholds,
+        what_if,
         consensus_champion: {
             let champ = (0..n_teams)
                 .max_by_key(|&i| results.title_counts[i])
@@ -497,6 +524,7 @@ mod tests {
             n_sims: 300,
             seed: 21,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let results = w.simulate(&cfg);
         let resp = build_response(&w, &results, &cfg, None);

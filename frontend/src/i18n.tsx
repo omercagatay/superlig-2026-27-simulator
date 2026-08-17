@@ -93,6 +93,18 @@ const DICT = {
   ptsOn: ["pts on", "puan farkı:"],
   bookMargin: ["book margin", "bahis marjı"],
 
+  // What-if
+  whatIf: ["What if…", "Ya olsaydı…"],
+  whatIfNote: [
+    "Pin results you want to assume, then run again. The outcome is fixed; the model still decides the scoreline.",
+    "Varsaymak istediğiniz sonuçları sabitleyin ve yeniden çalıştırın. Sonuç sabittir; skoru yine model belirler.",
+  ],
+  clearPins: ["Clear", "Temizle"],
+  assuming: ["Assuming", "Varsayım"],
+  pinHome: ["Assume home win", "Ev sahibi kazanır"],
+  pinDraw: ["Assume draw", "Beraberlik"],
+  pinAway: ["Assume away win", "Deplasman kazanır"],
+
   // Positions grid
   finishingPositions: ["Finishing position probabilities", "Sıralama olasılıkları"],
   finishingNote: [

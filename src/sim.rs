@@ -160,11 +160,24 @@ pub struct SimResults {
     pub representative: SeasonResult,
 }
 
+/// A result the user has pinned for an unplayed fixture. The *outcome* is
+/// fixed, not the scoreline — the model still decides how the win happens,
+/// which keeps goal difference honest instead of dictating 1-0 every time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ForcedOutcome {
+    Home,
+    Draw,
+    Away,
+}
+
 #[derive(Clone, Debug)]
 pub struct SimConfig {
     pub n_sims: usize,
     pub seed: u64,
     pub elo_overrides: HashMap<String, f64>,
+    /// "Suppose this happens": fixtures whose outcome is pinned, keyed
+    /// `(home_idx, away_idx)`.
+    pub forced: HashMap<(usize, usize), ForcedOutcome>,
 }
 
 impl Default for SimConfig {
@@ -173,6 +186,7 @@ impl Default for SimConfig {
             n_sims: 50000,
             seed: 12345,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         }
     }
 }
@@ -446,6 +460,15 @@ impl World {
     }
 
     pub fn simulate_one(&self, rng: &mut SmallRng) -> SeasonResult {
+        self.simulate_one_with(rng, &HashMap::new())
+    }
+
+    /// As `simulate_one`, with a set of pinned outcomes applied.
+    pub fn simulate_one_with(
+        &self,
+        rng: &mut SmallRng,
+        forced: &HashMap<(usize, usize), ForcedOutcome>,
+    ) -> SeasonResult {
         let n = self.teams.len();
 
         // Each trial commits to one draw of what the clubs are actually
@@ -471,7 +494,34 @@ impl World {
                 Some(&(hs, as_)) => (hs as i64, as_ as i64),
                 None => {
                     let (lh, la) = self.lam_pair_with(&season_elo, f.home, f.away);
-                    self.sample_match_score(lh, la, rng)
+                    match forced.get(&(f.home, f.away)) {
+                        None => self.sample_match_score(lh, la, rng),
+                        // Keep drawing until the scoreline agrees with the
+                        // pinned outcome: the result is fixed, the way it
+                        // arrives is still the model's. Bounded so a very
+                        // unlikely pin cannot stall a trial; the fallback is
+                        // the narrowest scoreline that satisfies it.
+                        Some(&want) => {
+                            let mut drawn = None;
+                            for _ in 0..64 {
+                                let (hg, ag) = self.sample_match_score(lh, la, rng);
+                                let got = match hg.cmp(&ag) {
+                                    std::cmp::Ordering::Greater => ForcedOutcome::Home,
+                                    std::cmp::Ordering::Equal => ForcedOutcome::Draw,
+                                    std::cmp::Ordering::Less => ForcedOutcome::Away,
+                                };
+                                if got == want {
+                                    drawn = Some((hg, ag));
+                                    break;
+                                }
+                            }
+                            drawn.unwrap_or(match want {
+                                ForcedOutcome::Home => (1, 0),
+                                ForcedOutcome::Draw => (1, 1),
+                                ForcedOutcome::Away => (0, 1),
+                            })
+                        }
+                    }
                 }
             };
             apply_result(&mut records, f.home, f.away, hg, ag);
@@ -490,7 +540,7 @@ impl World {
             .map(|i| {
                 let mut rng =
                     SmallRng::seed_from_u64(config.seed.wrapping_add(i as u64 * 2654435761));
-                self.simulate_one(&mut rng)
+                self.simulate_one_with(&mut rng, &config.forced)
             })
             .collect();
 
@@ -781,6 +831,72 @@ mod tests {
         }
     }
 
+    /// A pinned outcome must actually bind — every trial, not most of them —
+    /// and must move the aggregate odds in the direction it implies.
+    #[test]
+    fn pinned_outcomes_bind_and_move_the_forecast() {
+        let w = World::new();
+        let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
+        assert!(
+            w.fixtures.iter().any(|f| f.home == gaz && f.away == gs),
+            "Gaziantep host Galatasaray"
+        );
+
+        let mut forced = HashMap::new();
+        forced.insert((gaz, gs), ForcedOutcome::Home);
+
+        // Every single trial respects the pin.
+        for seed in 0..25u64 {
+            let r = w.simulate_one_with(&mut SmallRng::seed_from_u64(seed), &forced);
+            assert!(
+                r.records[gaz].won >= 1,
+                "seed {seed}: pinned home win did not happen"
+            );
+        }
+
+        let base = SimConfig {
+            n_sims: 3000,
+            seed: 5,
+            elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
+        };
+        let pinned = SimConfig {
+            forced: forced.clone(),
+            ..base.clone()
+        };
+        let r0 = w.simulate(&base);
+        let r1 = w.simulate(&pinned);
+        assert!(
+            r1.points_sum[gaz] > r0.points_sum[gaz],
+            "a guaranteed win must raise expected points"
+        );
+        assert!(r1.points_sum[gs] < r0.points_sum[gs]);
+        assert!(
+            r1.relegation_counts[gaz] < r0.relegation_counts[gaz],
+            "and lower relegation risk"
+        );
+    }
+
+    /// Pinning the outcome must not dictate the scoreline: the model still
+    /// produces a spread of winning margins.
+    #[test]
+    fn pinned_outcomes_leave_the_scoreline_to_the_model() {
+        let w = World::new();
+        let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
+        let mut forced = HashMap::new();
+        forced.insert((gaz, gs), ForcedOutcome::Home);
+
+        let mut margins = std::collections::HashSet::new();
+        for seed in 0..40u64 {
+            let r = w.simulate_one_with(&mut SmallRng::seed_from_u64(seed), &forced);
+            margins.insert(r.records[gaz].gf - r.records[gaz].ga);
+        }
+        assert!(
+            margins.len() > 5,
+            "forced wins collapsed onto one scoreline: {margins:?}"
+        );
+    }
+
     #[test]
     fn simulate_is_deterministic_for_same_seed() {
         let w = World::new();
@@ -788,6 +904,7 @@ mod tests {
             n_sims: 500,
             seed: 999,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let a = w.simulate(&cfg);
         let b = w.simulate(&cfg);
@@ -804,6 +921,7 @@ mod tests {
             n_sims: 400,
             seed: 3,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r = w.simulate(&cfg);
         assert_eq!(r.position_counts.len(), data::N_TEAMS);
@@ -825,6 +943,7 @@ mod tests {
             n_sims: 400,
             seed: 11,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r = w.simulate(&cfg);
         for club in 0..data::N_TEAMS {
@@ -859,6 +978,7 @@ mod tests {
             n_sims: 300,
             seed: 5,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r = w.simulate(&cfg);
         let n = data::N_TEAMS;
@@ -887,6 +1007,7 @@ mod tests {
             n_sims: 4000,
             seed: 77,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r = w.simulate(&cfg);
         let gs = w.idx["Galatasaray"];
@@ -912,6 +1033,7 @@ mod tests {
             n_sims: 2000,
             seed: 1,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r = w.simulate(&cfg);
         let gs = w.idx["Galatasaray"];
@@ -1112,6 +1234,7 @@ mod tests {
             n_sims: 500,
             seed: 42,
             elo_overrides: HashMap::new(),
+            forced: HashMap::new(),
         };
         let r1 = world.simulate(&config);
         let r2 = world.simulate(&config);

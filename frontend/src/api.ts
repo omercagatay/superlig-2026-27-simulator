@@ -57,14 +57,23 @@ export interface SimResponse {
   rivalries: RivalryPair[];
   consensus_champion: string;
   thresholds: RaceThreshold[];
+  what_if: WhatIf[];
   elo_overrides: Record<string, number>;
   scenario_applied: string | null;
+}
+
+export interface WhatIf {
+  home: string;
+  away: string;
+  /** "home" | "draw" | "away" */
+  outcome: string;
 }
 
 export interface SimRequest {
   n_sims?: number;
   seed?: number;
   elo_overrides?: Record<string, number>;
+  what_if?: WhatIf[];
 }
 
 export interface ScenarioRequest {

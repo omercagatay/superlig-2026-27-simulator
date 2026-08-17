@@ -199,6 +199,8 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest, plus bookmaker prices and the model-vs-market gap where available. |
 
+`/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline — the model keeps drawing until the result matches, so goal difference stays honest. Pinning an already-played or non-existent fixture is an error rather than a silent no-op.
+
 Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000 (the ClubElo club scale is compressed relative to international Elo), and request bodies are limited to 1 MiB.
 
 ### Baseline simulation

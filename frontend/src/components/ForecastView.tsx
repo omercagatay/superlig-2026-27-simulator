@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SimResponse, LiveData, MatchesResponse, AccuracyReport } from "../api";
+import type { SimResponse, LiveData, MatchesResponse, AccuracyReport, WhatIf } from "../api";
 import { ResultsTable } from "./ResultsTable";
 import { MatchesView } from "./MatchesView";
 import { AccuracyPanel } from "./AccuracyPanel";
@@ -13,6 +13,8 @@ export function ForecastView({
   liveData,
   matchesData,
   accuracy,
+  whatIf,
+  onWhatIf,
   liveMatchCount,
   onShowLive,
 }: {
@@ -20,6 +22,8 @@ export function ForecastView({
   liveData: LiveData | null;
   matchesData: MatchesResponse | null;
   accuracy: AccuracyReport | null;
+  whatIf: WhatIf[];
+  onWhatIf: (next: WhatIf[]) => void;
   liveMatchCount: number;
   onShowLive: () => void;
 }) {
@@ -139,7 +143,9 @@ export function ForecastView({
         </aside>
       </div>
 
-      {matchesData && <MatchesView data={matchesData} />}
+      {matchesData && (
+        <MatchesView data={matchesData} whatIf={whatIf} onWhatIf={onWhatIf} />
+      )}
 
       {selectedTeam && (
         <ClubDetail

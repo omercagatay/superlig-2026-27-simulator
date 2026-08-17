@@ -9,6 +9,7 @@ import {
   type LiveData,
   type MatchesResponse,
   type AccuracyReport,
+  type WhatIf,
 } from "./api";
 import { ForecastView } from "./components/ForecastView";
 import { LeagueTable } from "./components/LeagueTable";
@@ -67,6 +68,7 @@ export default function App() {
   const [seed, setSeed] = useState(12345);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
+  const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const t = useT();
@@ -84,7 +86,7 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const result = await runSimulation({ n_sims: nSims, seed });
+      const result = await runSimulation({ n_sims: nSims, seed, what_if: whatIf });
       setData(result);
       setActiveView("forecast");
     } catch (e) {
@@ -92,7 +94,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [nSims, seed]);
+  }, [nSims, seed, whatIf]);
 
   // On first load: hydrate cached live data (the backend refreshes it in
   // the background) and kick off an initial forecast so the dashboard is
@@ -275,6 +277,8 @@ export default function App() {
             liveData={liveData}
             matchesData={matchesData}
             accuracy={accuracy}
+            whatIf={whatIf}
+            onWhatIf={setWhatIf}
             liveMatchCount={liveMatchCount}
             onShowLive={() => setActiveView("live")}
           />

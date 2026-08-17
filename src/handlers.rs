@@ -1,4 +1,5 @@
 use axum::{extract::State, http::StatusCode, response::Json};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -25,13 +26,18 @@ pub async fn run_sim(
 ) -> Result<Json<SimResponse>, (StatusCode, String)> {
     let n_sims =
         validate_n_sims(req.n_sims.unwrap_or(50000)).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    let world_snapshot = state.world.read().await.clone();
+    let forced =
+        crate::validation::validate_what_if(&world_snapshot, req.what_if.as_deref().unwrap_or(&[]))
+            .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let config = SimConfig {
         n_sims,
         seed: req.seed.unwrap_or(12345),
         elo_overrides: req.elo_overrides.unwrap_or_default(),
+        forced,
     };
     let world = {
-        let w = state.world.read().await.clone();
+        let w = world_snapshot;
         if config.elo_overrides.is_empty() {
             w
         } else {
@@ -92,6 +98,7 @@ pub async fn scenario(
         n_sims,
         seed: req.seed.unwrap_or(12345),
         elo_overrides: impact.adjustments.clone(),
+        forced: HashMap::new(),
     };
     let resp = simulate_off_runtime(world, config, Some(impact.analysis)).await?;
     Ok(Json(resp))
