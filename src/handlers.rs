@@ -229,6 +229,46 @@ pub async fn matches(
     Ok(Json(resp))
 }
 
+/// A conservative 1X2 coupon for the next active matchday. The model is
+/// computed independently; fresh licensed-market prices are used only to
+/// filter and rank discrepancies. Missing/stale odds produce an explicit
+/// unavailable state rather than stale betting information.
+pub async fn daily_coupon(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<crate::coupon::DailyCouponResponse>, (StatusCode, String)> {
+    let now = chrono::Utc::now();
+    let cached = state.market.read().await.clone();
+    let market = if cached
+        .as_ref()
+        .is_some_and(|snapshot| crate::coupon::snapshot_is_fresh(snapshot, now))
+    {
+        cached
+    } else {
+        match crate::market::fetch().await {
+            Ok(snapshot) => {
+                *state.market.write().await = Some(snapshot.clone());
+                Some(snapshot)
+            }
+            Err(error) => {
+                tracing::warn!("Daily coupon market refresh failed: {error:#}");
+                cached
+            }
+        }
+    };
+    let world = state.world.read().await.clone();
+    let response = tokio::task::spawn_blocking(move || {
+        crate::coupon::build_daily_coupon(&world, market.as_ref())
+    })
+    .await
+    .map_err(|error| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Daily coupon task failed: {error}"),
+        )
+    })?;
+    Ok(Json(response))
+}
+
 /// How the model has actually done against its own frozen predictions.
 pub async fn accuracy(
     State(state): State<Arc<AppState>>,

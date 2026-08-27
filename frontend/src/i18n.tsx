@@ -11,6 +11,7 @@ const DICT = {
   tabPositions: ["Positions", "Sıralama"],
   tabRaces: ["Races", "Yarışlar"],
   tabTable: ["Table", "Puan durumu"],
+  tabCoupon: ["Daily picks", "Günün kuponu"],
   tabLive: ["Live", "Canlı"],
   sims: ["Sims", "Simülasyon"],
   seed: ["Seed", "Tohum"],
@@ -99,6 +100,80 @@ const DICT = {
   vsBookmaker: ["vs bookmaker", "bahis oranına karşı"],
   ptsOn: ["pts on", "puan farkı:"],
   bookMargin: ["book margin", "bahis marjı"],
+
+  // Daily coupon
+  couponEyebrow: ["Model vs licensed market", "Model ile yasal piyasa karşılaştırması"],
+  dailyCoupon: ["Daily coupon", "Günün kuponu"],
+  couponLoading: ["Checking fresh licensed-market prices…", "Güncel yasal piyasa oranları kontrol ediliyor…"],
+  couponGuardrails: ["Coupon safeguards", "Kupon güvenlik ölçütleri"],
+  couponLicensedOnly: ["Licensed only", "Yalnızca yasal bayiler"],
+  couponNoAffiliate: ["No affiliate links", "Reklam ortaklığı yok"],
+  couponCombinedOdds: ["Combined market odds", "Toplam piyasa oranı"],
+  couponLegs: ["Selections", "Seçim"],
+  couponModelJoint: ["Model-estimated hit", "Model isabet tahmini"],
+  couponWindow: ["Fixture window", "Maç aralığı"],
+  couponPick: ["Model selection", "Model seçimi"],
+  couponModelChance: ["Model", "Model"],
+  couponMarketChance: ["Margin-free market", "Marjsız piyasa"],
+  couponEdge: ["Difference", "Fark"],
+  couponPoints: ["pts", "puan"],
+  couponWarningLead: ["Important:", "Önemli:"],
+  couponWarning: [
+    "Experimental model output, not betting advice or a promise of profit. Prices move; verify every fixture and price with a licensed operator before making any decision.",
+    "Deneysel model çıktısıdır; bahis tavsiyesi veya kazanç vaadi değildir. Oranlar değişir; herhangi bir karar vermeden önce her maçı ve oranı yasal bayide doğrulayın.",
+  ],
+  couponJointNote: [
+    "The combined model percentage multiplies the individual estimates and approximately assumes independent match outcomes; real outcomes and model errors can be correlated.",
+    "Toplam model yüzdesi tekil tahminleri çarpar ve maç sonuçlarını yaklaşık olarak bağımsız varsayar; gerçek sonuçlar ve model hataları ilişkili olabilir.",
+  ],
+  couponHowSelected: ["How selections are made", "Seçimler nasıl yapılıyor"],
+  couponMethodBody: [
+    "The season model is calculated without bookmaker input. Fresh Nesine İddaa 1X2 prices are then used only to filter discrepancies in the next active matchday.",
+    "Sezon modeli bahis oranı kullanılmadan hesaplanır. Ardından güncel Nesine İddaa 1X2 oranları yalnızca sıradaki aktif haftadaki farkları süzmek için kullanılır.",
+  ],
+  couponRuleProbability: [
+    "Model probability is at least 30%.",
+    "Model olasılığı en az %30'dur.",
+  ],
+  couponRuleEdge: [
+    "Model exceeds the margin-free market by at least 2 percentage points.",
+    "Model, marjsız piyasa olasılığından en az 2 puan yüksektir.",
+  ],
+  couponRuleValue: [
+    "Model probability × current price is at least 1.02.",
+    "Model olasılığı × güncel oran en az 1,02'dir.",
+  ],
+  couponRulePrice: [
+    "One 1X2 selection per match, price capped at 4.00, no more than three selections.",
+    "Maç başına tek 1X2 seçimi, en fazla 4,00 oran ve en çok üç seçim kullanılır.",
+  ],
+  couponOddsSource: ["Odds source", "Oran kaynağı"],
+  couponLicensedOperators: ["Licensed operator links", "Yasal bayi bağlantıları"],
+  couponOperatorNote: [
+    "These first-party sites identify themselves as legal Spor Toto outlets in Türkiye. Links are plain, non-affiliate destinations; this app does not place bets or process payments.",
+    "Bu siteler kendi sayfalarında Türkiye'deki yasal Spor Toto bayileri olduklarını belirtir. Bağlantılar reklam ortaklığı içermez; bu uygulama bahis oynatmaz veya ödeme işlemez.",
+  ],
+  couponVerified: ["operator pages checked", "bayi sayfaları kontrol tarihi"],
+  responsiblePlay: ["Play responsibly.", "Sorumlu oynayın."],
+  responsiblePlayBody: [
+    "Adults 18+ only. Set a limit and never chase losses. Free support for gambling-related harm is available from YEDAM at 115.",
+    "Yalnızca 18 yaş ve üzeri. Sınır belirleyin ve kayıplarınızın peşinden gitmeyin. Kumar kaynaklı zararlar için YEDAM 115'ten ücretsiz destek alabilirsiniz.",
+  ],
+  couponNoValue: ["No qualifying selection today", "Bugün eşikleri geçen seçim yok"],
+  couponNoValueBody: [
+    "The model and licensed market are too close, or no selection clears every safeguard. A coupon is not forced.",
+    "Model ile yasal piyasa birbirine çok yakın veya hiçbir seçim tüm güvenlik ölçütlerini geçmiyor. Zorla kupon üretilmez.",
+  ],
+  couponStale: ["Market prices are stale", "Piyasa oranları güncel değil"],
+  couponStaleBody: [
+    "The last successful odds snapshot is older than 90 minutes, so no selections are shown.",
+    "Son başarılı oran görüntüsü 90 dakikadan eski olduğu için seçim gösterilmiyor.",
+  ],
+  couponUnavailable: ["Market prices are unavailable", "Piyasa oranlarına ulaşılamıyor"],
+  couponUnavailableBody: [
+    "The licensed odds feed is temporarily unavailable. The season forecast remains usable.",
+    "Yasal oran akışına geçici olarak ulaşılamıyor. Sezon tahmini kullanılmaya devam edebilir.",
+  ],
 
   // What-if
   whatIf: ["What if…", "Ya olsaydı…"],

@@ -1,4 +1,5 @@
 pub mod accuracy;
+pub mod coupon;
 pub mod data;
 pub mod dixoncoles;
 pub mod handlers;

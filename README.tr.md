@@ -16,6 +16,7 @@
 - TFF'nin resmî fikstüründeki oynanmış maçları sabitler ve yalnızca kalan maçları simüle eder.
 - Süper Lig'in kendi sıralama kurallarını uygular: **averaj değil, önce ikili averaj (head-to-head)** belirleyicidir.
 - Şampiyonluk, ilk iki, tam üçüncülük/dördüncülük, ilk dört ve küme düşme olasılıkları; 18×18 sıralama ızgarası; tahminî final tablosu; gelecek hafta tahminleri ve "kim kimin üstünde bitirir" olasılıkları üretir.
+- Bağımsız modeli güncel İddaa 1X2 oranlarıyla karşılaştıran, bütün eşikleri aşan seçim yoksa zorla tahmin üretmeyen kontrollü bir **Günün Kuponu** görünümü sunar.
 - Doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder.
 - IP başına hız sınırı, istek doğrulama, deterministik tohum (seed), açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
 
@@ -27,6 +28,7 @@
 | Simülasyon | Rayon, Rand, Dixon–Coles, pi-rating, Elo/Poisson |
 | Arayüz | React 18, TypeScript, Vite |
 | Canlı veri | Türkiye Futbol Federasyonu (tff.org) fikstür sayfası |
+| Piyasa oranları | Nesine İddaa maç önü bülteni (sezon modeline girmez; karşılaştırma ve kupon süzme için kullanılır) |
 | Geçmiş veri | MIT lisanslı Club Football Match Data (2012-13 – 2024-25) ve resmî TFF sonuçları (2025-26) |
 | Senaryo analizi | Moonshot API üzerinden Kimi |
 | Dağıtım | Çok aşamalı Docker imajı; Railway uyumlu |
@@ -71,6 +73,21 @@ Puan durumu şu sırayla belirlenir:
 İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`).
 
 Panel ilk iki, üçüncü, dördüncü ve ilk dört gibi kesin lig sıralamalarını gösterir; bu sıralara doğrudan UEFA turnuvası adı vermez. Gerçek katılım Türkiye Kupası şampiyonuna ve o sezonun UEFA erişim listesine de bağlıdır. Son üç takım küme düşer.
+
+### Günün Kuponu ve sorumlu oyun
+
+**Günün Kuponu** görünümü, önce modelin bahis oranlarından bağımsız hesaplanan 1X2 olasılıklarını üretir; ardından bunları güncel yasal piyasa görüntüsüyle karşılaştırır. Her maçtan en fazla bir seçim alınır ve seçim ancak şu koşulların tamamını sağlarsa gösterilir:
+
+- model olasılığı en az %30;
+- model olasılığı, marjı çıkarılmış piyasa olasılığından en az 2 puan yüksek;
+- model olasılığı × güncel ondalık oran en az 1,02;
+- güncel oran en fazla 4,00.
+
+Sıradaki aktif hafta değerlendirilir ve en fazla üç seçim döner. 90 dakikadan eski oranlar reddedilir. Hiçbir seçim uygun değilse API `no_value` döndürür ve arayüz kupon göstermediğini açıkça belirtir. Toplam model yüzdesi yalnızca tekil tahminlerin çarpımıdır; sonuçları yaklaşık olarak bağımsız varsayar ve garanti değildir.
+
+Oranlar halka açık [Nesine İddaa bülteninden](https://www.nesine.com/iddaa) alınır. Arayüz yalnızca 27 Ağustos 2026 tarihinde kendi sayfalarında Spor Toto'nun yasal bayisi olduklarını belirten birinci taraf sitelere bağlantı verir: [Nesine](https://www.nesine.com/), [Bilyoner](https://www.bilyoner.com/), [Misli](https://www.misli.com/hakkimizda), [Oley](https://www.oley.com/hakkimizda), [Birebin](https://www.birebin.com/) ve [iddaa.com](https://www.iddaa.com/yardim/detay/neden-bayi-secmeliyim-29874). Düzenleyici çerçeve ve resmî oyun planları [Spor Toto Teşkilat Başkanlığı](https://www.sportoto.gov.tr/) tarafından yayımlanır.
+
+Bu projenin bayilerle reklam ortaklığı yoktur; bahis iletmez ve ödeme işlemez. Özellik yalnızca 18 yaş ve üzeri yetişkinler içindir ve deneysel bilgi sunar—bahis tavsiyesi veya kazanç vaadi değildir. Sınır belirleyin ve kayıplarınızın peşinden gitmeyin. Kumar kaynaklı zararlar için [YEDAM](https://www.yedam.org.tr/bagimlilik-turleri/kumar-bagimliligi) **115** hattından ücretsiz destek verir.
 
 ### Kalibrasyon
 
@@ -148,7 +165,7 @@ cargo run --release
 ## Panelin kullanımı
 
 1. Simülasyon sayısını ve tohumu seçip **Run** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
-2. Beş sekmeyi inceleyin: **Forecast**, **Positions**, **Races**, **Table** ve **Live**.
+2. Altı sekmeyi inceleyin: **Forecast**, **Positions**, **Races**, **Table**, **Günün kuponu** ve **Live**.
 3. En güncel TFF sonuçlarını çekip tahmini, maç kartlarını ve isabet görünümünü yeniden hesaplamak için **Update live data** düğmesini kullanın.
 4. `Galatasaray'ın ilk kalecisi beş maç cezalı` gibi bir senaryo yazın. Kimi etkiyi açıklar, doğrulanmış kulüp puanları döndürür ve yeni bir simülasyon başlatır.
 
@@ -163,6 +180,7 @@ cargo run --release
 | `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
 | `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
+| `/api/coupon` | `GET` | 30/dk | Sıradaki aktif hafta için güncel yasal İddaa oranlarıyla süzülmüş en fazla üç 1X2 seçimi; ulaşılamayan, eski veya değersiz piyasa durumlarını açıkça bildirir. |
 
 Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla (ClubElo kulüp ölçeği, uluslararası Elo'ya göre daha dardır), istek gövdeleri 1 MiB ile sınırlıdır.
 
@@ -273,6 +291,7 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 │   ├── piratings.rs      # Geçmişe dayalı pi-rating modeli
 │   ├── history.rs        # Geçmiş sonuçların yüklenmesi ve kulüp adı eşlemesi
 │   ├── scraper.rs        # TFF canlı sonuç alımı
+│   ├── coupon.rs         # Kontrollü model-piyasa günlük seçimleri
 │   ├── handlers.rs       # API işleyicileri
 │   ├── llm.rs            # Kimi senaryo analizi
 │   ├── models.rs         # API istek ve yanıt tipleri
@@ -291,6 +310,7 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 
 - Canlı yenileme tff.org'a ve sayfanın güncel biçimine bağlıdır; yenileme başarısız olursa gömülü fikstür kullanılmaya devam eder.
 - Adil oranlar, simüle edilmiş olasılıkların tersidir; bahis marjı, likidite ya da piyasa bilgisi içermez.
+- Kupon seçimleri modelin kalibrasyonuna ve güncel halka açık piyasa görüntüsüne bağlıdır. Pozitif model değeri yine de kaybedebilir; kazanç vaadi yoktur.
 - En zayıf modellenen kulüpler yeni yükselenlerdir: Dixon–Coles ve pi-rating bileşenleri için üst lig geçmişleri olmadığından tahminleri tamamen Elo puanlarına dayanır.
 - Yukarıda anlatılan "ikili karşılaştırma bir kez uygulanır" kuralı yayımlanmış bir kural değil, açıkça belirtilmiş bir varsayımdır.
 - Senaryo puanları modelin ürettiği varsayımlardır. Dönen açıklamayı okuyun ve çıktıyı keşif amaçlı değerlendirin.

@@ -16,6 +16,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Locks confirmed results from the official TFF calendar and simulates only the remaining fixtures.
 - Applies the Süper Lig's own classification rules, in which **head-to-head decides before goal difference**.
 - Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
+- Adds a guardrailed **Daily coupon / Günün Kuponu** view that compares the independent model with fresh İddaa 1X2 prices and declines to manufacture picks when no selection clears every threshold.
 - Converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season.
 - Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
 
@@ -27,7 +28,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 | Simulation | Rayon, Rand, Dixon–Coles, pi-ratings, Elo/Poisson |
 | Frontend | React 18, TypeScript, Vite |
 | Live data | Türkiye Futbol Federasyonu (tff.org) fixture page |
-| Market odds | Nesine pre-match bulletin (comparison only, never a model input) |
+| Market odds | Nesine İddaa pre-match bulletin (never a season-model input; used for comparison and coupon filtering) |
 | Historical data | MIT-licensed Club Football Match Data (2012-13 to 2024-25) plus official TFF results (2025-26) |
 | Scenario analysis | Kimi via the Moonshot API |
 | Deployment | Multi-stage Docker image; Railway-compatible |
@@ -87,6 +88,21 @@ The table is ranked by:
 Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test.
 
 The dashboard reports exact finishing bands—top two, third, fourth, and top four—rather than assigning UEFA competition names. Actual qualification depends on the Turkish Cup winner and that season's UEFA access list, so league position alone is not enough. The bottom three are relegated.
+
+### Daily coupon and responsible play
+
+The **Günün Kuponu** view starts with the model's independently calculated 1X2 probabilities, then compares them with a fresh licensed-market snapshot. A fixture contributes at most one selection, and only when all of these conditions hold:
+
+- model probability is at least 30%;
+- model probability exceeds the margin-free market probability by at least 2 percentage points;
+- model probability × current decimal price is at least 1.02;
+- the current price is no higher than 4.00.
+
+The next active matchday is considered and no more than three selections are returned. Odds older than 90 minutes are rejected. When no selection qualifies, the API returns `no_value` and the interface explicitly shows no coupon. The combined model percentage is only the product of the individual estimates; it approximately assumes independent outcomes and is not a guarantee.
+
+Prices come from the public [Nesine İddaa bulletin](https://www.nesine.com/iddaa). The interface only links to first-party sites that, as checked on 27 August 2026, identify themselves as legal Spor Toto outlets: [Nesine](https://www.nesine.com/), [Bilyoner](https://www.bilyoner.com/), [Misli](https://www.misli.com/hakkimizda), [Oley](https://www.oley.com/hakkimizda), [Birebin](https://www.birebin.com/), and [iddaa.com](https://www.iddaa.com/yardim/detay/neden-bayi-secmeliyim-29874). The regulatory framework and official game plans are published by the [Spor Toto Teşkilat Başkanlığı](https://www.sportoto.gov.tr/).
+
+This project has no affiliate relationship with those operators, never submits a wager, and never processes payment. The feature is for adults aged 18+ and is experimental information—not betting advice or a promise of profit. Set limits and do not chase losses. [YEDAM](https://www.yedam.org.tr/bagimlilik-turleri/kumar-bagimliligi) provides free support for gambling-related harm at **115**.
 
 ### Calibration
 
@@ -183,7 +199,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 ## Use the dashboard
 
 1. Choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the five tabs: **Forecast**, **Positions**, **Races**, **Table**, and **Live**.
+2. Explore the six tabs: **Forecast**, **Positions**, **Races**, **Table**, **Daily picks**, and **Live**.
 3. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view.
 4. Enter a scenario such as `Galatasaray's first-choice keeper is suspended for five matches`. Kimi explains the effect, supplies validated club ratings, and starts a new simulation.
 
@@ -199,6 +215,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest, plus bookmaker prices and the model-vs-market gap where available. |
+| `/api/coupon` | `GET` | 30/min | Up to three guardrailed 1X2 selections for the next active matchday, using fresh licensed İddaa prices; explicitly reports unavailable, stale, or no-value states. |
 
 `/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline — the model keeps drawing until the result matches, so goal difference stays honest. Pinning an already-played or non-existent fixture is an error rather than a silent no-op.
 
@@ -311,6 +328,7 @@ Data-source details worth knowing about:
 │   ├── piratings.rs      # Historical pi-rating model
 │   ├── history.rs        # Historical result loading and club normalization
 │   ├── scraper.rs        # TFF live-result ingestion
+│   ├── coupon.rs         # Guardrailed model-vs-market daily selections
 │   ├── handlers.rs       # API handlers
 │   ├── llm.rs            # Kimi scenario analysis
 │   ├── models.rs         # API request and response types
@@ -329,6 +347,7 @@ Data-source details worth knowing about:
 
 - Live refresh depends on tff.org and its current page format; the embedded baseline calendar remains available if a refresh fails.
 - Fair odds are simply the inverse of simulated probabilities and do not include a bookmaker margin, liquidity, or market information.
+- Coupon selections depend on the model being calibrated and on a fresh public market snapshot. Positive model value can still lose; no profit is promised.
 - Promoted clubs are the least well-modelled: they have no top-flight history for the Dixon–Coles and pi-rating components, so their forecasts lean entirely on their Elo rating.
 - The head-to-head-once rule (see above) is a stated assumption, not a published one.
 - Scenario ratings are model-generated assumptions. Read the returned explanation and treat the output as exploratory.

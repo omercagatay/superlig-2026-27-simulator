@@ -210,9 +210,65 @@ export interface MatchesResponse {
   current_round: number;
 }
 
+export type CouponStatus = "ready" | "no_value" | "market_unavailable" | "market_stale";
+
+export interface CouponSelection {
+  round: number;
+  date: string;
+  kickoff: string | null;
+  home: string;
+  away: string;
+  /** İddaa 1X2 code. */
+  outcome: "1" | "X" | "2";
+  model_pct: number;
+  /** Margin-free probability implied by the licensed market. */
+  market_pct: number;
+  market_odds: number;
+  /** Model probability minus margin-free market probability, in points. */
+  edge_pct: number;
+  /** Model probability × market decimal odds. */
+  value_index: number;
+}
+
+export interface LicensedOperator {
+  name: string;
+  url: string;
+  verification_url: string;
+}
+
+export interface CouponSource {
+  odds_provider: string;
+  odds_url: string;
+  regulator: string;
+  regulator_url: string;
+  operator_verified_at: string;
+}
+
+export interface DailyCouponResponse {
+  status: CouponStatus;
+  round: number | null;
+  generated_at: string;
+  market_fetched_at: string | null;
+  window_from: string | null;
+  window_to: string | null;
+  selections: CouponSelection[];
+  combined_odds: number | null;
+  /** Approximate joint probability from multiplying individual model probabilities. */
+  combined_model_pct: number | null;
+  source: CouponSource;
+  licensed_operators: LicensedOperator[];
+}
+
 /** The full 306-fixture calendar with model prices for every unplayed game. */
 export async function getMatches(): Promise<MatchesResponse> {
   const resp = await fetch(`${API_BASE}/api/matches`);
+  if (!resp.ok) throw new Error(await resp.text());
+  return resp.json();
+}
+
+/** Guardrailed model-vs-market selections for the next active matchday. */
+export async function getDailyCoupon(): Promise<DailyCouponResponse> {
+  const resp = await fetch(`${API_BASE}/api/coupon`);
   if (!resp.ok) throw new Error(await resp.text());
   return resp.json();
 }

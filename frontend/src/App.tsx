@@ -4,10 +4,12 @@ import {
   refreshLiveData,
   getLiveData,
   getMatches,
+  getDailyCoupon,
   getAccuracy,
   type SimResponse,
   type LiveData,
   type MatchesResponse,
+  type DailyCouponResponse,
   type AccuracyReport,
   type WhatIf,
 } from "./api";
@@ -16,9 +18,10 @@ import { LeagueTable } from "./components/LeagueTable";
 import { PositionGrid } from "./components/PositionGrid";
 import { RacesView } from "./components/RacesView";
 import { LiveStats } from "./components/LiveStats";
+import { DailyCouponView } from "./components/DailyCouponView";
 import { useT, useLang } from "./i18n";
 
-type DashboardView = "forecast" | "positions" | "races" | "table" | "live";
+type DashboardView = "forecast" | "positions" | "races" | "table" | "coupon" | "live";
 
 type Theme = "dark" | "light";
 
@@ -67,6 +70,9 @@ export default function App() {
   const [nSims, setNSims] = useState(50000);
   const [seed, setSeed] = useState(12345);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
+  const [couponData, setCouponData] = useState<DailyCouponResponse | null>(null);
+  const [couponLoading, setCouponLoading] = useState(true);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
   const [activeView, setActiveView] = useState<DashboardView>("forecast");
@@ -115,6 +121,10 @@ export default function App() {
       .catch(() => {
         /* per-match forecasts are optional decoration */
       });
+    getDailyCoupon()
+      .then(setCouponData)
+      .catch((couponFailure) => setCouponError(String(couponFailure)))
+      .finally(() => setCouponLoading(false));
     getAccuracy()
       .then(setAccuracy)
       .catch(() => {
@@ -127,23 +137,31 @@ export default function App() {
     setRefreshing(true);
     setError(null);
     try {
+      setCouponLoading(true);
+      setCouponError(null);
       const live = await refreshLiveData();
       setLiveData(live);
       // The refresh mutates the backend's played results and ratings. Re-run
       // every derived view so the page cannot keep showing the old forecast.
-      const [result, matches, accuracyReport] = await Promise.all([
+      const [result, matches, accuracyReport, coupon] = await Promise.all([
         runSimulation({ n_sims: nSims, seed, what_if: whatIf }),
         getMatches().catch(() => null),
         getAccuracy().catch(() => null),
+        getDailyCoupon().catch((couponFailure) => {
+          setCouponError(String(couponFailure));
+          return null;
+        }),
       ]);
       setData(result);
       if (matches) setMatchesData(matches);
       if (accuracyReport) setAccuracy(accuracyReport);
+      if (coupon) setCouponData(coupon);
       if (!data) setActiveView("forecast");
     } catch (e) {
       setError(String(e));
     } finally {
       setRefreshing(false);
+      setCouponLoading(false);
     }
   }, [data, nSims, seed, whatIf]);
 
@@ -166,6 +184,7 @@ export default function App() {
     { id: "positions", label: t("tabPositions"), disabled: !data },
     { id: "races", label: t("tabRaces"), disabled: !data },
     { id: "table", label: t("tabTable"), disabled: !data },
+    { id: "coupon", label: t("tabCoupon"), disabled: !data },
     { id: "live", label: t("tabLive"), disabled: !liveData, count: liveData ? liveMatchCount : undefined },
   ];
 
@@ -301,6 +320,10 @@ export default function App() {
         )}
 
         {data && activeView === "table" && <LeagueTable table={data.table} />}
+
+        {data && activeView === "coupon" && (
+          <DailyCouponView data={couponData} loading={couponLoading} error={couponError} />
+        )}
 
         {liveData && activeView === "live" && <LiveStats liveData={liveData} />}
       </main>
