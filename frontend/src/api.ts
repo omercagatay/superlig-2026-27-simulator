@@ -2,10 +2,10 @@ export interface TeamRow {
   team: string;
   title_pct: number;
   title_odds: number | null;
-  ucl_pct: number;
-  uel_pct: number;
-  uecl_pct: number;
-  europe_pct: number;
+  top_two_pct: number;
+  third_pct: number;
+  fourth_pct: number;
+  top_four_pct: number;
   relegation_pct: number;
   relegation_odds: number | null;
   exp_points: number;

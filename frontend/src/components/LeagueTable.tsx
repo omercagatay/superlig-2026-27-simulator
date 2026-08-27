@@ -1,7 +1,7 @@
 import type { TableRow } from "../api";
 import { useT } from "../i18n";
 
-/** Marks the European and relegation cut lines in the projected table. */
+/** Marks exact upper-table positions and the relegation cut line. */
 function zoneClass(position: number, total: number): string {
   if (position <= 2) return "zone-ucl";
   if (position === 3) return "zone-uel";
@@ -60,13 +60,13 @@ export function LeagueTable({ table }: { table: TableRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="swatch zone-ucl" /> {tr("championsLeague")}
+          <span className="swatch zone-ucl" /> {tr("topTwo")}
         </li>
         <li>
-          <span className="swatch zone-uel" /> {tr("europaLeague")}
+          <span className="swatch zone-uel" /> {tr("thirdPlace")}
         </li>
         <li>
-          <span className="swatch zone-uecl" /> {tr("conferenceLeague")}
+          <span className="swatch zone-uecl" /> {tr("fourthPlace")}
         </li>
         <li>
           <span className="swatch zone-rel" /> {tr("relegation")}

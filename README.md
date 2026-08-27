@@ -2,7 +2,7 @@
 
 [English](README.md) | [Türkçe](README.tr.md)
 
-[![CI](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml)
+[![CI](https://github.com/omercagatay/superlig-2026-27-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/omercagatay/superlig-2026-27-simulator/actions/workflows/ci.yml)
 
 A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combines a Rust simulation engine, a React dashboard, live results from the Türkiye Futbol Federasyonu, and an optional Kimi-powered scenario analyzer.
 
@@ -15,7 +15,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Uses Dixon–Coles joint score sampling, which represents low-scoring and drawn matches better than independent Poissons.
 - Locks confirmed results from the official TFF calendar and simulates only the remaining fixtures.
 - Applies the Süper Lig's own classification rules, in which **head-to-head decides before goal difference**.
-- Produces title odds, an 18×18 finishing-position grid, a projected final table built from expected records, European-place and relegation odds, next-matchday home/draw/away forecasts, and pairwise "who finishes above whom" probabilities.
+- Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
 - Converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season.
 - Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
 
@@ -23,12 +23,12 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 
 | Layer | Technology |
 |---|---|
-| Backend/API | Rust 1.75+, Axum, Tokio |
+| Backend/API | Rust 1.87+, Axum, Tokio |
 | Simulation | Rayon, Rand, Dixon–Coles, pi-ratings, Elo/Poisson |
 | Frontend | React 18, TypeScript, Vite |
 | Live data | Türkiye Futbol Federasyonu (tff.org) fixture page |
 | Market odds | Nesine pre-match bulletin (comparison only, never a model input) |
-| Historical data | English Wikipedia season pages, 2012-13 to 2025-26 |
+| Historical data | MIT-licensed Club Football Match Data (2012-13 to 2024-25) plus official TFF results (2025-26) |
 | Scenario analysis | Kimi via the Moonshot API |
 | Deployment | Multi-stage Docker image; Railway-compatible |
 
@@ -46,7 +46,7 @@ Home advantage is a property of the **fixture**, not of the club: every club get
 By default those rates are blended with two models trained on real Süper Lig history:
 
 - **Elo (0.5):** current club strength on the ClubElo scale, plus an 80-point home adjustment.
-- **Dixon–Coles (0.3):** time-decayed attack/defence strengths and low-score correlation, fitted over 4,538 matches with a four-year half-life.
+- **Dixon–Coles (0.3):** time-decayed attack/defence strengths and low-score correlation, fitted over 4,590 chronologically dated matches with a four-year half-life.
 - **Pi-ratings (0.2):** sequential home/away strength updates from the same history.
 
 Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. When the Dixon–Coles weight is active, scorelines are drawn from its joint distribution.
@@ -59,14 +59,14 @@ The sigma is calibrated, not guessed. The arena replays each held-out season fro
 
 | | 2024-25 | 2025-26 |
 |---|---:|---:|
-| Actual champion points | 88 | 69 |
-| Actual points spread (sd) | 16.5 | 13.6 |
-| Model spread, σ=0 | 12.1 | 11.7 |
-| Model spread, σ=75 | ~13.6 | ~13.2 |
+| Played-match leader points | 86 | 77 |
+| Actual played-match points spread (sd) | 16.3 | 15.2 |
+| Model spread, σ=0 | 13.1 | 13.3 |
+| Model spread, σ=75 | ~14.4 | ~14.7 |
 
-Independent match sampling cannot generate season-long dominance; a shared per-season strength draw can, and σ≈75 is where simulated spread meets observed. It costs nothing per match — the analytic fixture probabilities use the point estimate, and per-match calibration is unchanged.
+Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes most of that gap. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 archive excludes unplayed administrative awards, so this diagnostic deliberately compares points from played fixtures on both sides.
 
-**A known residual:** even at this sigma the model under-produces runaway champions. Galatasaray's 88-point 2024-25 remains a ~2% event, and the model's median champion (70) sits well below the two most recent real ones (95 and 102). Read the title odds as "who is most likely to win", not as a forecast of the winning points total.
+**A known residual:** the model remains somewhat under-dispersed on 2024-25; an 86-point played-match leader occurs in roughly 7% of σ≈75 replays. Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
 
 **Ratings move with the season.** The Elo component starts from the preseason ClubElo baseline and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 
@@ -86,7 +86,7 @@ The table is ranked by:
 
 Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test.
 
-Positions 1–2 take Champions League places, 3rd the Europa League, 4th the Conference League, and the bottom three are relegated.
+The dashboard reports exact finishing bands—top two, third, fourth, and top four—rather than assigning UEFA competition names. Actual qualification depends on the Turkish Cup winner and that season's UEFA access list, so league position alone is not enough. The bottom three are relegated.
 
 ### Calibration
 
@@ -94,38 +94,38 @@ The Elo constants are verified against the real league rather than inherited:
 
 | | Empirical (14 seasons) | Simulated |
 |---|---:|---:|
-| Home goals per match | 1.571 | — |
-| Away goals per match | 1.225 | — |
-| Home wins | 45.4% | 45.4% |
-| Draws | 25.6% | 23.7% |
+| Home goals per match | 1.566 | — |
+| Away goals per match | 1.222 | — |
+| Home wins | 45.3% | 44.7% |
+| Draws | 25.8% | 24.5% |
 
 `tests/calibration.rs` fails the build if these drift apart.
 
 ### Model selection
 
-The blend was chosen by backtest, not by fiat. `cargo run --release --example arena` pits ten models against two held-out seasons (fit through 2023-24, tune on 2024-25; refit through 2024-25, judge on 2025-26), scored on log-loss, RPS, Brier, and accuracy. Test-season leaderboard (2025-26, 300 matches, log-loss per match):
+The blend was chosen by backtest, not by fiat. `cargo run --release --example arena` pits candidate models against two held-out seasons (fit through 2023-24, tune on 2024-25; refit through 2024-25, judge on 2025-26), scored on log-loss, RPS, Brier, and accuracy. Test-season leaderboard (2025-26, 306 matches, log-loss per match):
 
 | model | log-loss | RPS |
 |---|---:|---:|
-| **ensemble 0.5/0.3/0.2** | **0.9985** | **0.1957** |
-| Dixon–Coles, 1.5y half-life | 1.0001 | 0.1959 |
-| ensemble, validation-fitted weights | 1.0029 | 0.1960 |
-| Dixon–Coles, 4y half-life | 1.0059 | 0.1979 |
-| pi-ratings | 1.0068 | 0.1976 |
-| Elo–Poisson | 1.0087 | 0.1976 |
-| Maher (Poisson, no ρ) | 1.0106 | 0.1982 |
-| home-advantage baseline | 1.0857 | 0.2249 |
+| Dixon–Coles, 1.5y half-life | 0.9916 | 0.1925 |
+| **ensemble 0.5/0.3/0.2** | **0.9949** | **0.1943** |
+| logistic stack | 0.9974 | 0.1952 |
+| Dixon–Coles, 4y half-life | 0.9988 | 0.1950 |
+| ensemble, validation-fitted weights | 1.0018 | 0.1957 |
+| Elo–Poisson | 1.0049 | 0.1963 |
+| pi-ratings | 1.0076 | 0.1981 |
+| home-advantage baseline | 1.0865 | 0.2250 |
 
-Every real model clears the baselines by a wide margin; the gaps *within* the top group are inside sampling noise for 300 matches. The production ensemble is the only model in the top group on both hold-out seasons — weights fitted to the validation season alone (0.6/0/0.4) did better there but worse on test, i.e. they overfit. The 0.5/0.3/0.2 blend stays.
+Every fitted model clears the baselines by a wide margin. The production blend is within 0.0033 log-loss of the test winner while remaining competitive on validation. Weights fitted only to validation (0.4/0/0.6) win that season but fall behind on test, so the broader 0.5/0.3/0.2 blend stays.
 
-**Machine learning was tried and lost.** The arena builds a leak-free walk-forward meta-dataset (11 seasons, ~3,600 matches; every feature computed from models fitted only on earlier seasons) and fields a multinomial logistic stacker over the component models' outputs; a side experiment ran scikit-learn gradient boosting, random forests, and an MLP on the same features. Test-season log-loss: logistic stack 1.0002, sklearn logistic 1.0010, random forest 1.0083, shallow GBM 1.0129, MLP 1.0602 — all behind the 0.9985 statistical ensemble, with the tree/net models overfitting outright. This matches the literature: on results-only features, ML needs richer inputs (market odds, xG, lineups, within-season form) to beat a well-specified Dixon–Coles family, and none of those inputs are available here. A tuned temperature-scaling layer also failed to transfer from validation to test.
+The arena also builds a leak-free walk-forward multinomial logistic stack whose features are fitted only on earlier seasons. It scores 0.9974 on the test season: respectable, but behind the statistical ensemble. Results-only features do not currently justify replacing the simpler model; richer inputs such as xG and lineups are not available here.
 
 ## Run locally
 
 ### Prerequisites
 
-- Rust 1.75 or later
-- Node.js 20 or later with npm
+- Rust 1.87 or later
+- Node.js 20.19 or later with npm
 
 The baseline simulator does not require an API key. `KIMI_API_KEY` is needed only for natural-language scenarios.
 
@@ -136,8 +136,8 @@ The Vite development server proxies `/api` to port `3001`, so run the backend on
 Terminal 1:
 
 ```bash
-git clone https://github.com/omercagatay/worldcup-2026-simulator.git
-cd worldcup-2026-simulator
+git clone https://github.com/omercagatay/superlig-2026-27-simulator.git
+cd superlig-2026-27-simulator
 cp .env.example .env
 PORT=3001 cargo run --release
 ```
@@ -145,7 +145,7 @@ PORT=3001 cargo run --release
 Terminal 2:
 
 ```bash
-cd worldcup-2026-simulator/frontend
+cd superlig-2026-27-simulator/frontend
 npm ci
 npm run dev
 ```
@@ -176,14 +176,15 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 | `PORT` | `3000` | Backend HTTP port. Use `3001` with the Vite development server. |
 | `RUST_LOG` | `superlig_sim=info` | Rust tracing filter. |
 | `LIVE_REFRESH_MINUTES` | `30` | TFF refresh interval; `0` disables background refresh. |
+| `MAX_CONCURRENT_SIMULATIONS` | `1` | Global cap on overlapping Rayon simulations; excess requests receive HTTP 429. |
 | `ENSEMBLE_WEIGHTS` | `0.5,0.3,0.2` | Comma-separated Elo, Dixon–Coles, and pi-rating weights. |
 | `TRUST_PROXY` | `0` | Trust `X-Forwarded-For` for rate limiting only behind a sanitizing reverse proxy. |
 
 ## Use the dashboard
 
 1. Choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the four tabs: **Forecast** (title race, season outcomes, next matchday), **Positions** (finishing-position grid), **Table** (projected final table), and **Live** (results so far).
-3. Select **Update live data** to pull the latest results from TFF immediately.
+2. Explore the five tabs: **Forecast**, **Positions**, **Races**, **Table**, and **Live**.
+3. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view.
 4. Enter a scenario such as `Galatasaray's first-choice keeper is suspended for five matches`. Kimi explains the effect, supplies validated club ratings, and starts a new simulation.
 
 ## API
@@ -260,9 +261,11 @@ cargo fmt -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo build --release
+cargo audit
 
 cd frontend
 npm ci
+npm audit
 npm run build
 ```
 
@@ -276,9 +279,9 @@ The repository already includes the fixture calendar, historical results, and fi
 # 9 per round, 153 pairs each played exactly twice.
 python3 scripts/fetch_fixtures.py
 
-# 14 seasons of historical results from English Wikipedia.
-# Sleeps between requests: Wikipedia rate-limits action=raw by returning a
-# ~2 KB stub with HTTP 200 rather than an error.
+# Chronological 2012-13 to 2024-25 results from the MIT-licensed Club Football
+# Match Data archive, plus the official TFF 2025-26 weekly archive. The script
+# validates every expected season/week count before replacing the CSV.
 python3 scripts/fetch_history.py
 
 # Refit Dixon–Coles against the refreshed history (~0.3 s).
@@ -287,7 +290,10 @@ cargo run --release --example fit_dc
 
 Review the changed files under `data/` before committing a new fit.
 
-Two data-source quirks are worth knowing about:
+Data-source details worth knowing about:
+
+- **Historical match dates are preserved.** Dixon–Coles recency weights and sequential pi-ratings both depend on chronology; the generator rejects partial season archives instead of silently fitting them.
+- The redistributed archive-derived rows retain their upstream MIT notice in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 - **tff.org serves its pages as windows-1254**, not UTF-8. Decoding them as UTF-8 mangles every Turkish club name.
 - **tff.org serves an incomplete TLS chain**, omitting the GlobalSign intermediate that signs its certificate. Browsers recover by chasing the certificate's AIA URL; `curl`, Python `urllib`, and `reqwest` do not, and fail with "unable to get local issuer certificate". The fetch script performs the AIA fetch itself (pinned by SHA-256) and the server embeds the same intermediate at `data/tff_intermediate.pem`. Certificate verification stays on throughout.

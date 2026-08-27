@@ -1398,7 +1398,7 @@ button {
   background: color-mix(in srgb, var(--turf) calc(var(--i, 0) * 55%), transparent);
 }
 
-/* Column tints mark the European and relegation cut lines. Applied to the
+/* Column tints mark the top-four and relegation cut lines. Applied to the
    header cells only — tinting every body cell would fight the heat scale. */
 .position-grid th.col-europe {
   color: var(--turf);

@@ -129,13 +129,23 @@ export default function App() {
     try {
       const live = await refreshLiveData();
       setLiveData(live);
-      if (!data) setActiveView("live");
+      // The refresh mutates the backend's played results and ratings. Re-run
+      // every derived view so the page cannot keep showing the old forecast.
+      const [result, matches, accuracyReport] = await Promise.all([
+        runSimulation({ n_sims: nSims, seed, what_if: whatIf }),
+        getMatches().catch(() => null),
+        getAccuracy().catch(() => null),
+      ]);
+      setData(result);
+      if (matches) setMatchesData(matches);
+      if (accuracyReport) setAccuracy(accuracyReport);
+      if (!data) setActiveView("forecast");
     } catch (e) {
       setError(String(e));
     } finally {
       setRefreshing(false);
     }
-  }, [data]);
+  }, [data, nSims, seed, whatIf]);
 
   const liveMatchCount = liveData ? liveData.played_matches.length : 0;
   const lastUpdated = (() => {

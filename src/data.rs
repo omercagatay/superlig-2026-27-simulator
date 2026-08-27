@@ -21,14 +21,13 @@ pub const ELO_DIV: f64 = 400.0;
 ///
 /// Calibrated in `examples/arena.rs` against the spread of real final tables:
 /// replaying held-out seasons from the model's own match probabilities, the
-/// simulated points standard deviation matches the observed one (13.4 vs
-/// 13.6 on 2025-26) at roughly this value, where an earlier guess of 45 left
-/// the model visibly under-dispersed. Costs nothing per match — the analytic
-/// fixture probabilities use the point estimate; only season simulation draws.
+/// a sigma near this value raises the played-match table spread from 13.1 to
+/// roughly 14.4 against 16.3 observed on 2024-25, and from 13.3 to roughly
+/// 14.7 against 15.2 on 2025-26. Costs nothing per analytic match forecast;
+/// only season simulation draws it.
 ///
-/// Known residual: even here the model under-produces runaway champions. A
-/// 2024-25-style 88-point winner remains a ~2% event against an observed
-/// table spread it still cannot fully reach.
+/// Known residual: it remains under-dispersed on 2024-25; the 86 points won
+/// from played fixtures remain only about a 7% replay event.
 pub const RATING_SIGMA: f64 = 75.0;
 
 /// Elo update rate for one league match, before the goal-difference
@@ -40,17 +39,17 @@ pub const N_TEAMS: usize = 18;
 pub const N_ROUNDS: usize = 34;
 pub const N_FIXTURES: usize = 306;
 
-pub const UCL_SPOTS: usize = 2;
-pub const UEL_SPOTS: usize = 1;
-pub const UECL_SPOTS: usize = 1;
-pub const EUROPE_SPOTS: usize = UCL_SPOTS + UEL_SPOTS + UECL_SPOTS;
+/// Exact finishing-position cutoffs. UEFA competition entry cannot be
+/// inferred from league position alone because it also depends on the cup
+/// winner and that season's UEFA access list.
+pub const TOP_TWO_PLACES: usize = 2;
+pub const TOP_FOUR_PLACES: usize = 4;
 pub const RELEGATION_SPOTS: usize = 3;
 
-/// Compile-time: the European and relegation zones must not overlap, or
-/// `simulate`'s position bucketing would count one club in both.
+/// Compile-time: reported upper-table and relegation zones must not overlap.
 const _: () = {
-    assert!(UCL_SPOTS + UEL_SPOTS + UECL_SPOTS == EUROPE_SPOTS);
-    assert!(EUROPE_SPOTS + RELEGATION_SPOTS < N_TEAMS);
+    assert!(TOP_TWO_PLACES < TOP_FOUR_PLACES);
+    assert!(TOP_FOUR_PLACES + RELEGATION_SPOTS < N_TEAMS);
 };
 
 /// 2026-27 Trendyol Süper Lig clubs with ClubElo ratings as of 2026-08-16.

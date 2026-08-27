@@ -204,7 +204,11 @@ pub fn parse_bulletin(body: &str) -> Result<HashMap<(String, String), MarketPric
 
 pub async fn fetch() -> Result<MarketSnapshot> {
     let client = reqwest::Client::builder()
-        .user_agent("superlig-sim/0.1 (educational project)")
+        .user_agent(concat!(
+            "superlig-sim/",
+            env!("CARGO_PKG_VERSION"),
+            " (educational project)"
+        ))
         .timeout(std::time::Duration::from_secs(30))
         .build()?;
     let body = client
@@ -212,6 +216,8 @@ pub async fn fetch() -> Result<MarketSnapshot> {
         .send()
         .await
         .context("fetching the Nesine bulletin")?
+        .error_for_status()
+        .context("Nesine bulletin returned an error status")?
         .text()
         .await?;
     let prices = parse_bulletin(&body)?;

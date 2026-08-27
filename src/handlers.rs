@@ -1,7 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::Json};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Semaphore};
 
 use crate::llm;
 use crate::models::{build_response, ScenarioRequest, SimRequest, SimResponse};
@@ -18,6 +18,10 @@ pub struct AppState {
     /// simulation. `None` until the first successful fetch, and left at the
     /// last good snapshot if a later fetch fails.
     pub market: Arc<RwLock<Option<crate::market::MarketSnapshot>>>,
+    /// Global bound for CPU-heavy season simulations. Rayon already uses all
+    /// cores within one request, so unbounded overlapping requests only add
+    /// memory pressure and latency.
+    pub simulation_slots: Arc<Semaphore>,
 }
 
 pub async fn run_sim(
@@ -27,13 +31,16 @@ pub async fn run_sim(
     let n_sims =
         validate_n_sims(req.n_sims.unwrap_or(50000)).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let world_snapshot = state.world.read().await.clone();
+    let elo_overrides = req.elo_overrides.unwrap_or_default();
+    validate_elo_overrides(&world_snapshot, &elo_overrides)
+        .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let forced =
         crate::validation::validate_what_if(&world_snapshot, req.what_if.as_deref().unwrap_or(&[]))
             .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
     let config = SimConfig {
         n_sims,
         seed: req.seed.unwrap_or(12345),
-        elo_overrides: req.elo_overrides.unwrap_or_default(),
+        elo_overrides,
         forced,
     };
     let world = {
@@ -46,7 +53,7 @@ pub async fn run_sim(
             w
         }
     };
-    let resp = simulate_off_runtime(world, config, None).await?;
+    let resp = simulate_off_runtime(world, config, None, state.simulation_slots.clone()).await?;
     Ok(Json(resp))
 }
 
@@ -56,8 +63,16 @@ async fn simulate_off_runtime(
     world: crate::sim::World,
     config: SimConfig,
     scenario: Option<String>,
+    simulation_slots: Arc<Semaphore>,
 ) -> Result<SimResponse, (StatusCode, String)> {
+    let permit = simulation_slots.try_acquire_owned().map_err(|_| {
+        (
+            StatusCode::TOO_MANY_REQUESTS,
+            "Simulation capacity is busy; retry after the current run finishes".to_string(),
+        )
+    })?;
     tokio::task::spawn_blocking(move || {
+        let _permit = permit;
         let results = world.simulate(&config);
         build_response(&world, &results, &config, scenario)
     })
@@ -100,7 +115,13 @@ pub async fn scenario(
         elo_overrides: impact.adjustments.clone(),
         forced: HashMap::new(),
     };
-    let resp = simulate_off_runtime(world, config, Some(impact.analysis)).await?;
+    let resp = simulate_off_runtime(
+        world,
+        config,
+        Some(impact.analysis),
+        state.simulation_slots.clone(),
+    )
+    .await?;
     Ok(Json(resp))
 }
 
@@ -112,6 +133,12 @@ pub async fn perform_live_refresh(state: &AppState) -> anyhow::Result<LiveData> 
 
     let applied = {
         let mut world = state.world.write().await;
+        anyhow::ensure!(
+            live.played_matches.len() >= world.played.len(),
+            "TFF refresh regressed from {} recorded results to {}; keeping the last good state",
+            world.played.len(),
+            live.played_matches.len()
+        );
         world.update_from_live(&live)
     };
     tracing::info!("Live data applied to simulation: {applied} results");

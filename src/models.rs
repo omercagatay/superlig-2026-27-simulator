@@ -34,14 +34,14 @@ pub struct TeamRow {
     /// Fair decimal odds implied by `title_pct`; `None` when the club never
     /// won the league in any simulated season.
     pub title_odds: Option<f64>,
-    /// Champions League (positions 1-2).
-    pub ucl_pct: f64,
-    /// Europa League (position 3).
-    pub uel_pct: f64,
-    /// Conference League (position 4).
-    pub uecl_pct: f64,
-    /// Any European place (positions 1-4).
-    pub europe_pct: f64,
+    /// Finishing in positions 1-2.
+    pub top_two_pct: f64,
+    /// Finishing exactly third.
+    pub third_pct: f64,
+    /// Finishing exactly fourth.
+    pub fourth_pct: f64,
+    /// Finishing in positions 1-4.
+    pub top_four_pct: f64,
     /// Relegation (bottom three).
     pub relegation_pct: f64,
     pub relegation_odds: Option<f64>,
@@ -352,10 +352,10 @@ pub fn build_response(
                 team: world.teams[i].clone(),
                 title_pct,
                 title_odds: crate::odds::decimal_odds_from_pct(title_pct),
-                ucl_pct: pct(results.ucl_counts[i]),
-                uel_pct: pct(results.uel_counts[i]),
-                uecl_pct: pct(results.uecl_counts[i]),
-                europe_pct: pct(results.europe_counts[i]),
+                top_two_pct: pct(results.top_two_counts[i]),
+                third_pct: pct(results.third_counts[i]),
+                fourth_pct: pct(results.fourth_counts[i]),
+                top_four_pct: pct(results.top_four_counts[i]),
                 relegation_pct,
                 relegation_odds: crate::odds::decimal_odds_from_pct(relegation_pct),
                 exp_points: results.points_sum[i] / n,
@@ -439,7 +439,7 @@ pub fn build_response(
     contenders.sort_by(|&a, &b| {
         results.title_counts[b]
             .cmp(&results.title_counts[a])
-            .then_with(|| results.europe_counts[b].cmp(&results.europe_counts[a]))
+            .then_with(|| results.top_four_counts[b].cmp(&results.top_four_counts[a]))
     });
     contenders.truncate(6);
     let mut rivalries: Vec<RivalryPair> = Vec::new();
@@ -462,30 +462,40 @@ pub fn build_response(
     });
     rivalries.truncate(8);
 
-    // The league's own cut lines: champion, last Champions League place, last
-    // European place, and the last safe spot.
+    // Exact league-position cut lines. UEFA qualification is deliberately not
+    // claimed here: cup outcomes and the season's access list can move it.
     let last_safe = n_teams - crate::data::RELEGATION_SPOTS;
     let marks: [(usize, &str); 4] = [
         (1, "Champion"),
-        (crate::data::UCL_SPOTS, "Last Champions League place"),
-        (crate::data::EUROPE_SPOTS, "Last European place"),
+        (crate::data::TOP_TWO_PLACES, "Last top-two place"),
+        (crate::data::TOP_FOUR_PLACES, "Last top-four place"),
         (last_safe, "Last safe place"),
     ];
+    let quantile = |counts: &[usize], q: f64| -> Option<i64> {
+        let total: usize = counts.iter().sum();
+        if total == 0 {
+            return None;
+        }
+        let target = ((total - 1) as f64 * q).round() as usize;
+        let mut cumulative = 0;
+        for (points, &count) in counts.iter().enumerate() {
+            cumulative += count;
+            if cumulative > target {
+                return Some(points as i64);
+            }
+        }
+        None
+    };
     let thresholds: Vec<RaceThreshold> = marks
         .iter()
         .filter_map(|&(position, label)| {
-            let mut pts = results.cutoff_points.get(position - 1)?.clone();
-            if pts.is_empty() {
-                return None;
-            }
-            pts.sort_unstable();
-            let at = |q: f64| pts[(((pts.len() - 1) as f64) * q).round() as usize];
+            let counts = results.cutoff_point_counts.get(position - 1)?;
             Some(RaceThreshold {
                 position,
                 label: label.to_string(),
-                p50: at(0.5),
-                p75: at(0.75),
-                p90: at(0.9),
+                p50: quantile(counts, 0.5)?,
+                p75: quantile(counts, 0.75)?,
+                p90: quantile(counts, 0.9)?,
             })
         })
         .collect();
@@ -538,8 +548,8 @@ mod tests {
         assert!((title - 100.0).abs() < 1e-6, "title odds sum to {title}");
 
         for t in &resp.teams {
-            assert!((t.europe_pct - (t.ucl_pct + t.uel_pct + t.uecl_pct)).abs() < 1e-6);
-            assert!(t.title_pct <= t.ucl_pct + 1e-9);
+            assert!((t.top_four_pct - (t.top_two_pct + t.third_pct + t.fourth_pct)).abs() < 1e-6);
+            assert!(t.title_pct <= t.top_two_pct + 1e-9);
             assert!(t.exp_points >= 0.0 && t.exp_points <= 102.0);
             assert!(t.mean_position >= 1.0 && t.mean_position <= 18.0);
         }

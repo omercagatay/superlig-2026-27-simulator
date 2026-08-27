@@ -98,7 +98,7 @@ impl Ensemble {
         // `neutral = false`: league fixtures always have a home side, so
         // Dixon-Coles applies its gamma home boost.
         let (dc_h, dc_a) = self.dc.lam(home, away, false);
-        let (pi_h, pi_a) = self.pi.lambdas(home, away, true, false);
+        let (pi_h, pi_a) = self.pi.lambdas(home, away, false);
         Some((
             (self.w_dc * dc_h + self.w_pi * pi_h) / total,
             (self.w_dc * dc_a + self.w_pi * pi_a) / total,
@@ -140,10 +140,10 @@ pub struct SimResults {
     /// `position_counts[club][position]`, position 0 = champion.
     pub position_counts: Vec<Vec<usize>>,
     pub title_counts: Vec<usize>,
-    pub ucl_counts: Vec<usize>,
-    pub uel_counts: Vec<usize>,
-    pub uecl_counts: Vec<usize>,
-    pub europe_counts: Vec<usize>,
+    pub top_two_counts: Vec<usize>,
+    pub third_counts: Vec<usize>,
+    pub fourth_counts: Vec<usize>,
+    pub top_four_counts: Vec<usize>,
     pub relegation_counts: Vec<usize>,
     pub points_sum: Vec<f64>,
     pub gd_sum: Vec<f64>,
@@ -153,11 +153,133 @@ pub struct SimResults {
     pub ga_sum: Vec<f64>,
     /// `pairwise_above[a * n + b]` = trials where `a` finished above `b`.
     pub pairwise_above: Vec<usize>,
-    /// Per-trial points of the club that finished in each position, so the
-    /// league's own cut lines can be read off ("how many points has actually
-    /// been enough for the top two?"). Indexed by position, 0 = champion.
-    pub cutoff_points: Vec<Vec<i64>>,
+    /// `cutoff_point_counts[position][points]` is the number of trials where
+    /// that points total occupied the position. A fixed-size histogram avoids
+    /// retaining one points value per simulated season.
+    pub cutoff_point_counts: Vec<Vec<usize>>,
+    /// A deterministic sample season retained for diagnostics and tests.
     pub representative: SeasonResult,
+}
+
+/// Streaming reduction state. Keeping one of these per Rayon worker is a few
+/// kilobytes; retaining every `SeasonResult` for a 200k-trial request was
+/// roughly 150 MB and multiplied that cost across concurrent requests.
+struct SimAccumulator {
+    position_counts: Vec<Vec<usize>>,
+    title_counts: Vec<usize>,
+    top_two_counts: Vec<usize>,
+    third_counts: Vec<usize>,
+    fourth_counts: Vec<usize>,
+    top_four_counts: Vec<usize>,
+    relegation_counts: Vec<usize>,
+    points_sum: Vec<f64>,
+    gd_sum: Vec<f64>,
+    won_sum: Vec<f64>,
+    drawn_sum: Vec<f64>,
+    gf_sum: Vec<f64>,
+    ga_sum: Vec<f64>,
+    pairwise_above: Vec<usize>,
+    cutoff_point_counts: Vec<Vec<usize>>,
+}
+
+impl SimAccumulator {
+    fn new(n: usize) -> Self {
+        Self {
+            position_counts: vec![vec![0; n]; n],
+            title_counts: vec![0; n],
+            top_two_counts: vec![0; n],
+            third_counts: vec![0; n],
+            fourth_counts: vec![0; n],
+            top_four_counts: vec![0; n],
+            relegation_counts: vec![0; n],
+            points_sum: vec![0.0; n],
+            gd_sum: vec![0.0; n],
+            won_sum: vec![0.0; n],
+            drawn_sum: vec![0.0; n],
+            gf_sum: vec![0.0; n],
+            ga_sum: vec![0.0; n],
+            pairwise_above: vec![0; n * n],
+            cutoff_point_counts: vec![vec![0; data::N_ROUNDS * 3 + 1]; n],
+        }
+    }
+
+    fn record(&mut self, season: &SeasonResult) {
+        let n = season.order.len();
+        let relegation_from = n - data::RELEGATION_SPOTS;
+        for (position, &club) in season.order.iter().enumerate() {
+            self.position_counts[club][position] += 1;
+            let points = usize::try_from(season.records[club].points)
+                .expect("simulated league points are non-negative");
+            self.cutoff_point_counts[position][points] += 1;
+            if position == 0 {
+                self.title_counts[club] += 1;
+            }
+            if position < data::TOP_TWO_PLACES {
+                self.top_two_counts[club] += 1;
+            }
+            if position == 2 {
+                self.third_counts[club] += 1;
+            }
+            if position == 3 {
+                self.fourth_counts[club] += 1;
+            }
+            if position < data::TOP_FOUR_PLACES {
+                self.top_four_counts[club] += 1;
+            }
+            if position >= relegation_from {
+                self.relegation_counts[club] += 1;
+            }
+            for &below in &season.order[position + 1..] {
+                self.pairwise_above[club * n + below] += 1;
+            }
+        }
+        for club in 0..n {
+            self.points_sum[club] += season.records[club].points as f64;
+            self.gd_sum[club] += season.records[club].gd() as f64;
+            self.won_sum[club] += season.records[club].won as f64;
+            self.drawn_sum[club] += season.records[club].drawn as f64;
+            self.gf_sum[club] += season.records[club].gf as f64;
+            self.ga_sum[club] += season.records[club].ga as f64;
+        }
+    }
+
+    fn merge(mut self, other: Self) -> Self {
+        for (dst, src) in self.position_counts.iter_mut().zip(&other.position_counts) {
+            for (dst, src) in dst.iter_mut().zip(src) {
+                *dst += *src;
+            }
+        }
+        for (dst, src) in self
+            .cutoff_point_counts
+            .iter_mut()
+            .zip(&other.cutoff_point_counts)
+        {
+            for (dst, src) in dst.iter_mut().zip(src) {
+                *dst += *src;
+            }
+        }
+        macro_rules! add_vec {
+            ($field:ident) => {
+                for (dst, src) in self.$field.iter_mut().zip(&other.$field) {
+                    *dst += *src;
+                }
+            };
+        }
+        add_vec!(title_counts);
+        add_vec!(top_two_counts);
+        add_vec!(third_counts);
+        add_vec!(fourth_counts);
+        add_vec!(top_four_counts);
+        add_vec!(relegation_counts);
+        add_vec!(points_sum);
+        add_vec!(gd_sum);
+        add_vec!(won_sum);
+        add_vec!(drawn_sum);
+        add_vec!(gf_sum);
+        add_vec!(ga_sum);
+        add_vec!(pairwise_above);
+        self
+    }
 }
 
 /// A result the user has pinned for an unplayed fixture. The *outcome* is
@@ -281,8 +403,8 @@ impl World {
     /// added or corrected — an empty or partial scrape never erases the
     /// baseline, so a bad fetch degrades to "no new information".
     ///
-    /// Elo ratings are no longer scraped: club ratings come from `data::elo()`
-    /// and are adjusted only through scenario overrides.
+    /// Elo ratings are not scraped directly: club ratings start at
+    /// `data::elo()` and are replayed through every recorded result.
     pub fn update_from_live(&mut self, live: &crate::scraper::LiveData) -> usize {
         let mut applied = 0;
         for m in &live.played_matches {
@@ -302,9 +424,14 @@ impl World {
                 );
                 continue;
             }
-            self.played
-                .insert((home, away), (m.home_score, m.away_score));
-            applied += 1;
+            let score = (m.home_score, m.away_score);
+            if self.played.get(&(home, away)) != Some(&score) {
+                self.played.insert((home, away), score);
+                applied += 1;
+            }
+        }
+        if applied > 0 {
+            self.refresh_ratings();
         }
         applied
     }
@@ -535,105 +662,46 @@ impl World {
     pub fn simulate(&self, config: &SimConfig) -> SimResults {
         let n_sims = config.n_sims;
         let n = self.teams.len();
-        let seasons: Vec<SeasonResult> = (0..n_sims)
+        assert!(n_sims > 0, "simulation requires at least one trial");
+
+        let totals = (0..n_sims)
             .into_par_iter()
-            .map(|i| {
-                let mut rng =
-                    SmallRng::seed_from_u64(config.seed.wrapping_add(i as u64 * 2654435761));
-                self.simulate_one_with(&mut rng, &config.forced)
-            })
-            .collect();
+            .fold(
+                || SimAccumulator::new(n),
+                |mut totals, i| {
+                    let mut rng =
+                        SmallRng::seed_from_u64(config.seed.wrapping_add(i as u64 * 2_654_435_761));
+                    let season = self.simulate_one_with(&mut rng, &config.forced);
+                    totals.record(&season);
+                    totals
+                },
+            )
+            .reduce(|| SimAccumulator::new(n), SimAccumulator::merge);
 
-        let mut position_counts = vec![vec![0usize; n]; n];
-        let mut title_counts = vec![0usize; n];
-        let mut ucl_counts = vec![0usize; n];
-        let mut uel_counts = vec![0usize; n];
-        let mut uecl_counts = vec![0usize; n];
-        let mut europe_counts = vec![0usize; n];
-        let mut relegation_counts = vec![0usize; n];
-        let mut points_sum = vec![0.0f64; n];
-        let mut gd_sum = vec![0.0f64; n];
-        let mut won_sum = vec![0.0f64; n];
-        let mut drawn_sum = vec![0.0f64; n];
-        let mut gf_sum = vec![0.0f64; n];
-        let mut ga_sum = vec![0.0f64; n];
-        let mut pairwise_above = vec![0usize; n * n];
-        let mut cutoff_points: Vec<Vec<i64>> = vec![Vec::with_capacity(n_sims); n];
-
-        let relegation_from = n - data::RELEGATION_SPOTS;
-        for s in &seasons {
-            for (pos, &club) in s.order.iter().enumerate() {
-                position_counts[club][pos] += 1;
-                cutoff_points[pos].push(s.records[club].points);
-                if pos == 0 {
-                    title_counts[club] += 1;
-                }
-                if pos < data::UCL_SPOTS {
-                    ucl_counts[club] += 1;
-                } else if pos < data::UCL_SPOTS + data::UEL_SPOTS {
-                    uel_counts[club] += 1;
-                } else if pos < data::EUROPE_SPOTS {
-                    uecl_counts[club] += 1;
-                }
-                if pos < data::EUROPE_SPOTS {
-                    europe_counts[club] += 1;
-                }
-                if pos >= relegation_from {
-                    relegation_counts[club] += 1;
-                }
-                for &below in &s.order[pos + 1..] {
-                    pairwise_above[club * n + below] += 1;
-                }
-            }
-            for club in 0..n {
-                points_sum[club] += s.records[club].points as f64;
-                gd_sum[club] += s.records[club].gd() as f64;
-                won_sum[club] += s.records[club].won as f64;
-                drawn_sum[club] += s.records[club].drawn as f64;
-                gf_sum[club] += s.records[club].gf as f64;
-                ga_sum[club] += s.records[club].ga as f64;
-            }
-        }
-
-        // Representative season: the trial whose finishing order best matches
-        // the per-position modal club. Replaces the old representative bracket.
-        let mode_at: Vec<usize> = (0..n)
-            .map(|pos| {
-                (0..n)
-                    .max_by_key(|&club| position_counts[club][pos])
-                    .unwrap_or(0)
-            })
-            .collect();
-        let score = |s: &SeasonResult| -> usize {
-            s.order
-                .iter()
-                .enumerate()
-                .filter(|&(pos, &club)| mode_at[pos] == club)
-                .count()
+        // Keep one deterministic diagnostic sample without retaining every
+        // trial. Aggregate API output is built exclusively from `totals`.
+        let representative = {
+            let mut rng = SmallRng::seed_from_u64(config.seed.wrapping_add(0x9E37_79B9_7F4A_7C15));
+            self.simulate_one_with(&mut rng, &config.forced)
         };
-        let representative = seasons
-            .iter()
-            .max_by_key(|s| score(s))
-            .cloned()
-            .expect("at least one trial");
 
         SimResults {
             n_sims,
-            position_counts,
-            title_counts,
-            ucl_counts,
-            uel_counts,
-            uecl_counts,
-            europe_counts,
-            relegation_counts,
-            points_sum,
-            gd_sum,
-            won_sum,
-            drawn_sum,
-            gf_sum,
-            ga_sum,
-            pairwise_above,
-            cutoff_points,
+            position_counts: totals.position_counts,
+            title_counts: totals.title_counts,
+            top_two_counts: totals.top_two_counts,
+            third_counts: totals.third_counts,
+            fourth_counts: totals.fourth_counts,
+            top_four_counts: totals.top_four_counts,
+            relegation_counts: totals.relegation_counts,
+            points_sum: totals.points_sum,
+            gd_sum: totals.gd_sum,
+            won_sum: totals.won_sum,
+            drawn_sum: totals.drawn_sum,
+            gf_sum: totals.gf_sum,
+            ga_sum: totals.ga_sum,
+            pairwise_above: totals.pairwise_above,
+            cutoff_point_counts: totals.cutoff_point_counts,
             representative,
         }
     }
@@ -726,18 +794,27 @@ mod tests {
         assert_eq!(w.elo, once, "recompute must not compound");
 
         // The same holds through the live path, which re-sends known results.
+        // First use a genuinely unplayed fixture so the test also proves that
+        // the initial live update moves ratings.
+        let f = w
+            .fixtures
+            .iter()
+            .find(|f| !w.played.contains_key(&(f.home, f.away)))
+            .copied()
+            .expect("an unplayed fixture exists");
         let live = crate::scraper::LiveData {
             played_matches: vec![crate::scraper::ScrapedMatch {
-                round: 1,
-                home: "Galatasaray".to_string(),
-                home_score: 2,
-                away: "Çorum".to_string(),
-                away_score: 2,
+                round: f.round,
+                home: w.teams[f.home].clone(),
+                home_score: 5,
+                away: w.teams[f.away].clone(),
+                away_score: 0,
             }],
             fetched_at: "2026-08-17T00:00:00Z".to_string(),
         };
         w.update_from_live(&live);
         let after_first = w.elo.clone();
+        assert_ne!(after_first, once, "a new live result must update ratings");
         w.update_from_live(&live);
         assert_eq!(w.elo, after_first, "re-applying a result must be a no-op");
     }
@@ -949,12 +1026,12 @@ mod tests {
         for club in 0..data::N_TEAMS {
             let d = &r.position_counts[club];
             assert_eq!(r.title_counts[club], d[0]);
-            assert_eq!(r.ucl_counts[club], d[0] + d[1]);
-            assert_eq!(r.uel_counts[club], d[2]);
-            assert_eq!(r.uecl_counts[club], d[3]);
+            assert_eq!(r.top_two_counts[club], d[0] + d[1]);
+            assert_eq!(r.third_counts[club], d[2]);
+            assert_eq!(r.fourth_counts[club], d[3]);
             assert_eq!(
-                r.europe_counts[club],
-                d[..data::EUROPE_SPOTS].iter().sum::<usize>()
+                r.top_four_counts[club],
+                d[..data::TOP_FOUR_PLACES].iter().sum::<usize>()
             );
             let rel: usize = d[data::N_TEAMS - data::RELEGATION_SPOTS..].iter().sum();
             assert_eq!(
@@ -965,6 +1042,16 @@ mod tests {
             );
         }
         assert_eq!(r.title_counts.iter().sum::<usize>(), cfg.n_sims);
+        assert_eq!(
+            r.top_two_counts.iter().sum::<usize>(),
+            cfg.n_sims * data::TOP_TWO_PLACES
+        );
+        assert_eq!(r.third_counts.iter().sum::<usize>(), cfg.n_sims);
+        assert_eq!(r.fourth_counts.iter().sum::<usize>(), cfg.n_sims);
+        assert_eq!(
+            r.top_four_counts.iter().sum::<usize>(),
+            cfg.n_sims * data::TOP_FOUR_PLACES
+        );
         assert_eq!(
             r.relegation_counts.iter().sum::<usize>(),
             cfg.n_sims * data::RELEGATION_SPOTS

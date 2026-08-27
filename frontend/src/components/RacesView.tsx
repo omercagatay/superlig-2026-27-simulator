@@ -16,15 +16,15 @@ const RACES: Race[] = [
     tone: "tone-turf",
   },
   {
-    title: "championsLeague",
-    note: "raceUclNote",
-    pick: (t) => t.ucl_pct,
+    title: "topTwo",
+    note: "raceTopTwoNote",
+    pick: (t) => t.top_two_pct,
     tone: "tone-turf",
   },
   {
-    title: "anyEuropeanPlace",
-    note: "raceEuropeNote",
-    pick: (t) => t.europe_pct,
+    title: "topFour",
+    note: "raceTopFourNote",
+    pick: (t) => t.top_four_pct,
     tone: "tone-sky",
   },
   {
@@ -78,8 +78,8 @@ export function RacesView({
   const tr = useT();
   const LABELS: Record<string, Key> = {
     Champion: "champion",
-    "Last Champions League place": "lastUclPlace",
-    "Last European place": "lastEuropeanPlace",
+    "Last top-two place": "lastTopTwoPlace",
+    "Last top-four place": "lastTopFourPlace",
     "Last safe place": "lastSafePlace",
   };
   return (

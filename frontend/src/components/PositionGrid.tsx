@@ -70,7 +70,7 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="swatch col-europe" /> {tr("europeanPlaces")}
+          <span className="swatch col-europe" /> {tr("topFourPlaces")}
         </li>
         <li>
           <span className="swatch col-rel" /> {tr("relegationZone")}

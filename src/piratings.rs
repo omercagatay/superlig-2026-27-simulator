@@ -60,11 +60,34 @@ impl PiRatings {
         ordered.sort_by_key(|m| m.date);
 
         let mut total_goals = 0u64;
-        for m in &ordered {
-            let h = idx.canonical(&m.home_team);
-            let a = idx.canonical(&m.away_team);
-            ratings.update(h, a, m.home_score as f64 - m.away_score as f64);
-            total_goals += (m.home_score + m.away_score) as u64;
+        let mut start = 0;
+        while start < ordered.len() {
+            let day = ordered[start].date;
+            let end = ordered[start..]
+                .iter()
+                .position(|m| m.date != day)
+                .map_or(ordered.len(), |offset| start + offset);
+
+            // All fixtures on a date use the ratings entering that date.
+            // This makes the result independent of arbitrary CSV ordering —
+            // especially important because historical clubs share one bucket.
+            let updates: Vec<(usize, usize, f64)> = ordered[start..end]
+                .iter()
+                .map(|m| {
+                    let h = idx.canonical(&m.home_team);
+                    let a = idx.canonical(&m.away_team);
+                    let step = ratings.update_step(h, a, m.home_score as f64 - m.away_score as f64);
+                    (h, a, step)
+                })
+                .collect();
+            for (home, away, step) in updates {
+                ratings.apply_step(home, away, step);
+            }
+            total_goals += ordered[start..end]
+                .iter()
+                .map(|m| (m.home_score + m.away_score) as u64)
+                .sum::<u64>();
+            start = end;
         }
         ratings.n_matches = ordered.len();
         ratings.avg_goals = if ordered.is_empty() {
@@ -80,35 +103,36 @@ impl PiRatings {
         ratings
     }
 
-    fn update(&mut self, home: usize, away: usize, observed_gd: f64) {
+    fn update_step(&self, home: usize, away: usize, observed_gd: f64) -> f64 {
         let predicted = expected_gd(self.home[home]) - expected_gd(self.away[away]);
         let error = observed_gd - predicted;
-        let step = psi(error) * LAMBDA * error.signum();
-
-        let dh = step;
-        self.home[home] += dh;
-        self.away[home] += dh * GAMMA;
-
-        let da = -step;
-        self.away[away] += da;
-        self.home[away] += da * GAMMA;
+        psi(error) * LAMBDA * error.signum()
     }
 
-    /// Rating used for a neutral-venue match (mean of home/away form);
-    /// hosts keep their home-ground rating.
-    pub fn effective_rating(&self, team: usize, is_host: bool) -> f64 {
-        if is_host {
-            self.home[team]
+    fn apply_step(&mut self, home: usize, away: usize, step: f64) {
+        self.home[home] += step;
+        self.away[home] += step * GAMMA;
+
+        self.away[away] -= step;
+        self.home[away] -= step * GAMMA;
+    }
+
+    /// Rating used for a neutral-venue match (mean of home/away form).
+    fn neutral_rating(&self, team: usize) -> f64 {
+        (self.home[team] + self.away[team]) / 2.0
+    }
+
+    /// Expected goals `(λ_home, λ_away)`, splitting the expected total around
+    /// the predicted goal difference. League fixtures use the two venue-
+    /// specific ratings; a genuinely neutral match averages each club's home
+    /// and away ratings.
+    pub fn lambdas(&self, home: usize, away: usize, neutral: bool) -> (f64, f64) {
+        let (home_rating, away_rating) = if neutral {
+            (self.neutral_rating(home), self.neutral_rating(away))
         } else {
-            (self.home[team] + self.away[team]) / 2.0
-        }
-    }
-
-    /// Expected goals `(λ_a, λ_b)` for a match, splitting the expected
-    /// total around the predicted goal difference.
-    pub fn lambdas(&self, a: usize, b: usize, a_host: bool, b_host: bool) -> (f64, f64) {
-        let gd = expected_gd(self.effective_rating(a, a_host))
-            - expected_gd(self.effective_rating(b, b_host));
+            (self.home[home], self.away[away])
+        };
+        let gd = expected_gd(home_rating) - expected_gd(away_rating);
         let la = (self.avg_goals + gd) / 2.0;
         let lb = (self.avg_goals - gd) / 2.0;
         (la.clamp(0.15, 5.0), lb.clamp(0.15, 5.0))
@@ -160,11 +184,11 @@ mod tests {
         }
         let pi = PiRatings::compute(&history, &idx, since);
         let (gs, gaz) = (idx.canonical("Galatasaray"), idx.canonical("Gaziantep"));
-        let (lgs, lgaz) = pi.lambdas(gs, gaz, false, false);
+        let (lgs, lgaz) = pi.lambdas(gs, gaz, true);
         assert!(lgs > lgaz, "Galatasaray should have higher expected goals");
         assert!(lgaz >= 0.15);
         // Order symmetry.
-        let (lgaz2, lgs2) = pi.lambdas(gaz, gs, false, false);
+        let (lgaz2, lgs2) = pi.lambdas(gaz, gs, true);
         assert!((lgs - lgs2).abs() < 1e-12 && (lgaz - lgaz2).abs() < 1e-12);
     }
 
@@ -181,12 +205,50 @@ mod tests {
         let pi = PiRatings::compute(&history, &idx, since);
         let tra = idx.canonical("Trabzonspor");
         let kon = idx.canonical("Konyaspor");
-        let (host_lam, _) = pi.lambdas(tra, kon, true, false);
-        let (neutral_lam, _) = pi.lambdas(tra, kon, false, false);
+        let (host_lam, _) = pi.lambdas(tra, kon, false);
+        let (neutral_lam, _) = pi.lambdas(tra, kon, true);
         assert!(
             host_lam > neutral_lam,
             "playing at home should use the stronger home rating: {host_lam} vs {neutral_lam}"
         );
+    }
+
+    #[test]
+    fn league_fixture_uses_the_away_clubs_away_rating() {
+        let idx = idx_fixture();
+        let gs = idx.canonical("Galatasaray");
+        let gaz = idx.canonical("Gaziantep");
+        let mut pi = PiRatings {
+            home: vec![0.0; idx.idx_to_name.len()],
+            away: vec![0.0; idx.idx_to_name.len()],
+            avg_goals: 2.6,
+            n_matches: 0,
+        };
+        // Deliberately make Gaziantep's venue ratings disagree. A league away
+        // fixture must use -1.0, while a neutral fixture uses their mean 1.0.
+        pi.home[gaz] = 3.0;
+        pi.away[gaz] = -1.0;
+
+        let (_, league_away) = pi.lambdas(gs, gaz, false);
+        let (_, neutral_away) = pi.lambdas(gs, gaz, true);
+        assert!(
+            league_away < neutral_away,
+            "away venue rating was ignored: {league_away} vs {neutral_away}"
+        );
+    }
+
+    #[test]
+    fn same_day_results_do_not_depend_on_csv_row_order() {
+        let idx = idx_fixture();
+        let since = NaiveDate::from_ymd_opt(2020, 1, 1).unwrap();
+        // Both unknown historical clubs map to Other Club. Sequentially
+        // updating that bucket would make the second row depend on the first.
+        let a = m((2021, 1, 1), "Historical A", "Galatasaray", 0, 3);
+        let b = m((2021, 1, 1), "Historical B", "Gaziantep", 2, 0);
+        let forward = PiRatings::compute(&[a.clone(), b.clone()], &idx, since);
+        let reversed = PiRatings::compute(&[b, a], &idx, since);
+        assert_eq!(forward.home, reversed.home);
+        assert_eq!(forward.away, reversed.away);
     }
 
     #[test]

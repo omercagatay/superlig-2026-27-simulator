@@ -31,18 +31,26 @@ struct Split {
     as_of: NaiveDate,
 }
 
-/// Seasons carry a nominal date of 1 Jan of their second year, so a season
-/// is selected by that year.
+/// Return the year in which a season ends. August is the boundary; this keeps
+/// the pandemic-delayed July 2020 fixtures in 2019-20.
+fn season_end_year(date: NaiveDate) -> i32 {
+    if date.month() >= 8 {
+        date.year() + 1
+    } else {
+        date.year()
+    }
+}
+
 fn split(eval_year: i32) -> Split {
     let all = history::load_history_with_cutoff(2012);
     let train: Vec<_> = all
         .iter()
-        .filter(|m| m.date.year() < eval_year)
+        .filter(|m| season_end_year(m.date) < eval_year)
         .cloned()
         .collect();
     let eval: Vec<_> = all
         .iter()
-        .filter(|m| m.date.year() == eval_year)
+        .filter(|m| season_end_year(m.date) == eval_year)
         .cloned()
         .collect();
     assert!(
@@ -263,7 +271,7 @@ impl Fitted {
     fn pi_lam(&self, m: &HistoricalMatch) -> (f64, f64) {
         let h = self.idx.canonical(&m.home_team);
         let a = self.idx.canonical(&m.away_team);
-        self.pi.lambdas(h, a, true, false)
+        self.pi.lambdas(h, a, false)
     }
 
     /// The λ blend production uses, with arbitrary weights (sum 1).
@@ -295,7 +303,7 @@ fn features(f: &Fitted, m: &HistoricalMatch) -> [f64; 7] {
     let a = f.idx.canonical(&m.away_team);
     let (dh, da) = f.dc.lam(h, a, false);
     let (sh, sa) = f.dc_short.lam(h, a, false);
-    let (ph, pa) = f.pi.lambdas(h, a, true, false);
+    let (ph, pa) = f.pi.lambdas(h, a, false);
     let dr = f.elo.rating(&m.home_team) - f.elo.rating(&m.away_team);
     [
         dh.ln(),

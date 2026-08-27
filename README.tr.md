@@ -2,7 +2,7 @@
 
 [English](README.md) | [Türkçe](README.tr.md)
 
-[![CI](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/omercagatay/worldcup-2026-simulator/actions/workflows/ci.yml)
+[![CI](https://github.com/omercagatay/superlig-2026-27-simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/omercagatay/superlig-2026-27-simulator/actions/workflows/ci.yml)
 
 2026-27 Trendyol Süper Lig sezonu için uçtan uca Monte Carlo tahmin uygulaması. Rust ile yazılmış bir simülasyon motoru, React tabanlı bir kontrol paneli, Türkiye Futbol Federasyonu'ndan canlı sonuçlar ve isteğe bağlı olarak Kimi destekli bir senaryo çözümleyicisi bir arada çalışır.
 
@@ -15,7 +15,7 @@
 - Skorları Dixon–Coles ortak dağılımından çeker; bu, az gollü ve berabere biten maçları bağımsız Poisson'lara göre daha iyi temsil eder.
 - TFF'nin resmî fikstüründeki oynanmış maçları sabitler ve yalnızca kalan maçları simüle eder.
 - Süper Lig'in kendi sıralama kurallarını uygular: **averaj değil, önce ikili averaj (head-to-head)** belirleyicidir.
-- Şampiyonluk oranları, 18×18 sıralama olasılık ızgarası, tahminî final puan durumu, Avrupa kupaları ve küme düşme olasılıkları, gelecek haftanın ev sahibi/beraberlik/deplasman tahminleri ve ikili "kim kimin üstünde bitirir" olasılıkları üretir.
+- Şampiyonluk, ilk iki, tam üçüncülük/dördüncülük, ilk dört ve küme düşme olasılıkları; 18×18 sıralama ızgarası; tahminî final tablosu; gelecek hafta tahminleri ve "kim kimin üstünde bitirir" olasılıkları üretir.
 - Doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder.
 - IP başına hız sınırı, istek doğrulama, deterministik tohum (seed), açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
 
@@ -23,11 +23,11 @@
 
 | Katman | Teknoloji |
 |---|---|
-| Sunucu/API | Rust 1.75+, Axum, Tokio |
+| Sunucu/API | Rust 1.87+, Axum, Tokio |
 | Simülasyon | Rayon, Rand, Dixon–Coles, pi-rating, Elo/Poisson |
 | Arayüz | React 18, TypeScript, Vite |
 | Canlı veri | Türkiye Futbol Federasyonu (tff.org) fikstür sayfası |
-| Geçmiş veri | İngilizce Vikipedi sezon sayfaları, 2012-13 – 2025-26 |
+| Geçmiş veri | MIT lisanslı Club Football Match Data (2012-13 – 2024-25) ve resmî TFF sonuçları (2025-26) |
 | Senaryo analizi | Moonshot API üzerinden Kimi |
 | Dağıtım | Çok aşamalı Docker imajı; Railway uyumlu |
 
@@ -45,7 +45,7 @@ Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift d
 Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki modelle harmanlanır:
 
 - **Elo (0,5):** ClubElo ölçeğinde güncel kulüp gücü ve 80 puanlık ev sahibi düzeltmesi.
-- **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; 4.538 maç üzerinde kalibre edilmiştir.
+- **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; gerçek tarihleri korunan 4.590 maç üzerinde kalibre edilmiştir.
 - **Pi-rating (0,2):** aynı geçmiş üzerinde ardışık ev/deplasman güç güncellemeleri.
 
 Harmanı değiştirmek için `ENSEMBLE_WEIGHTS` kullanılır; `1,0,0` saf Elo modelini seçer. Dixon–Coles ağırlığı etkinken skorlar onun ortak dağılımından örneklenir.
@@ -70,7 +70,7 @@ Puan durumu şu sırayla belirlenir:
 
 İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`).
 
-1-2. sıralar Şampiyonlar Ligi, 3. sıra Avrupa Ligi, 4. sıra Konferans Ligi biletini alır; son üç takım küme düşer.
+Panel ilk iki, üçüncü, dördüncü ve ilk dört gibi kesin lig sıralamalarını gösterir; bu sıralara doğrudan UEFA turnuvası adı vermez. Gerçek katılım Türkiye Kupası şampiyonuna ve o sezonun UEFA erişim listesine de bağlıdır. Son üç takım küme düşer.
 
 ### Kalibrasyon
 
@@ -78,10 +78,10 @@ Elo sabitleri devralınmaz, gerçek lig verisine karşı doğrulanır:
 
 | | Gerçek (14 sezon) | Simülasyon |
 |---|---:|---:|
-| Maç başına ev sahibi golü | 1,571 | — |
-| Maç başına deplasman golü | 1,225 | — |
-| Ev sahibi galibiyeti | %45,4 | %45,4 |
-| Beraberlik | %25,6 | %23,7 |
+| Maç başına ev sahibi golü | 1,566 | — |
+| Maç başına deplasman golü | 1,222 | — |
+| Ev sahibi galibiyeti | %45,3 | %44,7 |
+| Beraberlik | %25,8 | %24,5 |
 
 Bu değerler birbirinden uzaklaşırsa `tests/calibration.rs` derlemeyi düşürür. Beraberlik oranındaki ~2 puanlık fark, bağımsız Poisson örneklemesinin bilinen bir zayıflığıdır; Dixon–Coles ağırlığı etkinken ρ düzeltmesi bunu telafi eder.
 
@@ -89,8 +89,8 @@ Bu değerler birbirinden uzaklaşırsa `tests/calibration.rs` derlemeyi düşür
 
 ### Gereksinimler
 
-- Rust 1.75 veya üzeri
-- Node.js 20 veya üzeri ve npm
+- Rust 1.87 veya üzeri
+- Node.js 20.19 veya üzeri ve npm
 
 Temel simülatör için API anahtarı gerekmez. `KIMI_API_KEY` yalnızca doğal dil senaryoları için gereklidir.
 
@@ -101,8 +101,8 @@ Vite geliştirme sunucusu `/api` isteklerini 3001 portuna yönlendirir; bu neden
 Terminal 1:
 
 ```bash
-git clone https://github.com/omercagatay/worldcup-2026-simulator.git
-cd worldcup-2026-simulator
+git clone https://github.com/omercagatay/superlig-2026-27-simulator.git
+cd superlig-2026-27-simulator
 cp .env.example .env
 PORT=3001 cargo run --release
 ```
@@ -110,7 +110,7 @@ PORT=3001 cargo run --release
 Terminal 2:
 
 ```bash
-cd worldcup-2026-simulator/frontend
+cd superlig-2026-27-simulator/frontend
 npm ci
 npm run dev
 ```
@@ -141,14 +141,15 @@ cargo run --release
 | `PORT` | `3000` | Arka uç HTTP portu. Vite geliştirme sunucusuyla `3001` kullanın. |
 | `RUST_LOG` | `superlig_sim=info` | Rust tracing filtresi. |
 | `LIVE_REFRESH_MINUTES` | `30` | TFF yenileme aralığı; `0` arka plan yenilemesini kapatır. |
+| `MAX_CONCURRENT_SIMULATIONS` | `1` | Aynı anda çalışan Rayon simülasyonlarına genel sınır; fazlası HTTP 429 alır. |
 | `ENSEMBLE_WEIGHTS` | `0.5,0.3,0.2` | Virgülle ayrılmış Elo, Dixon–Coles ve pi-rating ağırlıkları. |
 | `TRUST_PROXY` | `0` | `X-Forwarded-For` başlığına yalnızca temizleyici bir ters vekil sunucu arkasında güvenin. |
 
 ## Panelin kullanımı
 
 1. Simülasyon sayısını ve tohumu seçip **Run** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
-2. Dört sekmeyi inceleyin: **Forecast** (şampiyonluk yarışı, sezon çıktıları, gelecek hafta), **Positions** (sıralama olasılık ızgarası), **Table** (tahminî final puan durumu) ve **Live** (şu ana kadarki sonuçlar).
-3. TFF'den en güncel sonuçları hemen çekmek için **Update live data** düğmesini kullanın.
+2. Beş sekmeyi inceleyin: **Forecast**, **Positions**, **Races**, **Table** ve **Live**.
+3. En güncel TFF sonuçlarını çekip tahmini, maç kartlarını ve isabet görünümünü yeniden hesaplamak için **Update live data** düğmesini kullanın.
 4. `Galatasaray'ın ilk kalecisi beş maç cezalı` gibi bir senaryo yazın. Kimi etkiyi açıklar, doğrulanmış kulüp puanları döndürür ve yeni bir simülasyon başlatır.
 
 ## API
@@ -222,9 +223,11 @@ cargo fmt -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo build --release
+cargo audit
 
 cd frontend
 npm ci
+npm audit
 npm run build
 ```
 
@@ -238,9 +241,9 @@ Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibr
 # hafta başına 9 maç, 153 eşleşmenin her biri tam olarak iki kez.
 python3 scripts/fetch_fixtures.py
 
-# İngilizce Vikipedi'den 14 sezonluk geçmiş sonuçlar.
-# İstekler arasında bekler: Vikipedi, action=raw isteklerini hata yerine
-# HTTP 200 ile ~2 KB'lık bir yer tutucu sayfa döndürerek sınırlar.
+# MIT lisanslı Club Football Match Data arşivinden tarih sıralı 2012-13 –
+# 2024-25 sonuçları ve resmî TFF haftalık arşivinden 2025-26 sonuçları.
+# CSV değiştirilmeden önce bütün sezon/hafta sayıları doğrulanır.
 python3 scripts/fetch_history.py
 
 # Yenilenen geçmişle Dixon–Coles'u yeniden kalibre et (~0,3 sn).
@@ -249,7 +252,10 @@ cargo run --release --example fit_dc
 
 Yeni bir kalibrasyonu işlemeden önce `data/` altındaki değişiklikleri gözden geçirin.
 
-Veri kaynaklarına dair bilinmesi gereken iki tuzak:
+Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
+
+- **Geçmiş maçların gerçek tarihleri korunur.** Dixon–Coles zaman ağırlıkları ve ardışık pi-rating modeli kronolojiye bağlıdır; üretici eksik sezon arşivini sessizce kullanmak yerine reddeder.
+- Yeniden dağıtılan arşiv kaynaklı satırların MIT bildirimi [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) içinde korunur.
 
 - **tff.org sayfalarını windows-1254 ile sunar**, UTF-8 ile değil. UTF-8 varsayarak çözmek bütün Türkçe kulüp adlarını bozar.
 - **tff.org eksik bir TLS zinciri sunar**: sertifikasını imzalayan GlobalSign ara sertifikasını göndermez. Tarayıcılar sertifikadaki AIA adresini kendiliğinden çekerek bunu telafi eder; `curl`, Python `urllib` ve `reqwest` etmez ve "unable to get local issuer certificate" hatası verir. Fikstür betiği bu AIA indirmesini kendisi yapar (SHA-256 ile sabitlenmiş), sunucu ise aynı ara sertifikayı `data/tff_intermediate.pem` içinde gömülü tutar. Sertifika doğrulaması hiçbir aşamada kapatılmaz.

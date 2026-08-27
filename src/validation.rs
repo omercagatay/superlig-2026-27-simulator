@@ -85,7 +85,7 @@ pub fn validate_elo_overrides(
         if !world.idx.contains_key(team) {
             return Err(format!("Unknown team in Elo overrides: {team}"));
         }
-        if *rating < MIN_ELO || *rating > MAX_ELO {
+        if !rating.is_finite() || *rating < MIN_ELO || *rating > MAX_ELO {
             return Err(format!(
                 "Elo rating for {team} must be between {MIN_ELO:.0} and {MAX_ELO:.0}, got {rating:.1}"
             ));
@@ -144,6 +144,9 @@ mod tests {
         assert!(validate_elo_overrides(&world, &overrides).is_err());
 
         overrides.insert("Galatasaray".to_string(), MAX_ELO + 1.0);
+        assert!(validate_elo_overrides(&world, &overrides).is_err());
+
+        overrides.insert("Galatasaray".to_string(), f64::NAN);
         assert!(validate_elo_overrides(&world, &overrides).is_err());
     }
 

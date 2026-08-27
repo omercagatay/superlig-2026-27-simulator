@@ -113,8 +113,8 @@ export function ClubDetail({
               <span className="club-stat-val">{team.title_pct.toFixed(1)}%</span>
             </div>
             <div className="club-stat">
-              <span className="tile-label">{tr("europe")}</span>
-              <span className="club-stat-val">{team.europe_pct.toFixed(1)}%</span>
+              <span className="tile-label">{tr("topFour")}</span>
+              <span className="club-stat-val">{team.top_four_pct.toFixed(1)}%</span>
             </div>
             <div className="club-stat">
               <span className="tile-label">{tr("relegation")}</span>

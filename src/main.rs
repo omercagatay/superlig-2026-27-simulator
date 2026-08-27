@@ -13,7 +13,7 @@ use superlig_sim::{
     rate_limit::RateLimitLayer,
     sim::World,
 };
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Semaphore};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -50,11 +50,19 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("KIMI_API_KEY not set — scenario endpoint will return an error");
     }
 
+    let simulation_capacity = std::env::var("MAX_CONCURRENT_SIMULATIONS")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .filter(|&value| value > 0)
+        .unwrap_or(1);
+    tracing::info!("Simulation concurrency limit: {simulation_capacity}");
+
     let state = Arc::new(AppState {
         world: Arc::new(RwLock::new(world)),
         kimi_api_key,
         live_data: Arc::new(RwLock::new(None)),
         market: Arc::new(RwLock::new(None)),
+        simulation_slots: Arc::new(Semaphore::new(simulation_capacity)),
     });
 
     // Keep the simulation current with the real tournament: refresh live

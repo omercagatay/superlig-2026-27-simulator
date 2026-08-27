@@ -54,10 +54,10 @@ export function ResultsTable({
               <th className="col-team">{tr("club")}</th>
               <th className="cell-title">{tr("title")}</th>
               <th title={tr("tipDecimalOdds")}>{tr("odds")}</th>
-              <th title={tr("tipUcl")}>UCL</th>
-              <th title={tr("tipUel")}>UEL</th>
-              <th title={tr("tipUecl")}>UECL</th>
-              <th title={tr("tipEurope")}>{tr("europe")}</th>
+              <th title={tr("tipTopTwo")}>{tr("topTwoShort")}</th>
+              <th title={tr("tipThird")}>{tr("thirdShort")}</th>
+              <th title={tr("tipFourth")}>{tr("fourthShort")}</th>
+              <th title={tr("tipTopFour")}>{tr("topFourShort")}</th>
               <th title={tr("tipRelegation")}>{tr("relegation")}</th>
               <th title={tr("tipXpts")}>{tr("xPts")}</th>
               <th title={tr("tipXgd")}>{tr("xGD")}</th>
@@ -103,17 +103,17 @@ export function ResultsTable({
                     <span className="cell-zero">–</span>
                   )}
                 </td>
-                <td style={heat(t.ucl_pct)}>
-                  <Pct v={t.ucl_pct} />
+                <td style={heat(t.top_two_pct)}>
+                  <Pct v={t.top_two_pct} />
                 </td>
-                <td style={heat(t.uel_pct)}>
-                  <Pct v={t.uel_pct} />
+                <td style={heat(t.third_pct)}>
+                  <Pct v={t.third_pct} />
                 </td>
-                <td style={heat(t.uecl_pct)}>
-                  <Pct v={t.uecl_pct} />
+                <td style={heat(t.fourth_pct)}>
+                  <Pct v={t.fourth_pct} />
                 </td>
-                <td style={heat(t.europe_pct)}>
-                  <Pct v={t.europe_pct} />
+                <td style={heat(t.top_four_pct)}>
+                  <Pct v={t.top_four_pct} />
                 </td>
                 <td style={risk(t.relegation_pct)}>
                   <Pct v={t.relegation_pct} />

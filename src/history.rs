@@ -204,24 +204,31 @@ mod tests {
         }
     }
 
-    /// The name-drift regression net. Wikipedia display names change between
-    /// seasons ("İstanbul B.B." -> "Başakşehir"); an unmapped variant sends a
-    /// real club's history into the bucket, silently weakening it. Asserting
-    /// per-club season coverage is what makes that failure loud.
+    /// The name-drift regression net. Source display names change over time;
+    /// an unmapped variant sends a real club's history into the bucket,
+    /// silently weakening it. Asserting season coverage makes that loud.
     #[test]
     fn every_ever_present_club_has_full_season_coverage() {
         use std::collections::HashSet;
         let ms = load_history();
         let mut seasons: HashMap<&str, HashSet<i32>> = HashMap::new();
         for m in &ms {
+            // The season is named for its starting year. August is the normal
+            // boundary and keeps the pandemic-delayed July 2020 fixtures in
+            // 2019-20.
+            let season = if m.date.month() >= 8 {
+                m.date.year()
+            } else {
+                m.date.year() - 1
+            };
             seasons
                 .entry(m.home_team.as_str())
                 .or_default()
-                .insert(m.date.year());
+                .insert(season);
             seasons
                 .entry(m.away_team.as_str())
                 .or_default()
-                .insert(m.date.year());
+                .insert(season);
         }
         for club in ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor"] {
             let n = seasons.get(club).map_or(0, |s| s.len());
@@ -242,5 +249,45 @@ mod tests {
                 "{name} has no history — check ALIASES in scripts/fetch_history.py"
             );
         }
+    }
+
+    #[test]
+    fn completed_2025_26_history_has_one_canonical_name_per_club() {
+        use std::collections::HashSet;
+        let start = NaiveDate::from_ymd_opt(2025, 8, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2026, 8, 1).unwrap();
+        let season: Vec<_> = load_history()
+            .into_iter()
+            .filter(|m| m.date >= start && m.date < end)
+            .collect();
+        assert_eq!(season.len(), crate::data::N_FIXTURES);
+
+        let actual: HashSet<&str> = season
+            .iter()
+            .flat_map(|m| [m.home_team.as_str(), m.away_team.as_str()])
+            .collect();
+        let expected: HashSet<&str> = [
+            "Alanyaspor",
+            "Antalyaspor",
+            "Başakşehir",
+            "Beşiktaş",
+            "Eyüpspor",
+            "Fenerbahçe",
+            "Galatasaray",
+            "Gaziantep",
+            "Gençlerbirliği",
+            "Göztepe",
+            "Karagümrük",
+            "Kasımpaşa",
+            "Kayserispor",
+            "Kocaelispor",
+            "Konyaspor",
+            "Rizespor",
+            "Samsunspor",
+            "Trabzonspor",
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(actual, expected, "stale sponsor-name alias in history");
     }
 }
