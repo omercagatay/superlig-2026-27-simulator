@@ -75,8 +75,8 @@
   "round": 1,
   "home": "Samsunspor",
   "away": "Göztepe",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 3,
+  "away_score": 3,
   "date": "2026-08-17",
   "kickoff": "21:30"
  },
@@ -84,8 +84,8 @@
   "round": 2,
   "home": "Alanyaspor",
   "away": "Beşiktaş",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 1,
+  "away_score": 0,
   "date": "2026-08-23",
   "kickoff": "21:30"
  },
@@ -93,8 +93,8 @@
   "round": 2,
   "home": "Erzurumspor",
   "away": "Galatasaray",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 0,
+  "away_score": 4,
   "date": "2026-08-21",
   "kickoff": "21:30"
  },
@@ -102,8 +102,8 @@
   "round": 2,
   "home": "Eyüpspor",
   "away": "Gaziantep",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 0,
+  "away_score": 1,
   "date": "2026-08-23",
   "kickoff": "19:00"
  },
@@ -111,8 +111,8 @@
   "round": 2,
   "home": "Fenerbahçe",
   "away": "Konyaspor",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 4,
+  "away_score": 2,
   "date": "2026-08-22",
   "kickoff": "21:30"
  },
@@ -120,8 +120,8 @@
   "round": 2,
   "home": "Göztepe",
   "away": "Gençlerbirliği",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 0,
+  "away_score": 1,
   "date": "2026-08-23",
   "kickoff": "21:30"
  },
@@ -129,8 +129,8 @@
   "round": 2,
   "home": "Kocaelispor",
   "away": "Amedspor",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 2,
+  "away_score": 0,
   "date": "2026-08-24",
   "kickoff": "21:30"
  },
@@ -138,8 +138,8 @@
   "round": 2,
   "home": "Rizespor",
   "away": "Samsunspor",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 0,
+  "away_score": 2,
   "date": "2026-08-22",
   "kickoff": "19:00"
  },
@@ -147,8 +147,8 @@
   "round": 2,
   "home": "Trabzonspor",
   "away": "Başakşehir",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 2,
+  "away_score": 1,
   "date": "2026-08-23",
   "kickoff": "19:00"
  },
@@ -156,8 +156,8 @@
   "round": 2,
   "home": "Çorum",
   "away": "Kasımpaşa",
-  "home_score": null,
-  "away_score": null,
+  "home_score": 0,
+  "away_score": 1,
   "date": "2026-08-22",
   "kickoff": "19:00"
  },
@@ -257,8 +257,8 @@
   "away": "Konyaspor",
   "home_score": null,
   "away_score": null,
-  "date": "2026-09-06",
-  "kickoff": null
+  "date": "2026-09-05",
+  "kickoff": "17:00"
  },
  {
   "round": 4,
@@ -275,8 +275,8 @@
   "away": "Gaziantep",
   "home_score": null,
   "away_score": null,
-  "date": "2026-09-06",
-  "kickoff": null
+  "date": "2026-09-07",
+  "kickoff": "20:00"
  },
  {
   "round": 4,
@@ -285,7 +285,7 @@
   "home_score": null,
   "away_score": null,
   "date": "2026-09-06",
-  "kickoff": null
+  "kickoff": "17:00"
  },
  {
   "round": 4,
@@ -294,7 +294,7 @@
   "home_score": null,
   "away_score": null,
   "date": "2026-09-06",
-  "kickoff": null
+  "kickoff": "20:00"
  },
  {
   "round": 4,
@@ -302,8 +302,8 @@
   "away": "Alanyaspor",
   "home_score": null,
   "away_score": null,
-  "date": "2026-09-06",
-  "kickoff": null
+  "date": "2026-09-07",
+  "kickoff": "20:00"
  },
  {
   "round": 4,
@@ -312,7 +312,7 @@
   "home_score": null,
   "away_score": null,
   "date": "2026-09-06",
-  "kickoff": null
+  "kickoff": "20:00"
  },
  {
   "round": 4,
@@ -321,7 +321,7 @@
   "home_score": null,
   "away_score": null,
   "date": "2026-09-06",
-  "kickoff": null
+  "kickoff": "17:00"
  },
  {
   "round": 5,

@@ -46,7 +46,7 @@
     "away": "Kasımpaşa",
     "home_pct": 42.57866027271934,
     "draw_pct": 27.22299757616815,
-    "away_pct": 30.198342151112506,
+    "away_pct": 30.198342151112502,
     "logged_at": "2026-08-17"
   },
   {
@@ -86,7 +86,7 @@
     "away": "Başakşehir",
     "home_pct": 43.85784992880789,
     "draw_pct": 27.457759213910293,
-    "away_pct": 28.684390857281826,
+    "away_pct": 28.684390857281823,
     "logged_at": "2026-08-17"
   },
   {
@@ -114,2869 +114,2869 @@
     "date": "2026-08-29",
     "home": "Galatasaray",
     "away": "Göztepe",
-    "home_pct": 63.79486865834373,
-    "draw_pct": 21.960985157055372,
-    "away_pct": 14.244146184600911,
-    "logged_at": "2026-08-17"
+    "home_pct": 66.72538045633644,
+    "draw_pct": 20.907626136898504,
+    "away_pct": 12.366993406765058,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-29",
     "home": "Gaziantep",
     "away": "Rizespor",
-    "home_pct": 39.775697139689434,
-    "draw_pct": 27.606946527283082,
-    "away_pct": 32.617356333027494,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.75421144943306,
+    "draw_pct": 27.411556651978586,
+    "away_pct": 30.834231898588367,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-29",
     "home": "Konyaspor",
     "away": "Kocaelispor",
-    "home_pct": 42.021216384826914,
-    "draw_pct": 29.560439501792434,
-    "away_pct": 28.418344113380652,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.482498581594655,
+    "draw_pct": 29.591534839129015,
+    "away_pct": 28.92596657927634,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-30",
     "home": "Başakşehir",
     "away": "Kasımpaşa",
-    "home_pct": 54.9580430958695,
-    "draw_pct": 24.916132532154563,
-    "away_pct": 20.12582437197594,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.28646472087988,
+    "draw_pct": 25.06182754200869,
+    "away_pct": 20.65170773711143,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-30",
     "home": "Eyüpspor",
     "away": "Alanyaspor",
-    "home_pct": 39.72662849382432,
-    "draw_pct": 28.165643171455862,
-    "away_pct": 32.10772833471982,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.3492781121452,
+    "draw_pct": 28.03225886675801,
+    "away_pct": 32.618463021096794,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-30",
     "home": "Samsunspor",
     "away": "Fenerbahçe",
-    "home_pct": 24.946552229049406,
-    "draw_pct": 26.47719142217198,
-    "away_pct": 48.57625634877862,
-    "logged_at": "2026-08-17"
+    "home_pct": 25.428400318148984,
+    "draw_pct": 26.720035325626075,
+    "away_pct": 47.85156435622495,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-31",
     "home": "Amedspor",
     "away": "Trabzonspor",
-    "home_pct": 35.616689146553604,
-    "draw_pct": 27.692924789255873,
-    "away_pct": 36.69038606419052,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.94782271993033,
+    "draw_pct": 27.6529314453937,
+    "away_pct": 37.39924583467597,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 3,
     "date": "2026-08-31",
     "home": "Beşiktaş",
     "away": "Çorum",
-    "home_pct": 58.10383506237717,
-    "draw_pct": 23.904236512665015,
-    "away_pct": 17.991928424957823,
-    "logged_at": "2026-08-17"
+    "home_pct": 58.429957420185055,
+    "draw_pct": 23.81586382516958,
+    "away_pct": 17.75417875464537,
+    "logged_at": "2026-08-28"
+  },
+  {
+    "round": 4,
+    "date": "2026-09-05",
+    "home": "Erzurumspor",
+    "away": "Konyaspor",
+    "home_pct": 40.028860879604686,
+    "draw_pct": 28.442866154209185,
+    "away_pct": 31.528272966186123,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Başakşehir",
     "away": "Galatasaray",
-    "home_pct": 28.83796243074056,
-    "draw_pct": 27.395160028561843,
-    "away_pct": 43.766877540697585,
-    "logged_at": "2026-08-17"
-  },
-  {
-    "round": 4,
-    "date": "2026-09-06",
-    "home": "Erzurumspor",
-    "away": "Konyaspor",
-    "home_pct": 39.54711025958327,
-    "draw_pct": 28.509978965940363,
-    "away_pct": 31.942910774476356,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.270812559616648,
+    "draw_pct": 27.453787395633277,
+    "away_pct": 44.27540004475007,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Fenerbahçe",
     "away": "Beşiktaş",
-    "home_pct": 53.25888630683875,
-    "draw_pct": 24.902049616615237,
-    "away_pct": 21.839064076546016,
-    "logged_at": "2026-08-17"
-  },
-  {
-    "round": 4,
-    "date": "2026-09-06",
-    "home": "Göztepe",
-    "away": "Gaziantep",
-    "home_pct": 51.23124485953814,
-    "draw_pct": 26.10915905520028,
-    "away_pct": 22.659596085261573,
-    "logged_at": "2026-08-17"
+    "home_pct": 52.506506518475824,
+    "draw_pct": 25.247922703566967,
+    "away_pct": 22.24557077795721,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Kasımpaşa",
     "away": "Amedspor",
-    "home_pct": 36.56752194689156,
-    "draw_pct": 27.441464768950347,
-    "away_pct": 35.9910132841581,
-    "logged_at": "2026-08-17"
+    "home_pct": 38.38349363368521,
+    "draw_pct": 27.361822807035917,
+    "away_pct": 34.254683559278874,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Kocaelispor",
     "away": "Samsunspor",
-    "home_pct": 33.29735796992632,
-    "draw_pct": 29.965232080523315,
-    "away_pct": 36.73740994955037,
-    "logged_at": "2026-08-17"
-  },
-  {
-    "round": 4,
-    "date": "2026-09-06",
-    "home": "Rizespor",
-    "away": "Alanyaspor",
-    "home_pct": 41.193984785035724,
-    "draw_pct": 27.458768928730027,
-    "away_pct": 31.34724628623426,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.17741800787065,
+    "draw_pct": 29.973358279486533,
+    "away_pct": 35.84922371264282,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Trabzonspor",
     "away": "Gençlerbirliği",
-    "home_pct": 56.525843425925316,
-    "draw_pct": 24.781381942230198,
-    "away_pct": 18.692774631844493,
-    "logged_at": "2026-08-17"
+    "home_pct": 57.77111843148061,
+    "draw_pct": 24.411158451978615,
+    "away_pct": 17.817723116540783,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 4,
     "date": "2026-09-06",
     "home": "Çorum",
     "away": "Eyüpspor",
-    "home_pct": 41.8820699396996,
-    "draw_pct": 28.140963496497324,
-    "away_pct": 29.976966563803064,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.383931411224026,
+    "draw_pct": 27.937755965940575,
+    "away_pct": 29.678312622835406,
+    "logged_at": "2026-08-28"
+  },
+  {
+    "round": 4,
+    "date": "2026-09-07",
+    "home": "Göztepe",
+    "away": "Gaziantep",
+    "home_pct": 50.292063813812035,
+    "draw_pct": 26.302843837888602,
+    "away_pct": 23.405092348299362,
+    "logged_at": "2026-08-28"
+  },
+  {
+    "round": 4,
+    "date": "2026-09-07",
+    "home": "Rizespor",
+    "away": "Alanyaspor",
+    "home_pct": 40.83559112695772,
+    "draw_pct": 27.404687034318297,
+    "away_pct": 31.759721838723987,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Alanyaspor",
     "away": "Göztepe",
-    "home_pct": 39.190915108657556,
-    "draw_pct": 27.91859740592023,
-    "away_pct": 32.890487485422206,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.586340980423564,
+    "draw_pct": 27.612110115012033,
+    "away_pct": 30.801548904564395,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Amedspor",
     "away": "Başakşehir",
-    "home_pct": 36.93849227239066,
-    "draw_pct": 28.100170610223895,
-    "away_pct": 34.96133711738544,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.823936907920356,
+    "draw_pct": 28.032254528778616,
+    "away_pct": 35.143808563301036,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Beşiktaş",
     "away": "Erzurumspor",
-    "home_pct": 59.61923163091814,
-    "draw_pct": 23.692137434035672,
-    "away_pct": 16.688630935046206,
-    "logged_at": "2026-08-17"
+    "home_pct": 59.50304615484917,
+    "draw_pct": 23.726051510880115,
+    "away_pct": 16.770902334270723,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Eyüpspor",
     "away": "Rizespor",
-    "home_pct": 41.671063910743314,
-    "draw_pct": 27.871357080412118,
-    "away_pct": 30.457579008844554,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.745345534114406,
+    "draw_pct": 27.62407729371471,
+    "away_pct": 29.63057717217089,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Galatasaray",
     "away": "Kocaelispor",
-    "home_pct": 68.12046255881597,
-    "draw_pct": 21.10279859957447,
-    "away_pct": 10.776738841609552,
-    "logged_at": "2026-08-17"
+    "home_pct": 68.84682490592542,
+    "draw_pct": 20.87856850154881,
+    "away_pct": 10.274606592525771,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Gaziantep",
     "away": "Fenerbahçe",
-    "home_pct": 18.073931073985207,
-    "draw_pct": 23.8032183944405,
-    "away_pct": 58.1228505315743,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.658343731464218,
+    "draw_pct": 24.175278926176023,
+    "away_pct": 57.166377342359766,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Gençlerbirliği",
     "away": "Kasımpaşa",
-    "home_pct": 41.9903180664133,
-    "draw_pct": 27.54998949678946,
-    "away_pct": 30.45969243679723,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.929679823947716,
+    "draw_pct": 27.500221965256344,
+    "away_pct": 30.570098210795944,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Konyaspor",
     "away": "Trabzonspor",
-    "home_pct": 30.542123135780546,
-    "draw_pct": 27.93251423680588,
-    "away_pct": 41.52536262741357,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.57207111884908,
+    "draw_pct": 27.887977508316048,
+    "away_pct": 41.539951372834864,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 5,
     "date": "2026-09-13",
     "home": "Samsunspor",
     "away": "Çorum",
-    "home_pct": 48.30858531906445,
-    "draw_pct": 26.92020041829361,
-    "away_pct": 24.771214262641955,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.94321406678115,
+    "draw_pct": 26.75530306341858,
+    "away_pct": 24.301482869800274,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Amedspor",
     "away": "Beşiktaş",
-    "home_pct": 33.29656343220271,
-    "draw_pct": 27.606380210196,
-    "away_pct": 39.09705635760129,
-    "logged_at": "2026-08-17"
+    "home_pct": 33.27465306202371,
+    "draw_pct": 27.638647223354422,
+    "away_pct": 39.08669971462186,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Başakşehir",
     "away": "Gençlerbirliği",
-    "home_pct": 54.76450457468622,
-    "draw_pct": 25.63391078636729,
-    "away_pct": 19.601584638946488,
-    "logged_at": "2026-08-17"
+    "home_pct": 55.41320747669612,
+    "draw_pct": 25.441607243825835,
+    "away_pct": 19.145185279478046,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Erzurumspor",
     "away": "Samsunspor",
-    "home_pct": 33.42448339912825,
-    "draw_pct": 28.561329102589127,
-    "away_pct": 38.01418749828262,
-    "logged_at": "2026-08-17"
+    "home_pct": 33.525476479107574,
+    "draw_pct": 28.561098376322146,
+    "away_pct": 37.913425144570276,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Fenerbahçe",
     "away": "Eyüpspor",
-    "home_pct": 67.56975669940928,
-    "draw_pct": 20.48927531204183,
-    "away_pct": 11.940967988548904,
-    "logged_at": "2026-08-17"
+    "home_pct": 67.51682728426434,
+    "draw_pct": 20.43407975807953,
+    "away_pct": 12.049092957656129,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Göztepe",
     "away": "Rizespor",
-    "home_pct": 48.120922731468916,
-    "draw_pct": 26.643298644306057,
-    "away_pct": 25.23577862422503,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.52697868217839,
+    "draw_pct": 26.481911874248183,
+    "away_pct": 24.99110944357341,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Kasımpaşa",
     "away": "Konyaspor",
-    "home_pct": 41.74427282449068,
-    "draw_pct": 27.60618313911351,
-    "away_pct": 30.649544036395817,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.53467559068152,
+    "draw_pct": 27.377840452389584,
+    "away_pct": 29.08748395692889,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Kocaelispor",
     "away": "Gaziantep",
-    "home_pct": 42.08456553239435,
-    "draw_pct": 29.289406914992565,
-    "away_pct": 28.62602755261308,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.25993557883016,
+    "draw_pct": 29.124473315773542,
+    "away_pct": 27.6155911053963,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Trabzonspor",
     "away": "Galatasaray",
-    "home_pct": 29.930823538098867,
-    "draw_pct": 27.027836769500308,
-    "away_pct": 43.04133969240082,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.89130891855899,
+    "draw_pct": 27.215489585636497,
+    "away_pct": 42.89320149580452,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 6,
     "date": "2026-09-20",
     "home": "Çorum",
     "away": "Alanyaspor",
-    "home_pct": 39.898064091655,
-    "draw_pct": 27.837909255227423,
-    "away_pct": 32.264026653117575,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.69434321068714,
+    "draw_pct": 27.768617131860353,
+    "away_pct": 32.5370396574525,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Alanyaspor",
     "away": "Erzurumspor",
-    "home_pct": 46.55223579265765,
-    "draw_pct": 27.265027856473246,
-    "away_pct": 26.182736350869096,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.421212444009754,
+    "draw_pct": 27.00553706747818,
+    "away_pct": 25.573250488512077,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Beşiktaş",
     "away": "Kocaelispor",
-    "home_pct": 57.19696555559266,
-    "draw_pct": 25.493076990334636,
-    "away_pct": 17.309957454072723,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.32076033483322,
+    "draw_pct": 25.820469674787816,
+    "away_pct": 17.858769990378974,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Eyüpspor",
     "away": "Göztepe",
-    "home_pct": 36.10695366164788,
-    "draw_pct": 28.502064089525813,
-    "away_pct": 35.39098224882628,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.09280678263349,
+    "draw_pct": 28.304447108753976,
+    "away_pct": 34.602746108612536,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Galatasaray",
     "away": "Kasımpaşa",
-    "home_pct": 70.47161098701376,
-    "draw_pct": 18.80438183871466,
-    "away_pct": 10.724007174271573,
-    "logged_at": "2026-08-17"
+    "home_pct": 70.96389162260827,
+    "draw_pct": 18.708555481901413,
+    "away_pct": 10.327552895490308,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Gaziantep",
     "away": "Çorum",
-    "home_pct": 39.69958411406336,
-    "draw_pct": 27.868099152066062,
-    "away_pct": 32.43231673387057,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.510755894107206,
+    "draw_pct": 27.758654874295207,
+    "away_pct": 31.730589231597584,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Gençlerbirliği",
     "away": "Amedspor",
-    "home_pct": 35.30458048285459,
-    "draw_pct": 28.428896216549138,
-    "away_pct": 36.26652330059626,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.67785646488101,
+    "draw_pct": 28.357793038743505,
+    "away_pct": 34.96435049637549,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Konyaspor",
     "away": "Başakşehir",
-    "home_pct": 31.524822160820044,
-    "draw_pct": 28.48051784513801,
-    "away_pct": 39.994659994041946,
-    "logged_at": "2026-08-17"
+    "home_pct": 32.099954503285744,
+    "draw_pct": 28.45807704548024,
+    "away_pct": 39.44196845123402,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Rizespor",
     "away": "Fenerbahçe",
-    "home_pct": 20.51102118550744,
-    "draw_pct": 24.55503576368951,
-    "away_pct": 54.933943050803045,
-    "logged_at": "2026-08-17"
+    "home_pct": 20.457542800204617,
+    "draw_pct": 24.592889265972392,
+    "away_pct": 54.94956793382298,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 7,
     "date": "2026-10-11",
     "home": "Samsunspor",
     "away": "Trabzonspor",
-    "home_pct": 36.24617199467283,
-    "draw_pct": 28.033775682927242,
-    "away_pct": 35.720052322399944,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.32679200647618,
+    "draw_pct": 28.03068550041059,
+    "away_pct": 35.64252249311324,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Amedspor",
     "away": "Konyaspor",
-    "home_pct": 48.02675304220384,
-    "draw_pct": 26.986125476128812,
-    "away_pct": 24.987121481667344,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.93703809354628,
+    "draw_pct": 26.995010050165025,
+    "away_pct": 25.067951856288705,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Başakşehir",
     "away": "Gaziantep",
-    "home_pct": 57.03941576123509,
-    "draw_pct": 24.622223537164654,
-    "away_pct": 18.33836070160026,
-    "logged_at": "2026-08-17"
+    "home_pct": 57.534848003935736,
+    "draw_pct": 24.48879091185337,
+    "away_pct": 17.976361084210893,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Erzurumspor",
     "away": "Eyüpspor",
-    "home_pct": 39.57803727462196,
-    "draw_pct": 28.545377017912728,
-    "away_pct": 31.876585707465317,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.404976003231184,
+    "draw_pct": 28.338906808903282,
+    "away_pct": 31.25611718786554,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Fenerbahçe",
     "away": "Alanyaspor",
-    "home_pct": 66.15097572239264,
-    "draw_pct": 20.75572816078492,
-    "away_pct": 13.093296116822428,
-    "logged_at": "2026-08-17"
+    "home_pct": 65.28359468634301,
+    "draw_pct": 21.131533953871763,
+    "away_pct": 13.58487135978523,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Gençlerbirliği",
     "away": "Galatasaray",
-    "home_pct": 18.800730202264493,
-    "draw_pct": 24.81850526504877,
-    "away_pct": 56.38076453268673,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.904479486230624,
+    "draw_pct": 25.00480772151668,
+    "away_pct": 56.090712792252695,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Kasımpaşa",
     "away": "Samsunspor",
-    "home_pct": 35.6181166349316,
-    "draw_pct": 27.775340359583765,
-    "away_pct": 36.60654300548463,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.018644353434624,
+    "draw_pct": 27.766402004263625,
+    "away_pct": 35.21495364230174,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Kocaelispor",
     "away": "Göztepe",
-    "home_pct": 33.82526623888939,
-    "draw_pct": 29.866784391364092,
-    "away_pct": 36.30794936974653,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.110275071853756,
+    "draw_pct": 29.78215246300221,
+    "away_pct": 34.10757246514404,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Trabzonspor",
     "away": "Beşiktaş",
-    "home_pct": 40.48798439043226,
-    "draw_pct": 27.35810271864127,
-    "away_pct": 32.15391289092646,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.696736127099484,
+    "draw_pct": 27.335426801682218,
+    "away_pct": 30.9678370712183,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 8,
     "date": "2026-10-18",
     "home": "Çorum",
     "away": "Rizespor",
-    "home_pct": 41.87989231115885,
-    "draw_pct": 27.579013263797965,
-    "away_pct": 30.54109442504318,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.12187863789633,
+    "draw_pct": 27.376550174164954,
+    "away_pct": 29.501571187938712,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Alanyaspor",
     "away": "Kocaelispor",
-    "home_pct": 44.741221869755826,
-    "draw_pct": 28.82527175510357,
-    "away_pct": 26.4335063751406,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.95988907333632,
+    "draw_pct": 28.72001526939037,
+    "away_pct": 26.320095657273306,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Beşiktaş",
     "away": "Başakşehir",
-    "home_pct": 46.29362636502786,
-    "draw_pct": 27.06102704323088,
-    "away_pct": 26.645346591741248,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.728181128337724,
+    "draw_pct": 27.035206460338674,
+    "away_pct": 26.236612411323605,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Eyüpspor",
     "away": "Kasımpaşa",
-    "home_pct": 42.513814561899714,
-    "draw_pct": 27.535742874497775,
-    "away_pct": 29.950442563602508,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.06520125299296,
+    "draw_pct": 27.55079442262443,
+    "away_pct": 31.3840043243826,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Galatasaray",
     "away": "Fenerbahçe",
-    "home_pct": 44.535138830269275,
-    "draw_pct": 26.39957339335423,
-    "away_pct": 29.065287776376493,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.44206369273945,
+    "draw_pct": 26.451263810504784,
+    "away_pct": 27.106672496755774,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Gaziantep",
     "away": "Erzurumspor",
-    "home_pct": 41.40442861491259,
-    "draw_pct": 28.018127658341108,
-    "away_pct": 30.577443726746296,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.80171171048959,
+    "draw_pct": 27.93306983022229,
+    "away_pct": 30.265218459288118,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Göztepe",
     "away": "Çorum",
-    "home_pct": 47.99660985464671,
-    "draw_pct": 26.866428614999055,
-    "away_pct": 25.136961530354252,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.216836513843894,
+    "draw_pct": 26.906547621633052,
+    "away_pct": 25.87661586452306,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Konyaspor",
     "away": "Gençlerbirliği",
-    "home_pct": 43.12656937740925,
-    "draw_pct": 28.233000473176844,
-    "away_pct": 28.6404301494139,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.69809699992428,
+    "draw_pct": 28.12948372099287,
+    "away_pct": 28.17241927908284,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Rizespor",
     "away": "Trabzonspor",
-    "home_pct": 31.2324788273482,
-    "draw_pct": 27.319351718020428,
-    "away_pct": 41.44816945463136,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.64422747645618,
+    "draw_pct": 27.18591335934528,
+    "away_pct": 42.16985916419855,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 9,
     "date": "2026-10-25",
     "home": "Samsunspor",
     "away": "Amedspor",
-    "home_pct": 42.314304818942006,
-    "draw_pct": 27.84819118130233,
-    "away_pct": 29.837503999755665,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.08338221719736,
+    "draw_pct": 27.76456179677323,
+    "away_pct": 29.152055986029414,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Amedspor",
     "away": "Eyüpspor",
-    "home_pct": 48.0656647030631,
-    "draw_pct": 27.034015972599075,
-    "away_pct": 24.900319324337833,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.35446460404506,
+    "draw_pct": 26.854266394193726,
+    "away_pct": 24.791269001761215,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Başakşehir",
     "away": "Samsunspor",
-    "home_pct": 47.13029423786094,
-    "draw_pct": 27.359762923016667,
-    "away_pct": 25.509942839122406,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.44416920633094,
+    "draw_pct": 27.29613078115071,
+    "away_pct": 25.259700012518348,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Erzurumspor",
     "away": "Çorum",
-    "home_pct": 39.39265490730751,
-    "draw_pct": 28.270117418452635,
-    "away_pct": 32.337227674239855,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.802103403969156,
+    "draw_pct": 28.16249300303838,
+    "away_pct": 32.03540359299246,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Fenerbahçe",
     "away": "Göztepe",
-    "home_pct": 62.50232108757899,
-    "draw_pct": 22.29579618652941,
-    "away_pct": 15.201882725891592,
-    "logged_at": "2026-08-17"
+    "home_pct": 63.00328382945134,
+    "draw_pct": 22.116649163187695,
+    "away_pct": 14.880067007360962,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Gençlerbirliği",
     "away": "Alanyaspor",
-    "home_pct": 39.341716332995674,
-    "draw_pct": 28.139772860151822,
-    "away_pct": 32.5185108068525,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.32686381055062,
+    "draw_pct": 27.983000406133364,
+    "away_pct": 31.690135783316016,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Kasımpaşa",
     "away": "Beşiktaş",
-    "home_pct": 27.89631280063053,
-    "draw_pct": 26.584667001909317,
-    "away_pct": 45.51902019746015,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.395371313487562,
+    "draw_pct": 26.865550316692673,
+    "away_pct": 43.739078369819765,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Kocaelispor",
     "away": "Rizespor",
-    "home_pct": 38.85760183945756,
-    "draw_pct": 29.497017903316753,
-    "away_pct": 31.645380257225682,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.3940633325732,
+    "draw_pct": 29.2041831759767,
+    "away_pct": 29.401753491450112,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Konyaspor",
     "away": "Galatasaray",
-    "home_pct": 19.574656659043267,
-    "draw_pct": 25.170455713141564,
-    "away_pct": 55.25488762781517,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.139444267285764,
+    "draw_pct": 25.146009151920506,
+    "away_pct": 55.71454658079372,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 10,
     "date": "2026-11-01",
     "home": "Trabzonspor",
     "away": "Gaziantep",
-    "home_pct": 58.734875284378205,
-    "draw_pct": 23.740264746890393,
-    "away_pct": 17.52485996873141,
-    "logged_at": "2026-08-17"
+    "home_pct": 59.83289842073148,
+    "draw_pct": 23.41206054611483,
+    "away_pct": 16.7550410331537,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Alanyaspor",
     "away": "Trabzonspor",
-    "home_pct": 32.830794679026155,
-    "draw_pct": 27.59744567931722,
-    "away_pct": 39.571759641656634,
-    "logged_at": "2026-08-17"
+    "home_pct": 33.474560609351045,
+    "draw_pct": 27.53735568993986,
+    "away_pct": 38.988083700709105,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Beşiktaş",
     "away": "Gençlerbirliği",
-    "home_pct": 58.96900720792343,
-    "draw_pct": 23.95791311879952,
-    "away_pct": 17.07307967327704,
-    "logged_at": "2026-08-17"
+    "home_pct": 59.26624217419207,
+    "draw_pct": 23.937329737172817,
+    "away_pct": 16.79642808863511,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Eyüpspor",
     "away": "Kocaelispor",
-    "home_pct": 41.67274993223661,
-    "draw_pct": 29.60045182904283,
-    "away_pct": 28.72679823872054,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.54961374361038,
+    "draw_pct": 29.635399971403842,
+    "away_pct": 29.81498628498578,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Galatasaray",
     "away": "Amedspor",
-    "home_pct": 63.96923893812255,
-    "draw_pct": 21.771804238161504,
-    "away_pct": 14.258956823715947,
-    "logged_at": "2026-08-17"
+    "home_pct": 65.81308802460153,
+    "draw_pct": 21.165760027693327,
+    "away_pct": 13.021151947705153,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Gaziantep",
     "away": "Kasımpaşa",
-    "home_pct": 40.486562319017615,
-    "draw_pct": 27.283966954704255,
-    "away_pct": 32.22947072627812,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.00831896978524,
+    "draw_pct": 27.292137604852346,
+    "away_pct": 32.699543425362414,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Göztepe",
     "away": "Başakşehir",
-    "home_pct": 36.897889240462675,
-    "draw_pct": 28.301080246389283,
-    "away_pct": 34.80103051314805,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.177157545319574,
+    "draw_pct": 28.197160014284034,
+    "away_pct": 35.625682440396396,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Rizespor",
     "away": "Erzurumspor",
-    "home_pct": 45.03438978025203,
-    "draw_pct": 27.455941099774932,
-    "away_pct": 27.50966911997305,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.506552585040026,
+    "draw_pct": 27.44188965041076,
+    "away_pct": 28.051557764549216,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Samsunspor",
     "away": "Konyaspor",
-    "home_pct": 48.16795684840952,
-    "draw_pct": 27.264564482534087,
-    "away_pct": 24.567478669056396,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.94286892822406,
+    "draw_pct": 27.099594556258083,
+    "away_pct": 23.95753651551786,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 11,
     "date": "2026-11-08",
     "home": "Çorum",
     "away": "Fenerbahçe",
-    "home_pct": 19.64076194436593,
-    "draw_pct": 24.53146442753792,
-    "away_pct": 55.82777362809615,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.710902673503707,
+    "draw_pct": 24.614851218974223,
+    "away_pct": 55.67424610752207,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Amedspor",
     "away": "Rizespor",
-    "home_pct": 47.91188880497633,
-    "draw_pct": 26.582698120828592,
-    "away_pct": 25.505413074195076,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.96911659954786,
+    "draw_pct": 26.332868153677403,
+    "away_pct": 24.69801524677473,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Başakşehir",
     "away": "Çorum",
-    "home_pct": 53.788514555300615,
-    "draw_pct": 25.577081090078973,
-    "away_pct": 20.63440435462041,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.451899584760355,
+    "draw_pct": 25.331872779525188,
+    "away_pct": 20.21622763571446,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Erzurumspor",
     "away": "Göztepe",
-    "home_pct": 34.09451911054953,
-    "draw_pct": 28.447757671591756,
-    "away_pct": 37.45772321785872,
-    "logged_at": "2026-08-17"
+    "home_pct": 35.55532051121194,
+    "draw_pct": 28.363933789730694,
+    "away_pct": 36.080745699057374,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Galatasaray",
     "away": "Samsunspor",
-    "home_pct": 62.790892240868125,
-    "draw_pct": 22.45297913882411,
-    "away_pct": 14.756128620307779,
-    "logged_at": "2026-08-17"
+    "home_pct": 64.31692601787145,
+    "draw_pct": 22.05042725249705,
+    "away_pct": 13.632646729631489,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Gençlerbirliği",
     "away": "Gaziantep",
-    "home_pct": 44.35824605605948,
-    "draw_pct": 27.656369947747393,
-    "away_pct": 27.985383996193132,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.498033076484816,
+    "draw_pct": 27.476946096577443,
+    "away_pct": 27.025020826937734,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Kasımpaşa",
     "away": "Alanyaspor",
-    "home_pct": 40.02449671132929,
-    "draw_pct": 27.265535031618043,
-    "away_pct": 32.709968257052665,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.4727553119384,
+    "draw_pct": 27.081517825337,
+    "away_pct": 31.44572686272461,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Kocaelispor",
     "away": "Fenerbahçe",
-    "home_pct": 18.589301402799517,
-    "draw_pct": 26.134578657471742,
-    "away_pct": 55.276119939728744,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.510358101104043,
+    "draw_pct": 26.561864148564418,
+    "away_pct": 53.92777775033154,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Konyaspor",
     "away": "Beşiktaş",
-    "home_pct": 28.421314448245795,
-    "draw_pct": 27.642117550318623,
-    "away_pct": 43.93656800143558,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.994559878042185,
+    "draw_pct": 27.788918926353546,
+    "away_pct": 43.21652119560426,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 12,
     "date": "2026-11-22",
     "home": "Trabzonspor",
     "away": "Eyüpspor",
-    "home_pct": 55.18171561529942,
-    "draw_pct": 25.18938881907649,
-    "away_pct": 19.62889556562409,
-    "logged_at": "2026-08-17"
+    "home_pct": 57.00402136313522,
+    "draw_pct": 24.52556510843589,
+    "away_pct": 18.470413528428885,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Alanyaspor",
     "away": "Konyaspor",
-    "home_pct": 44.556397639751935,
-    "draw_pct": 27.647551941791704,
-    "away_pct": 27.796050418456375,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.907387940952546,
+    "draw_pct": 27.37049193004186,
+    "away_pct": 26.722120129005596,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Beşiktaş",
     "away": "Galatasaray",
-    "home_pct": 32.174474113658256,
-    "draw_pct": 27.234903448975533,
-    "away_pct": 40.590622437366214,
-    "logged_at": "2026-08-17"
+    "home_pct": 31.372038727737046,
+    "draw_pct": 27.486838586783048,
+    "away_pct": 41.1411226854799,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Eyüpspor",
     "away": "Başakşehir",
-    "home_pct": 31.08451869274124,
-    "draw_pct": 28.447050903667208,
-    "away_pct": 40.46843040359155,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.996862035951207,
+    "draw_pct": 28.26069483440951,
+    "away_pct": 40.742443129639284,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Fenerbahçe",
     "away": "Erzurumspor",
-    "home_pct": 69.61426786325092,
-    "draw_pct": 19.543839703514536,
-    "away_pct": 10.841892433234543,
-    "logged_at": "2026-08-17"
+    "home_pct": 68.55466779989416,
+    "draw_pct": 19.979436624437028,
+    "away_pct": 11.46589557566881,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Gaziantep",
     "away": "Amedspor",
-    "home_pct": 34.05730512879913,
-    "draw_pct": 27.891987747766084,
-    "away_pct": 38.05070712343479,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.983615902988674,
+    "draw_pct": 27.90923233858254,
+    "away_pct": 37.1071517584288,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Göztepe",
     "away": "Trabzonspor",
-    "home_pct": 35.82818095464521,
-    "draw_pct": 27.87014510089845,
-    "away_pct": 36.30167394445635,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.53599319217572,
+    "draw_pct": 27.767067962244802,
+    "away_pct": 37.69693884557949,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Rizespor",
     "away": "Kasımpaşa",
-    "home_pct": 43.99186668250597,
-    "draw_pct": 26.772351397063765,
-    "away_pct": 29.235781920430266,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.59449452519146,
+    "draw_pct": 26.878730225414394,
+    "away_pct": 30.52677524939415,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Samsunspor",
     "away": "Gençlerbirliği",
-    "home_pct": 49.39947324159981,
-    "draw_pct": 27.025363461944334,
-    "away_pct": 23.575163296455855,
-    "logged_at": "2026-08-17"
+    "home_pct": 50.043873944196335,
+    "draw_pct": 26.912483620375177,
+    "away_pct": 23.04364243542849,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 13,
     "date": "2026-11-29",
     "home": "Çorum",
     "away": "Kocaelispor",
-    "home_pct": 42.520788935562535,
-    "draw_pct": 29.31844739294183,
-    "away_pct": 28.160763671495626,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.471390550579926,
+    "draw_pct": 29.40827411547967,
+    "away_pct": 29.120335333940396,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Amedspor",
     "away": "Alanyaspor",
-    "home_pct": 45.951989447052384,
-    "draw_pct": 26.960004526353053,
-    "away_pct": 27.088006026594563,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.49669446164121,
+    "draw_pct": 27.003253348812763,
+    "away_pct": 27.50005218954602,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Başakşehir",
     "away": "Fenerbahçe",
-    "home_pct": 29.68775884101641,
-    "draw_pct": 27.271197892391115,
-    "away_pct": 43.04104326659248,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.178073343281596,
+    "draw_pct": 27.386385775411732,
+    "away_pct": 42.43554088130667,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Beşiktaş",
     "away": "Samsunspor",
-    "home_pct": 51.19237037220602,
-    "draw_pct": 26.08439658695102,
-    "away_pct": 22.723233040842945,
-    "logged_at": "2026-08-17"
+    "home_pct": 51.22481159290284,
+    "draw_pct": 26.175172792249885,
+    "away_pct": 22.600015614847276,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Erzurumspor",
     "away": "Kocaelispor",
-    "home_pct": 40.24686831571733,
-    "draw_pct": 29.725403174450964,
-    "away_pct": 30.027728509831693,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.547336482029934,
+    "draw_pct": 29.77080522219669,
+    "away_pct": 30.681858295773377,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Galatasaray",
     "away": "Rizespor",
-    "home_pct": 69.6531141030813,
-    "draw_pct": 19.303450058814857,
-    "away_pct": 11.04343583810386,
-    "logged_at": "2026-08-17"
+    "home_pct": 72.32998777131645,
+    "draw_pct": 18.215145010764083,
+    "away_pct": 9.454867217919475,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Gençlerbirliği",
     "away": "Eyüpspor",
-    "home_pct": 41.27710226188609,
-    "draw_pct": 28.436802988988624,
-    "away_pct": 30.28609474912528,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.99348243148631,
+    "draw_pct": 28.079051542516353,
+    "away_pct": 28.927466025997333,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Kasımpaşa",
     "away": "Göztepe",
-    "home_pct": 36.48342471835605,
-    "draw_pct": 27.60292185409196,
-    "away_pct": 35.913653427552006,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.285673282825755,
+    "draw_pct": 27.426926507187176,
+    "away_pct": 33.28740020998707,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Konyaspor",
     "away": "Gaziantep",
-    "home_pct": 45.26045639196896,
-    "draw_pct": 27.562765151989538,
-    "away_pct": 27.17677845604149,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.69590527177536,
+    "draw_pct": 27.503504140476707,
+    "away_pct": 26.80059058774793,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 14,
     "date": "2026-12-06",
     "home": "Trabzonspor",
     "away": "Çorum",
-    "home_pct": 55.599640207381604,
-    "draw_pct": 24.716861748635573,
-    "away_pct": 19.683498043982812,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.863563435343856,
+    "draw_pct": 24.291129341988597,
+    "away_pct": 18.845307222667547,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Alanyaspor",
     "away": "Samsunspor",
-    "home_pct": 38.34301365545995,
-    "draw_pct": 28.12286404402059,
-    "away_pct": 33.53412230051946,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.29357764189847,
+    "draw_pct": 28.029283156727715,
+    "away_pct": 32.677139201373805,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Erzurumspor",
     "away": "Kasımpaşa",
-    "home_pct": 40.18648345401228,
-    "draw_pct": 27.667745775513318,
-    "away_pct": 32.14577077047441,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.29848108674205,
+    "draw_pct": 27.690926686066465,
+    "away_pct": 33.010592227191495,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Eyüpspor",
     "away": "Galatasaray",
-    "home_pct": 19.169502044018085,
-    "draw_pct": 25.042611460180364,
-    "away_pct": 55.78788649580155,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.211118239210215,
+    "draw_pct": 24.648444454765833,
+    "away_pct": 57.14043730602396,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Fenerbahçe",
     "away": "Trabzonspor",
-    "home_pct": 55.84880995684286,
-    "draw_pct": 24.202053391982854,
-    "away_pct": 19.94913665117429,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.61514447646964,
+    "draw_pct": 24.60250313304159,
+    "away_pct": 20.782352390488764,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Gaziantep",
     "away": "Beşiktaş",
-    "home_pct": 26.05107115587758,
-    "draw_pct": 26.712535658799297,
-    "away_pct": 47.236393185323124,
-    "logged_at": "2026-08-17"
+    "home_pct": 26.8142507946723,
+    "draw_pct": 26.9442528670094,
+    "away_pct": 46.24149633831829,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Göztepe",
     "away": "Konyaspor",
-    "home_pct": 47.83606826876301,
-    "draw_pct": 27.2027549548412,
-    "away_pct": 24.961176776395806,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.12195920544975,
+    "draw_pct": 27.275696418945405,
+    "away_pct": 25.602344375604858,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Kocaelispor",
     "away": "Gençlerbirliği",
-    "home_pct": 39.969787573634875,
-    "draw_pct": 29.8623776358067,
-    "away_pct": 30.167834790558416,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.2970034115705,
+    "draw_pct": 29.6954607054547,
+    "away_pct": 29.00753588297481,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Rizespor",
     "away": "Başakşehir",
-    "home_pct": 32.322270459642645,
-    "draw_pct": 27.886286096340545,
-    "away_pct": 39.791443444016814,
-    "logged_at": "2026-08-17"
+    "home_pct": 32.25450270374226,
+    "draw_pct": 27.785723977598426,
+    "away_pct": 39.959773318659316,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 15,
     "date": "2026-12-13",
     "home": "Çorum",
     "away": "Amedspor",
-    "home_pct": 36.058526153833434,
-    "draw_pct": 28.122496788806295,
-    "away_pct": 35.81897705736027,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.293836882593446,
+    "draw_pct": 28.037340973245662,
+    "away_pct": 35.6688221441609,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Amedspor",
     "away": "Göztepe",
-    "home_pct": 42.25236617295627,
-    "draw_pct": 27.729961850329687,
-    "away_pct": 30.017671976714045,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.232897086305385,
+    "draw_pct": 27.545022597405044,
+    "away_pct": 29.222080316289574,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Başakşehir",
     "away": "Erzurumspor",
-    "home_pct": 55.34686166833821,
-    "draw_pct": 25.41664616989983,
-    "away_pct": 19.236492161761966,
-    "logged_at": "2026-08-17"
+    "home_pct": 55.578549770708506,
+    "draw_pct": 25.27345587317044,
+    "away_pct": 19.147994356121043,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Beşiktaş",
     "away": "Rizespor",
-    "home_pct": 58.30914811810648,
-    "draw_pct": 23.694924248298456,
-    "away_pct": 17.99592763359506,
-    "logged_at": "2026-08-17"
+    "home_pct": 59.82807107181717,
+    "draw_pct": 23.26313873444729,
+    "away_pct": 16.908790193735555,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Galatasaray",
     "away": "Alanyaspor",
-    "home_pct": 67.43457637363434,
-    "draw_pct": 20.36051249211246,
-    "away_pct": 12.204911134253202,
-    "logged_at": "2026-08-17"
+    "home_pct": 68.97336626327466,
+    "draw_pct": 19.84378995399211,
+    "away_pct": 11.182843782733237,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Gençlerbirliği",
     "away": "Çorum",
-    "home_pct": 41.133363331892504,
-    "draw_pct": 28.14911839056694,
-    "away_pct": 30.717518277540556,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.3994798993295,
+    "draw_pct": 27.92183820808517,
+    "away_pct": 29.67868189258534,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Kasımpaşa",
     "away": "Fenerbahçe",
-    "home_pct": 19.576766554141013,
-    "draw_pct": 23.949472219492776,
-    "away_pct": 56.473761226366214,
-    "logged_at": "2026-08-17"
+    "home_pct": 20.839703886152957,
+    "draw_pct": 24.49415780124168,
+    "away_pct": 54.66613831260536,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Konyaspor",
     "away": "Eyüpspor",
-    "home_pct": 41.98642440055672,
-    "draw_pct": 28.408473534985163,
-    "away_pct": 29.605102064458126,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.028029573029144,
+    "draw_pct": 28.156547601737795,
+    "away_pct": 28.815422825233057,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Samsunspor",
     "away": "Gaziantep",
-    "home_pct": 51.581274376324856,
-    "draw_pct": 26.146513706232465,
-    "away_pct": 22.272211917442668,
-    "logged_at": "2026-08-17"
+    "home_pct": 52.068728357410066,
+    "draw_pct": 26.073714253966386,
+    "away_pct": 21.85755738862355,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 16,
     "date": "2026-12-20",
     "home": "Trabzonspor",
     "away": "Kocaelispor",
-    "home_pct": 54.92380752488961,
-    "draw_pct": 26.27008842480866,
-    "away_pct": 18.806104050301737,
-    "logged_at": "2026-08-17"
+    "home_pct": 55.1044130739922,
+    "draw_pct": 26.20179143201902,
+    "away_pct": 18.693795493988773,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Alanyaspor",
     "away": "Başakşehir",
-    "home_pct": 33.79803454845072,
-    "draw_pct": 28.122851867430793,
-    "away_pct": 38.07911358411849,
-    "logged_at": "2026-08-17"
+    "home_pct": 35.01579745420207,
+    "draw_pct": 28.03587418213782,
+    "away_pct": 36.948328363660124,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Erzurumspor",
     "away": "Trabzonspor",
-    "home_pct": 28.068729094757817,
-    "draw_pct": 27.547236084194832,
-    "away_pct": 44.384034821047344,
-    "logged_at": "2026-08-17"
+    "home_pct": 27.96071115104997,
+    "draw_pct": 27.456644663828662,
+    "away_pct": 44.58264418512136,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Eyüpspor",
     "away": "Samsunspor",
-    "home_pct": 35.35568447349289,
-    "draw_pct": 28.657265016659743,
-    "away_pct": 35.987050509847364,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.94766229188734,
+    "draw_pct": 28.553604324578657,
+    "away_pct": 36.49873338353402,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Fenerbahçe",
     "away": "Amedspor",
-    "home_pct": 62.81728652722435,
-    "draw_pct": 22.04573261364768,
-    "away_pct": 15.136980859127974,
-    "logged_at": "2026-08-17"
+    "home_pct": 62.227685476065076,
+    "draw_pct": 22.273288145195888,
+    "away_pct": 15.499026378739037,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Gaziantep",
     "away": "Galatasaray",
-    "home_pct": 17.515567112907107,
-    "draw_pct": 23.75577847026795,
-    "away_pct": 58.72865441682495,
-    "logged_at": "2026-08-17"
+    "home_pct": 17.30305280596058,
+    "draw_pct": 23.856195916194174,
+    "away_pct": 58.840751277845236,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Göztepe",
     "away": "Beşiktaş",
-    "home_pct": 33.52487963390047,
-    "draw_pct": 27.803540111570147,
-    "away_pct": 38.671580254529374,
-    "logged_at": "2026-08-17"
+    "home_pct": 32.82279861344943,
+    "draw_pct": 27.775335815059133,
+    "away_pct": 39.401865571491435,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Kocaelispor",
     "away": "Kasımpaşa",
-    "home_pct": 39.87276377640546,
-    "draw_pct": 29.18901664350343,
-    "away_pct": 30.93821958009112,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.8477475720154,
+    "draw_pct": 29.139191114208913,
+    "away_pct": 31.013061313775687,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Rizespor",
     "away": "Gençlerbirliği",
-    "home_pct": 44.43341897439316,
-    "draw_pct": 27.570861145945784,
-    "away_pct": 27.995719879661053,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.336330650751954,
+    "draw_pct": 27.53527304794851,
+    "away_pct": 28.128396301299542,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 17,
     "date": "2027-01-17",
     "home": "Çorum",
     "away": "Konyaspor",
-    "home_pct": 41.81236743435432,
-    "draw_pct": 28.120612284515822,
-    "away_pct": 30.06702028112987,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.93802669466983,
+    "draw_pct": 28.07008322948526,
+    "away_pct": 29.991890075844918,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Alanyaspor",
     "away": "Gaziantep",
-    "home_pct": 48.05437763499086,
-    "draw_pct": 26.65191478658026,
-    "away_pct": 25.29370757842888,
-    "logged_at": "2026-08-17"
+    "home_pct": 49.21521887751359,
+    "draw_pct": 26.39021807377296,
+    "away_pct": 24.394563048713447,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Erzurumspor",
     "away": "Amedspor",
-    "home_pct": 33.62232735825958,
-    "draw_pct": 28.40775156491121,
-    "away_pct": 37.969921076829216,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.19621635084907,
+    "draw_pct": 28.337028391114373,
+    "away_pct": 37.466755258036564,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Eyüpspor",
     "away": "Beşiktaş",
-    "home_pct": 27.95644177636666,
-    "draw_pct": 27.58483234814131,
-    "away_pct": 44.45872587549203,
-    "logged_at": "2026-08-17"
+    "home_pct": 27.88057760978616,
+    "draw_pct": 27.506474059688745,
+    "away_pct": 44.61294833052509,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Fenerbahçe",
     "away": "Gençlerbirliği",
-    "home_pct": 68.94667904624482,
-    "draw_pct": 19.885639101692,
-    "away_pct": 11.167681852063186,
-    "logged_at": "2026-08-17"
+    "home_pct": 68.26293424788469,
+    "draw_pct": 20.24385201787461,
+    "away_pct": 11.493213734240705,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Göztepe",
     "away": "Samsunspor",
-    "home_pct": 41.48562044663986,
-    "draw_pct": 28.060658842921605,
-    "away_pct": 30.453720710438542,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.408106205002504,
+    "draw_pct": 28.12698012904839,
+    "away_pct": 31.46491366594912,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Kocaelispor",
     "away": "Başakşehir",
-    "home_pct": 29.52367807530395,
-    "draw_pct": 29.644326326888503,
-    "away_pct": 40.831995597807555,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.794897112130787,
+    "draw_pct": 29.679890654540202,
+    "away_pct": 39.52521223332902,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Rizespor",
     "away": "Konyaspor",
-    "home_pct": 43.05412789647095,
-    "draw_pct": 27.72434701641743,
-    "away_pct": 29.221525087111623,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.012758372372566,
+    "draw_pct": 27.692922048962,
+    "away_pct": 29.294319578665434,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Trabzonspor",
     "away": "Kasımpaşa",
-    "home_pct": 56.610864728652565,
-    "draw_pct": 24.065461630955017,
-    "away_pct": 19.32367364039242,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.55373832892633,
+    "draw_pct": 24.058214120928305,
+    "away_pct": 19.38804755014537,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 18,
     "date": "2027-01-24",
     "home": "Çorum",
     "away": "Galatasaray",
-    "home_pct": 19.094952951855202,
-    "draw_pct": 24.523166124646817,
-    "away_pct": 56.38188092349799,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.35977605393431,
+    "draw_pct": 24.337542802909205,
+    "away_pct": 57.3026811431565,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Amedspor",
     "away": "Kocaelispor",
-    "home_pct": 48.96302610412411,
-    "draw_pct": 27.99214280150225,
-    "away_pct": 23.044831094373652,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.64352205817573,
+    "draw_pct": 28.292944766042254,
+    "away_pct": 24.06353317578201,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Başakşehir",
     "away": "Trabzonspor",
-    "home_pct": 41.52811286618405,
-    "draw_pct": 27.726985444640732,
-    "away_pct": 30.74490168917522,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.60976302032703,
+    "draw_pct": 27.670862533971196,
+    "away_pct": 30.71937444570177,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Beşiktaş",
     "away": "Alanyaspor",
-    "home_pct": 55.99943466346796,
-    "draw_pct": 24.518671121131412,
-    "away_pct": 19.481894215400636,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.12932516519299,
+    "draw_pct": 24.54153915132743,
+    "away_pct": 19.329135683479574,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Galatasaray",
     "away": "Erzurumspor",
-    "home_pct": 70.72720994313761,
-    "draw_pct": 19.15432807038326,
-    "away_pct": 10.118461986479145,
-    "logged_at": "2026-08-17"
+    "home_pct": 71.95344445903594,
+    "draw_pct": 18.645843702615007,
+    "away_pct": 9.400711838349068,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Gaziantep",
     "away": "Eyüpspor",
-    "home_pct": 39.601701677699396,
-    "draw_pct": 28.224493706661104,
-    "away_pct": 32.173804615639504,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.91412372485813,
+    "draw_pct": 27.98810225535357,
+    "away_pct": 31.097774019788304,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Gençlerbirliği",
     "away": "Göztepe",
-    "home_pct": 35.76620033110254,
-    "draw_pct": 28.487382073140417,
-    "away_pct": 35.746417595757045,
-    "logged_at": "2026-08-17"
+    "home_pct": 38.072417314115505,
+    "draw_pct": 28.329432100314627,
+    "away_pct": 33.59815058556987,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Kasımpaşa",
     "away": "Çorum",
-    "home_pct": 42.23365516292027,
-    "draw_pct": 27.188961985124553,
-    "away_pct": 30.57738285195517,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.944452662474475,
+    "draw_pct": 26.929411915333496,
+    "away_pct": 29.126135422192036,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Konyaspor",
     "away": "Fenerbahçe",
-    "home_pct": 20.194629591206933,
-    "draw_pct": 25.208010318402263,
-    "away_pct": 54.5973600903908,
-    "logged_at": "2026-08-17"
+    "home_pct": 20.601407220071945,
+    "draw_pct": 25.43047252616253,
+    "away_pct": 53.96812025376553,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 19,
     "date": "2027-01-31",
     "home": "Samsunspor",
     "away": "Rizespor",
-    "home_pct": 48.48061976323352,
-    "draw_pct": 26.697895026446876,
-    "away_pct": 24.821485210319604,
-    "logged_at": "2026-08-17"
+    "home_pct": 50.308277311197,
+    "draw_pct": 26.308367250498826,
+    "away_pct": 23.383355438304164,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Alanyaspor",
     "away": "Eyüpspor",
-    "home_pct": 44.656883864783566,
-    "draw_pct": 27.64214489891928,
-    "away_pct": 27.700971236297168,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.457728174880145,
+    "draw_pct": 27.172986415473172,
+    "away_pct": 26.369285409646686,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Erzurumspor",
     "away": "Gençlerbirliği",
-    "home_pct": 40.63946540585814,
-    "draw_pct": 28.49409975540865,
-    "away_pct": 30.86643483873321,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.049695223175874,
+    "draw_pct": 28.42073527544392,
+    "away_pct": 30.52956950138021,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Fenerbahçe",
     "away": "Samsunspor",
-    "home_pct": 61.458286261476516,
-    "draw_pct": 22.79160076308547,
-    "away_pct": 15.750112975438016,
-    "logged_at": "2026-08-17"
+    "home_pct": 60.49672868543132,
+    "draw_pct": 23.200018772404135,
+    "away_pct": 16.30325254216454,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Göztepe",
     "away": "Galatasaray",
-    "home_pct": 23.815424529177545,
-    "draw_pct": 26.232029562679404,
-    "away_pct": 49.95254590814305,
-    "logged_at": "2026-08-17"
+    "home_pct": 22.22494725526807,
+    "draw_pct": 25.903987166862496,
+    "away_pct": 51.87106557786944,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Kasımpaşa",
     "away": "Başakşehir",
-    "home_pct": 31.060037758417025,
-    "draw_pct": 27.52847334089293,
-    "away_pct": 41.41148890069004,
-    "logged_at": "2026-08-17"
+    "home_pct": 32.67233007507664,
+    "draw_pct": 27.569399804922,
+    "away_pct": 39.75827012000136,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Kocaelispor",
     "away": "Konyaspor",
-    "home_pct": 39.3741422016005,
-    "draw_pct": 29.87071857915207,
-    "away_pct": 30.75513921924743,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.82593250141577,
+    "draw_pct": 29.67794904048712,
+    "away_pct": 29.496118458097108,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Rizespor",
     "away": "Gaziantep",
-    "home_pct": 46.39765637516857,
-    "draw_pct": 26.84408484047831,
-    "away_pct": 26.758258784353124,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.17343103575409,
+    "draw_pct": 26.876894664720613,
+    "away_pct": 26.949674299525295,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Trabzonspor",
     "away": "Amedspor",
-    "home_pct": 49.681610792506945,
-    "draw_pct": 26.175599549204552,
-    "away_pct": 24.142789658288507,
-    "logged_at": "2026-08-17"
+    "home_pct": 51.12687268227973,
+    "draw_pct": 25.81985905075712,
+    "away_pct": 23.053268266963155,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 20,
     "date": "2027-02-07",
     "home": "Çorum",
     "away": "Beşiktaş",
-    "home_pct": 27.964515760117308,
-    "draw_pct": 27.163514606027416,
-    "away_pct": 44.87196963385529,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.09746222362117,
+    "draw_pct": 27.20792844265446,
+    "away_pct": 44.69460933372437,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Alanyaspor",
     "away": "Rizespor",
-    "home_pct": 45.0159278870003,
-    "draw_pct": 27.0015348159241,
-    "away_pct": 27.98253729707561,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.49127687113636,
+    "draw_pct": 26.51985452796958,
+    "away_pct": 25.988868600894055,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Amedspor",
     "away": "Kasımpaşa",
-    "home_pct": 48.61127772830174,
-    "draw_pct": 26.153501654772356,
-    "away_pct": 25.235220616925915,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.12053177115344,
+    "draw_pct": 26.412835202951516,
+    "away_pct": 26.46663302589506,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Beşiktaş",
     "away": "Fenerbahçe",
-    "home_pct": 33.12279637785884,
-    "draw_pct": 27.03657814501464,
-    "away_pct": 39.84062547712651,
-    "logged_at": "2026-08-17"
+    "home_pct": 33.46793081765946,
+    "draw_pct": 27.27993616265832,
+    "away_pct": 39.25213301968222,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Eyüpspor",
     "away": "Çorum",
-    "home_pct": 41.50569129325375,
-    "draw_pct": 28.110707660475665,
-    "away_pct": 30.383601046270588,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.41192538154952,
+    "draw_pct": 27.978389717441544,
+    "away_pct": 30.609684901008944,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Galatasaray",
     "away": "Başakşehir",
-    "home_pct": 57.96078287536302,
-    "draw_pct": 24.11353396558598,
-    "away_pct": 17.925683159050998,
-    "logged_at": "2026-08-17"
+    "home_pct": 59.99099976659068,
+    "draw_pct": 23.57713940690076,
+    "away_pct": 16.431860826508572,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Gaziantep",
     "away": "Göztepe",
-    "home_pct": 34.239844872691485,
-    "draw_pct": 28.040545577086423,
-    "away_pct": 37.71960955022208,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.1220133047351,
+    "draw_pct": 27.99608384085635,
+    "away_pct": 35.88190285440854,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Gençlerbirliği",
     "away": "Trabzonspor",
-    "home_pct": 29.66263106667911,
-    "draw_pct": 27.789135015310674,
-    "away_pct": 42.54823391801021,
-    "logged_at": "2026-08-17"
+    "home_pct": 30.29673679808848,
+    "draw_pct": 27.79165562615578,
+    "away_pct": 41.911607575755745,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Konyaspor",
     "away": "Erzurumspor",
-    "home_pct": 43.65425440216947,
-    "draw_pct": 28.12078209645062,
-    "away_pct": 28.224963501379914,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.786961026286505,
+    "draw_pct": 28.044103063837195,
+    "away_pct": 28.168935909876303,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 21,
     "date": "2027-02-14",
     "home": "Samsunspor",
     "away": "Kocaelispor",
-    "home_pct": 48.259751843454715,
-    "draw_pct": 28.337416599428185,
-    "away_pct": 23.40283155711711,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.90865451344363,
+    "draw_pct": 28.412449860222505,
+    "away_pct": 23.67889562633387,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Başakşehir",
     "away": "Amedspor",
-    "home_pct": 47.79319460910144,
-    "draw_pct": 26.926401382232818,
-    "away_pct": 25.280404008665734,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.64731126726472,
+    "draw_pct": 26.695305586923695,
+    "away_pct": 24.65738314581159,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Erzurumspor",
     "away": "Beşiktaş",
-    "home_pct": 26.011510446241072,
-    "draw_pct": 27.14479831264033,
-    "away_pct": 46.8436912411186,
-    "logged_at": "2026-08-17"
+    "home_pct": 26.480825352138048,
+    "draw_pct": 27.246503311750768,
+    "away_pct": 46.27267133611119,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Fenerbahçe",
     "away": "Gaziantep",
-    "home_pct": 71.05666369901188,
-    "draw_pct": 18.658123239786082,
-    "away_pct": 10.285213061202047,
-    "logged_at": "2026-08-17"
+    "home_pct": 70.27808114305287,
+    "draw_pct": 19.07627654802284,
+    "away_pct": 10.645642308924286,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Göztepe",
     "away": "Alanyaspor",
-    "home_pct": 46.04027897190181,
-    "draw_pct": 27.116846072199042,
-    "away_pct": 26.84287495589915,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.97912247291273,
+    "draw_pct": 27.187784447536494,
+    "away_pct": 27.833093079550785,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Kasımpaşa",
     "away": "Gençlerbirliği",
-    "home_pct": 43.27325092349212,
-    "draw_pct": 27.417391205616585,
-    "away_pct": 29.30935787089129,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.00077503964237,
+    "draw_pct": 27.166922307829637,
+    "away_pct": 27.83230265252799,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Kocaelispor",
     "away": "Galatasaray",
-    "home_pct": 18.12166780795014,
-    "draw_pct": 26.076517809582818,
-    "away_pct": 55.80181438246704,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.307677766800584,
+    "draw_pct": 26.267614135940043,
+    "away_pct": 55.42470809725937,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Rizespor",
     "away": "Eyüpspor",
-    "home_pct": 43.15617538058431,
-    "draw_pct": 27.735691563918795,
-    "away_pct": 29.108133055496904,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.532613050721174,
+    "draw_pct": 27.535330177406653,
+    "away_pct": 28.932056771872173,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Trabzonspor",
     "away": "Konyaspor",
-    "home_pct": 55.069232674105905,
-    "draw_pct": 25.206710416652804,
-    "away_pct": 19.72405690924128,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.396744291272725,
+    "draw_pct": 24.810750160040474,
+    "away_pct": 18.79250554868681,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 22,
     "date": "2027-02-21",
     "home": "Çorum",
     "away": "Samsunspor",
-    "home_pct": 35.628683549614756,
-    "draw_pct": 28.340819276258657,
-    "away_pct": 36.030497174126594,
-    "logged_at": "2026-08-17"
+    "home_pct": 35.40822089318045,
+    "draw_pct": 28.325975008618105,
+    "away_pct": 36.26580409820146,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Alanyaspor",
     "away": "Çorum",
-    "home_pct": 44.88381981218117,
-    "draw_pct": 27.24182723299235,
-    "away_pct": 27.87435295482648,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.17729562230923,
+    "draw_pct": 26.935009669597836,
+    "away_pct": 26.887694708092937,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Beşiktaş",
     "away": "Amedspor",
-    "home_pct": 52.21855678680662,
-    "draw_pct": 25.550760896700698,
-    "away_pct": 22.230682316492675,
-    "logged_at": "2026-08-17"
+    "home_pct": 52.72194643358618,
+    "draw_pct": 25.444361798816544,
+    "away_pct": 21.833691767597262,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Eyüpspor",
     "away": "Fenerbahçe",
-    "home_pct": 19.767208712134344,
-    "draw_pct": 25.075434907904924,
-    "away_pct": 55.15735637996073,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.607912494228405,
+    "draw_pct": 24.95050058885283,
+    "away_pct": 55.44158691691876,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Galatasaray",
     "away": "Trabzonspor",
-    "home_pct": 57.28275310595629,
-    "draw_pct": 23.963332457376946,
-    "away_pct": 18.753914436666765,
-    "logged_at": "2026-08-17"
+    "home_pct": 58.66719189362293,
+    "draw_pct": 23.711914803907042,
+    "away_pct": 17.62089330247003,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Gaziantep",
     "away": "Kocaelispor",
-    "home_pct": 39.986037714001455,
-    "draw_pct": 29.487464428231036,
-    "away_pct": 30.5264978577675,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.80285203539579,
+    "draw_pct": 29.476723214633836,
+    "away_pct": 30.72042474997038,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Gençlerbirliği",
     "away": "Başakşehir",
-    "home_pct": 30.809258584279174,
-    "draw_pct": 28.353035765385183,
-    "away_pct": 40.837705650335636,
-    "logged_at": "2026-08-17"
+    "home_pct": 32.01084968522898,
+    "draw_pct": 28.34550233199331,
+    "away_pct": 39.6436479827777,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Konyaspor",
     "away": "Kasımpaşa",
-    "home_pct": 43.06138929297389,
-    "draw_pct": 27.481537491452556,
-    "away_pct": 29.457073215573555,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.3238904301429,
+    "draw_pct": 27.53185990488916,
+    "away_pct": 30.144249664967926,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Rizespor",
     "away": "Göztepe",
-    "home_pct": 37.63037378764819,
-    "draw_pct": 27.88209821143758,
-    "away_pct": 34.48752800091424,
-    "logged_at": "2026-08-17"
+    "home_pct": 38.6546664435921,
+    "draw_pct": 27.735336898332,
+    "away_pct": 33.6099966580759,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 23,
     "date": "2027-02-28",
     "home": "Samsunspor",
     "away": "Erzurumspor",
-    "home_pct": 49.95470048405601,
-    "draw_pct": 26.864688909117223,
-    "away_pct": 23.18061060682676,
-    "logged_at": "2026-08-17"
+    "home_pct": 50.16724877444656,
+    "draw_pct": 26.776900897184074,
+    "away_pct": 23.055850328369367,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Amedspor",
     "away": "Gençlerbirliği",
-    "home_pct": 49.19033657503799,
-    "draw_pct": 26.888291370749464,
-    "away_pct": 23.921372054212554,
-    "logged_at": "2026-08-17"
+    "home_pct": 49.0138695552688,
+    "draw_pct": 26.93494720061051,
+    "away_pct": 24.051183244120693,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Başakşehir",
     "away": "Konyaspor",
-    "home_pct": 53.46733947948002,
-    "draw_pct": 26.005372251507847,
-    "away_pct": 20.527288269012136,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.17602705893651,
+    "draw_pct": 25.79869755184097,
+    "away_pct": 20.025275389222514,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Erzurumspor",
     "away": "Alanyaspor",
-    "home_pct": 37.61082409573185,
-    "draw_pct": 28.185595832609845,
-    "away_pct": 34.20358007165831,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.74852931843808,
+    "draw_pct": 28.109532232670315,
+    "away_pct": 34.14193844889161,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Fenerbahçe",
     "away": "Rizespor",
-    "home_pct": 68.48219232797672,
-    "draw_pct": 19.68235977430454,
-    "away_pct": 11.83544789771874,
-    "logged_at": "2026-08-17"
+    "home_pct": 68.87989541449055,
+    "draw_pct": 19.54575232626415,
+    "away_pct": 11.574352259245307,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Göztepe",
     "away": "Eyüpspor",
-    "home_pct": 47.90202165218689,
-    "draw_pct": 27.214938796934746,
-    "away_pct": 24.883039550878372,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.61314607476116,
+    "draw_pct": 27.093505082304333,
+    "away_pct": 25.293348842934492,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Kasımpaşa",
     "away": "Galatasaray",
-    "home_pct": 18.941802949968693,
-    "draw_pct": 23.92541504485129,
-    "away_pct": 57.132782005180026,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.3104137258614,
+    "draw_pct": 24.24176350848667,
+    "away_pct": 56.44782276565194,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Kocaelispor",
     "away": "Beşiktaş",
-    "home_pct": 26.406850108068774,
-    "draw_pct": 28.77561997883909,
-    "away_pct": 44.81752991309213,
-    "logged_at": "2026-08-17"
+    "home_pct": 27.762375407400302,
+    "draw_pct": 29.020275294986934,
+    "away_pct": 43.21734929761277,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Trabzonspor",
     "away": "Samsunspor",
-    "home_pct": 48.72271314680198,
-    "draw_pct": 26.663309787310425,
-    "away_pct": 24.6139770658876,
-    "logged_at": "2026-08-17"
+    "home_pct": 49.68622520853074,
+    "draw_pct": 26.482832318301796,
+    "away_pct": 23.830942473167454,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 24,
     "date": "2027-03-07",
     "home": "Çorum",
     "away": "Gaziantep",
-    "home_pct": 44.997287286280304,
-    "draw_pct": 27.332387109731243,
-    "away_pct": 27.670325603988445,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.92921125680975,
+    "draw_pct": 27.339856764514487,
+    "away_pct": 27.73093197867577,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Alanyaspor",
     "away": "Fenerbahçe",
-    "home_pct": 21.96712077366637,
-    "draw_pct": 25.244886476859403,
-    "away_pct": 52.787992749474235,
-    "logged_at": "2026-08-17"
+    "home_pct": 22.900722936561113,
+    "draw_pct": 25.566557644956962,
+    "away_pct": 51.53271941848193,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Beşiktaş",
     "away": "Trabzonspor",
-    "home_pct": 45.45956151861053,
-    "draw_pct": 26.766890335665995,
-    "away_pct": 27.773548145723474,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.30246514864697,
+    "draw_pct": 26.871370014639645,
+    "away_pct": 27.826164836713378,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Eyüpspor",
     "away": "Erzurumspor",
-    "home_pct": 43.163829695538986,
-    "draw_pct": 28.19889896353573,
-    "away_pct": 28.637271340925274,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.65872166492347,
+    "draw_pct": 28.11958409772575,
+    "away_pct": 29.221694237350775,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Galatasaray",
     "away": "Gençlerbirliği",
-    "home_pct": 70.1027989349763,
-    "draw_pct": 19.485391518876877,
-    "away_pct": 10.411809546146829,
-    "logged_at": "2026-08-17"
+    "home_pct": 71.72109226236273,
+    "draw_pct": 18.893174968077314,
+    "away_pct": 9.385732769559961,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Gaziantep",
     "away": "Başakşehir",
-    "home_pct": 29.16353098240253,
-    "draw_pct": 27.763650644502817,
-    "away_pct": 43.07281837309465,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.960677312760016,
+    "draw_pct": 27.803043422921288,
+    "away_pct": 42.236279264318696,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Göztepe",
     "away": "Kocaelispor",
-    "home_pct": 48.10670971660167,
-    "draw_pct": 28.283314065879644,
-    "away_pct": 23.609976217518682,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.25561895755531,
+    "draw_pct": 28.605826731745665,
+    "away_pct": 25.138554310699018,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Konyaspor",
     "away": "Amedspor",
-    "home_pct": 36.21162553062185,
-    "draw_pct": 28.30679077113899,
-    "away_pct": 35.48158369823916,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.92649301175049,
+    "draw_pct": 28.253272644955242,
+    "away_pct": 34.82023434329426,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Rizespor",
     "away": "Çorum",
-    "home_pct": 43.283311147921076,
-    "draw_pct": 27.384124115291453,
-    "away_pct": 29.332564736787475,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.18417630235979,
+    "draw_pct": 27.312945746913037,
+    "away_pct": 29.502877950727175,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 25,
     "date": "2027-03-14",
     "home": "Samsunspor",
     "away": "Kasımpaşa",
-    "home_pct": 49.3479020439513,
-    "draw_pct": 26.294105029099846,
-    "away_pct": 24.357992926948853,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.61980984916704,
+    "draw_pct": 26.436546909442438,
+    "away_pct": 24.94364324139053,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Amedspor",
     "away": "Samsunspor",
-    "home_pct": 41.533010643272725,
-    "draw_pct": 27.919273661854543,
-    "away_pct": 30.54771569487273,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.08112349959055,
+    "draw_pct": 28.003886095824516,
+    "away_pct": 30.91499040458494,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Başakşehir",
     "away": "Beşiktaş",
-    "home_pct": 39.135046729937564,
-    "draw_pct": 27.90919392561797,
-    "away_pct": 32.95575934444447,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.765353232506264,
+    "draw_pct": 27.92569528158052,
+    "away_pct": 32.30895148591322,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Erzurumspor",
     "away": "Gaziantep",
-    "home_pct": 42.5866863055675,
-    "draw_pct": 27.845360235982653,
-    "away_pct": 29.567953458449836,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.862281410181964,
+    "draw_pct": 27.825687064637528,
+    "away_pct": 29.312031525180508,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Fenerbahçe",
     "away": "Galatasaray",
-    "home_pct": 41.88140913922714,
-    "draw_pct": 26.72169675616801,
-    "away_pct": 31.39689410460486,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.88884995233273,
+    "draw_pct": 27.200268767020685,
+    "away_pct": 32.910881280646585,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Gençlerbirliği",
     "away": "Konyaspor",
-    "home_pct": 41.24263484348617,
-    "draw_pct": 28.409057104785695,
-    "away_pct": 30.34830805172813,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.607788625315926,
+    "draw_pct": 28.200768872641945,
+    "away_pct": 29.191442502042143,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Kasımpaşa",
     "away": "Eyüpspor",
-    "home_pct": 41.88517511722101,
-    "draw_pct": 27.603074177018915,
-    "away_pct": 30.511750705760065,
-    "logged_at": "2026-08-17"
+    "home_pct": 44.1351336141268,
+    "draw_pct": 27.193329899212287,
+    "away_pct": 28.67153648666091,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Kocaelispor",
     "away": "Alanyaspor",
-    "home_pct": 37.46204538015313,
-    "draw_pct": 29.64567413556572,
-    "away_pct": 32.89228048428115,
-    "logged_at": "2026-08-17"
+    "home_pct": 38.510777092659104,
+    "draw_pct": 29.511665613664164,
+    "away_pct": 31.97755729367673,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Trabzonspor",
     "away": "Rizespor",
-    "home_pct": 55.77791427175992,
-    "draw_pct": 24.504906428240027,
-    "away_pct": 19.717179300000048,
-    "logged_at": "2026-08-17"
+    "home_pct": 58.2086104427179,
+    "draw_pct": 23.76303198357777,
+    "away_pct": 18.028357573704337,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 26,
     "date": "2027-03-21",
     "home": "Çorum",
     "away": "Göztepe",
-    "home_pct": 36.359256688745155,
-    "draw_pct": 28.194063007684072,
-    "away_pct": 35.44668030357078,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.51001056968384,
+    "draw_pct": 28.067208738416237,
+    "away_pct": 34.4227806918999,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Alanyaspor",
     "away": "Gençlerbirliği",
-    "home_pct": 45.945399848974375,
-    "draw_pct": 27.410259854605012,
-    "away_pct": 26.644340296420616,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.240404631099544,
+    "draw_pct": 27.127563458070703,
+    "away_pct": 25.63203191082976,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Beşiktaş",
     "away": "Kasımpaşa",
-    "home_pct": 59.16424435393056,
-    "draw_pct": 23.23764049401803,
-    "away_pct": 17.598115152051417,
-    "logged_at": "2026-08-17"
+    "home_pct": 58.245030921101616,
+    "draw_pct": 23.585443579834273,
+    "away_pct": 18.169525499064108,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Eyüpspor",
     "away": "Amedspor",
-    "home_pct": 35.703566447363144,
-    "draw_pct": 28.358599351124358,
-    "away_pct": 35.9378342015125,
-    "logged_at": "2026-08-17"
+    "home_pct": 35.8043749086951,
+    "draw_pct": 28.215079175741636,
+    "away_pct": 35.98054591556326,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Galatasaray",
     "away": "Konyaspor",
-    "home_pct": 68.69666703828854,
-    "draw_pct": 20.103354812547288,
-    "away_pct": 11.199978149164174,
-    "logged_at": "2026-08-17"
+    "home_pct": 70.49072325830949,
+    "draw_pct": 19.424445669742916,
+    "away_pct": 10.084831071947598,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Gaziantep",
     "away": "Trabzonspor",
-    "home_pct": 28.146486598087378,
-    "draw_pct": 27.13021960513531,
-    "away_pct": 44.72329379677731,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.396513766375392,
+    "draw_pct": 27.140105083474353,
+    "away_pct": 44.46338115015027,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Göztepe",
     "away": "Fenerbahçe",
-    "home_pct": 24.507339234755364,
-    "draw_pct": 26.175281952616935,
-    "away_pct": 49.3173788126277,
-    "logged_at": "2026-08-17"
+    "home_pct": 23.81321553585828,
+    "draw_pct": 26.044220183851635,
+    "away_pct": 50.14256428029009,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Rizespor",
     "away": "Kocaelispor",
-    "home_pct": 43.68658110099148,
-    "draw_pct": 28.934658172929446,
-    "away_pct": 27.378760726079072,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.48380462773677,
+    "draw_pct": 29.058737017151355,
+    "away_pct": 28.457458355111886,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Samsunspor",
     "away": "Başakşehir",
-    "home_pct": 37.27757349189628,
-    "draw_pct": 28.449304706123886,
-    "away_pct": 34.27312180197983,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.98814790500699,
+    "draw_pct": 28.37994439718231,
+    "away_pct": 33.631907697810696,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 27,
     "date": "2027-04-04",
     "home": "Çorum",
     "away": "Erzurumspor",
-    "home_pct": 43.6048596234195,
-    "draw_pct": 27.929774720705876,
-    "away_pct": 28.46536565587463,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.232733553226204,
+    "draw_pct": 27.88948847874895,
+    "away_pct": 28.877777968024844,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Amedspor",
     "away": "Galatasaray",
-    "home_pct": 23.516997458142907,
-    "draw_pct": 25.963271285152363,
-    "away_pct": 50.51973125670472,
-    "logged_at": "2026-08-17"
+    "home_pct": 22.55994479825623,
+    "draw_pct": 25.860088997730973,
+    "away_pct": 51.57996620401279,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Başakşehir",
     "away": "Göztepe",
-    "home_pct": 48.02929866291825,
-    "draw_pct": 27.04785237777459,
-    "away_pct": 24.922848959307167,
-    "logged_at": "2026-08-17"
+    "home_pct": 49.8656491268207,
+    "draw_pct": 26.59398249948645,
+    "away_pct": 23.54036837369284,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Erzurumspor",
     "away": "Rizespor",
-    "home_pct": 39.44734351161961,
-    "draw_pct": 28.01784265173754,
-    "away_pct": 32.534813836642854,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.03983606133269,
+    "draw_pct": 27.826282845327327,
+    "away_pct": 31.133881093339994,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Fenerbahçe",
     "away": "Çorum",
-    "home_pct": 68.2742148320323,
-    "draw_pct": 19.874384709212112,
-    "away_pct": 11.851400458755593,
-    "logged_at": "2026-08-17"
+    "home_pct": 67.59779090550592,
+    "draw_pct": 20.146568168701663,
+    "away_pct": 12.255640925792424,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Gençlerbirliği",
     "away": "Beşiktaş",
-    "home_pct": 27.559161269005767,
-    "draw_pct": 27.45509282786946,
-    "away_pct": 44.98574590312477,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.760862277851817,
+    "draw_pct": 27.657322563496773,
+    "away_pct": 43.5818151586514,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Kasımpaşa",
     "away": "Gaziantep",
-    "home_pct": 45.28448906134203,
-    "draw_pct": 26.72655726465689,
-    "away_pct": 27.98895367400107,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.893536861710714,
+    "draw_pct": 26.48491031662399,
+    "away_pct": 26.62155282166529,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Kocaelispor",
     "away": "Eyüpspor",
-    "home_pct": 39.275636759556726,
-    "draw_pct": 29.90521312160767,
-    "away_pct": 30.8191501188356,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.95939257062792,
+    "draw_pct": 29.606390310010205,
+    "away_pct": 29.43421711936188,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Konyaspor",
     "away": "Samsunspor",
-    "home_pct": 35.817879326623135,
-    "draw_pct": 28.648877318793907,
-    "away_pct": 35.53324335458296,
-    "logged_at": "2026-08-17"
+    "home_pct": 36.05524972172394,
+    "draw_pct": 28.64032161321248,
+    "away_pct": 35.30442866506359,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 28,
     "date": "2027-04-11",
     "home": "Trabzonspor",
     "away": "Alanyaspor",
-    "home_pct": 53.4862114416545,
-    "draw_pct": 25.253047038150427,
-    "away_pct": 21.260741520195083,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.50553790689921,
+    "draw_pct": 24.955415245764026,
+    "away_pct": 20.53904684733676,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Alanyaspor",
     "away": "Kasımpaşa",
-    "home_pct": 45.7984843758898,
-    "draw_pct": 26.643738824078266,
-    "away_pct": 27.557776800031924,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.75970612813428,
+    "draw_pct": 26.564807020350536,
+    "away_pct": 27.675486851515174,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Beşiktaş",
     "away": "Konyaspor",
-    "home_pct": 57.50621074499108,
-    "draw_pct": 24.42874828717407,
-    "away_pct": 18.065040967834854,
-    "logged_at": "2026-08-17"
+    "home_pct": 57.89318571819704,
+    "draw_pct": 24.38067420865593,
+    "away_pct": 17.726140073147036,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Eyüpspor",
     "away": "Trabzonspor",
-    "home_pct": 30.06543215319153,
-    "draw_pct": 27.89293551383109,
-    "away_pct": 42.041632332977386,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.43702121748509,
+    "draw_pct": 27.651763216435914,
+    "away_pct": 42.911215566079,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Fenerbahçe",
     "away": "Kocaelispor",
-    "home_pct": 66.90028169932363,
-    "draw_pct": 21.56000131582442,
-    "away_pct": 11.53971698485195,
-    "logged_at": "2026-08-17"
+    "home_pct": 65.24930982571703,
+    "draw_pct": 22.276489819929342,
+    "away_pct": 12.47420035435363,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Gaziantep",
     "away": "Gençlerbirliği",
-    "home_pct": 40.83107634513446,
-    "draw_pct": 28.10435585405951,
-    "away_pct": 31.06456780080602,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.66654017868593,
+    "draw_pct": 28.009907214867404,
+    "away_pct": 30.32355260644667,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Göztepe",
     "away": "Erzurumspor",
-    "home_pct": 49.677022511821136,
-    "draw_pct": 26.82264153828014,
-    "away_pct": 23.500335949898716,
-    "logged_at": "2026-08-17"
+    "home_pct": 48.474798021296714,
+    "draw_pct": 26.96107227472278,
+    "away_pct": 24.564129703980505,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Rizespor",
     "away": "Amedspor",
-    "home_pct": 37.50403181377612,
-    "draw_pct": 27.789131339786344,
-    "away_pct": 34.70683684643754,
-    "logged_at": "2026-08-17"
+    "home_pct": 37.59208867045019,
+    "draw_pct": 27.69857627467138,
+    "away_pct": 34.70933505487843,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Samsunspor",
     "away": "Galatasaray",
-    "home_pct": 24.232574137378887,
-    "draw_pct": 26.532848503534773,
-    "away_pct": 49.23457735908634,
-    "logged_at": "2026-08-17"
+    "home_pct": 23.787885342955576,
+    "draw_pct": 26.63556573307977,
+    "away_pct": 49.576548923964666,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 29,
     "date": "2027-04-18",
     "home": "Çorum",
     "away": "Başakşehir",
-    "home_pct": 31.258900949026604,
-    "draw_pct": 28.079906412170118,
-    "away_pct": 40.66119263880329,
-    "logged_at": "2026-08-17"
+    "home_pct": 31.34074788699816,
+    "draw_pct": 27.992136301925196,
+    "away_pct": 40.667115811076634,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Amedspor",
     "away": "Gaziantep",
-    "home_pct": 51.15509993921148,
-    "draw_pct": 25.99191994402976,
-    "away_pct": 22.852980116758754,
-    "logged_at": "2026-08-17"
+    "home_pct": 50.84626888356992,
+    "draw_pct": 26.110516880220384,
+    "away_pct": 23.043214236209682,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Başakşehir",
     "away": "Eyüpspor",
-    "home_pct": 53.536886509381695,
-    "draw_pct": 25.997575959782377,
-    "away_pct": 20.465537530835928,
-    "logged_at": "2026-08-17"
+    "home_pct": 54.717823910679265,
+    "draw_pct": 25.540674766209364,
+    "away_pct": 19.741501323111375,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Erzurumspor",
     "away": "Fenerbahçe",
-    "home_pct": 18.005038221212534,
-    "draw_pct": 24.262967940939404,
-    "away_pct": 57.73199383784807,
-    "logged_at": "2026-08-17"
+    "home_pct": 18.33068024938458,
+    "draw_pct": 24.448317095570545,
+    "away_pct": 57.221002655044884,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Galatasaray",
     "away": "Beşiktaş",
-    "home_pct": 54.73413584999902,
-    "draw_pct": 24.710221694007334,
-    "away_pct": 20.55564245599365,
-    "logged_at": "2026-08-17"
+    "home_pct": 56.656101543472595,
+    "draw_pct": 24.434531233643757,
+    "away_pct": 18.90936722288365,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Gençlerbirliği",
     "away": "Samsunspor",
-    "home_pct": 35.06833154121941,
-    "draw_pct": 28.623830292098646,
-    "away_pct": 36.30783816668193,
-    "logged_at": "2026-08-17"
+    "home_pct": 35.979691522808274,
+    "draw_pct": 28.615631598453273,
+    "away_pct": 35.404676878738464,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Kasımpaşa",
     "away": "Rizespor",
-    "home_pct": 42.290966313869966,
-    "draw_pct": 26.93153311437335,
-    "away_pct": 30.77750057175669,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.167417298347694,
+    "draw_pct": 26.54143801773532,
+    "away_pct": 28.291144683916986,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Kocaelispor",
     "away": "Çorum",
-    "home_pct": 38.604045287616614,
-    "draw_pct": 29.71089747614812,
-    "away_pct": 31.68505723623528,
-    "logged_at": "2026-08-17"
+    "home_pct": 39.91719817920705,
+    "draw_pct": 29.525438861532198,
+    "away_pct": 30.557362959260747,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Konyaspor",
     "away": "Alanyaspor",
-    "home_pct": 40.225826999146065,
-    "draw_pct": 28.137576353828585,
-    "away_pct": 31.63659664702535,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.55402173010865,
+    "draw_pct": 28.049762502492353,
+    "away_pct": 31.39621576739898,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 30,
     "date": "2027-04-25",
     "home": "Trabzonspor",
     "away": "Göztepe",
-    "home_pct": 49.67525827015085,
-    "draw_pct": 26.324046402934947,
-    "away_pct": 24.000695326914204,
-    "logged_at": "2026-08-17"
+    "home_pct": 52.142761055974354,
+    "draw_pct": 25.706096363606175,
+    "away_pct": 22.151142580419492,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Alanyaspor",
     "away": "Amedspor",
-    "home_pct": 39.06734271477226,
-    "draw_pct": 27.755164191934366,
-    "away_pct": 33.17749309329338,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.50046824140682,
+    "draw_pct": 27.582202192066845,
+    "away_pct": 31.91732956652632,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Eyüpspor",
     "away": "Gençlerbirliği",
-    "home_pct": 42.64476102803528,
-    "draw_pct": 28.30103766153845,
-    "away_pct": 29.054201310426258,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.564886097516315,
+    "draw_pct": 28.199430926590924,
+    "away_pct": 29.235682975892765,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Fenerbahçe",
     "away": "Başakşehir",
-    "home_pct": 56.51054002821914,
-    "draw_pct": 24.394530693519446,
-    "away_pct": 19.094929278261418,
-    "logged_at": "2026-08-17"
+    "home_pct": 55.9343687787038,
+    "draw_pct": 24.57937094911915,
+    "away_pct": 19.486260272177056,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Gaziantep",
     "away": "Konyaspor",
-    "home_pct": 39.51010774786274,
-    "draw_pct": 28.217507299568446,
-    "away_pct": 32.272384952568814,
-    "logged_at": "2026-08-17"
+    "home_pct": 40.43387789770861,
+    "draw_pct": 28.124395733946166,
+    "away_pct": 31.44172636834523,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Göztepe",
     "away": "Kasımpaşa",
-    "home_pct": 48.93334281082497,
-    "draw_pct": 26.24146670894832,
-    "away_pct": 24.82519048022671,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.79106326540473,
+    "draw_pct": 26.557841414980103,
+    "away_pct": 26.651095319615177,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Kocaelispor",
     "away": "Erzurumspor",
-    "home_pct": 40.26259366732177,
-    "draw_pct": 29.818170530344823,
-    "away_pct": 29.91923580233341,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.154824919122504,
+    "draw_pct": 29.65056157288003,
+    "away_pct": 29.194613507997463,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Rizespor",
     "away": "Galatasaray",
-    "home_pct": 19.91602160845889,
-    "draw_pct": 24.557515209290727,
-    "away_pct": 55.52646318225038,
-    "logged_at": "2026-08-17"
+    "home_pct": 19.020980981927895,
+    "draw_pct": 24.334613960678507,
+    "away_pct": 56.64440505739361,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Samsunspor",
     "away": "Beşiktaş",
-    "home_pct": 33.95338234067948,
-    "draw_pct": 27.9934297815294,
-    "away_pct": 38.053187877791125,
-    "logged_at": "2026-08-17"
+    "home_pct": 34.626214676079094,
+    "draw_pct": 28.101834735617402,
+    "away_pct": 37.27195058830351,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 31,
     "date": "2027-05-02",
     "home": "Çorum",
     "away": "Trabzonspor",
-    "home_pct": 30.112015093125706,
-    "draw_pct": 27.50011121375745,
-    "away_pct": 42.387873693116845,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.676972994481677,
+    "draw_pct": 27.374018467566568,
+    "away_pct": 42.94900853795178,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Amedspor",
     "away": "Çorum",
-    "home_pct": 47.936350144408166,
-    "draw_pct": 26.794556322203594,
-    "away_pct": 25.269093533388244,
-    "logged_at": "2026-08-17"
+    "home_pct": 47.79292573352515,
+    "draw_pct": 26.753096089238042,
+    "away_pct": 25.453978177236795,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Başakşehir",
     "away": "Rizespor",
-    "home_pct": 54.031769450699144,
-    "draw_pct": 25.35742328857037,
-    "away_pct": 20.610807260730496,
-    "logged_at": "2026-08-17"
+    "home_pct": 55.88935586101017,
+    "draw_pct": 24.810221922112056,
+    "away_pct": 19.30042221687778,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Beşiktaş",
     "away": "Gaziantep",
-    "home_pct": 61.20813865523449,
-    "draw_pct": 22.856509493677958,
-    "away_pct": 15.935351851087567,
-    "logged_at": "2026-08-17"
+    "home_pct": 61.393826927718486,
+    "draw_pct": 22.894966963992758,
+    "away_pct": 15.711206108288764,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Galatasaray",
     "away": "Eyüpspor",
-    "home_pct": 68.81546487793526,
-    "draw_pct": 20.065765721866963,
-    "away_pct": 11.11876940019778,
-    "logged_at": "2026-08-17"
+    "home_pct": 71.07284781938594,
+    "draw_pct": 19.069549650974846,
+    "away_pct": 9.857602529639196,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Gençlerbirliği",
     "away": "Kocaelispor",
-    "home_pct": 41.81164585879176,
-    "draw_pct": 29.577102701678935,
-    "away_pct": 28.611251439529294,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.01633712952617,
+    "draw_pct": 29.50924992625273,
+    "away_pct": 28.474412944221093,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Kasımpaşa",
     "away": "Erzurumspor",
-    "home_pct": 43.93239799090131,
-    "draw_pct": 27.293583154061356,
-    "away_pct": 28.77401885503734,
-    "logged_at": "2026-08-17"
+    "home_pct": 45.229337105445,
+    "draw_pct": 27.053106018975775,
+    "away_pct": 27.717556875579223,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Konyaspor",
     "away": "Göztepe",
-    "home_pct": 36.589374438426404,
-    "draw_pct": 28.482802869426116,
-    "away_pct": 34.927822692147465,
-    "logged_at": "2026-08-17"
+    "home_pct": 38.24727583670101,
+    "draw_pct": 28.35134846385158,
+    "away_pct": 33.40137569944743,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Samsunspor",
     "away": "Alanyaspor",
-    "home_pct": 46.42409986216123,
-    "draw_pct": 27.191374110624956,
-    "away_pct": 26.384526027213827,
-    "logged_at": "2026-08-17"
+    "home_pct": 46.81415135321536,
+    "draw_pct": 27.102721314412452,
+    "away_pct": 26.083127332372197,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 32,
     "date": "2027-05-09",
     "home": "Trabzonspor",
     "away": "Fenerbahçe",
-    "home_pct": 30.815299126255596,
-    "draw_pct": 26.872406778108022,
-    "away_pct": 42.31229409563639,
-    "logged_at": "2026-08-17"
+    "home_pct": 31.884776015881695,
+    "draw_pct": 27.06986955995763,
+    "away_pct": 41.04535442416067,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Alanyaspor",
     "away": "Galatasaray",
-    "home_pct": 21.291043544680313,
-    "draw_pct": 25.245874919867312,
-    "away_pct": 53.463081535452375,
-    "logged_at": "2026-08-17"
+    "home_pct": 21.299248185034447,
+    "draw_pct": 25.376122918258265,
+    "away_pct": 53.324628896707296,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Erzurumspor",
     "away": "Başakşehir",
-    "home_pct": 29.23731563369079,
-    "draw_pct": 28.151982747148494,
-    "away_pct": 42.610701619160714,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.64461967014596,
+    "draw_pct": 28.103825646810048,
+    "away_pct": 42.25155468304399,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Eyüpspor",
     "away": "Konyaspor",
-    "home_pct": 41.479042454510804,
-    "draw_pct": 28.440894614277013,
-    "away_pct": 30.08006293121217,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.440817834706095,
+    "draw_pct": 28.340617292292976,
+    "away_pct": 30.218564873000926,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Fenerbahçe",
     "away": "Kasımpaşa",
-    "home_pct": 69.26523585549836,
-    "draw_pct": 19.20358977592932,
-    "away_pct": 11.531174368572323,
-    "logged_at": "2026-08-17"
+    "home_pct": 67.40827705620201,
+    "draw_pct": 20.003127630305862,
+    "away_pct": 12.588595313492126,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Gaziantep",
     "away": "Samsunspor",
-    "home_pct": 33.47235654049909,
-    "draw_pct": 28.1745381885907,
-    "away_pct": 38.35310527091022,
-    "logged_at": "2026-08-17"
+    "home_pct": 33.9978935201999,
+    "draw_pct": 28.213545624204844,
+    "away_pct": 37.78856085559526,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Göztepe",
     "away": "Amedspor",
-    "home_pct": 42.02122380863323,
-    "draw_pct": 27.768793204945485,
-    "away_pct": 30.209982986421284,
-    "logged_at": "2026-08-17"
+    "home_pct": 41.43871532946951,
+    "draw_pct": 27.729661570143104,
+    "away_pct": 30.83162310038739,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Kocaelispor",
     "away": "Trabzonspor",
-    "home_pct": 28.305978987882003,
-    "draw_pct": 29.127622364649653,
-    "away_pct": 42.56639864746835,
-    "logged_at": "2026-08-17"
+    "home_pct": 29.000793417039784,
+    "draw_pct": 29.158371708080093,
+    "away_pct": 41.84083487488012,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Rizespor",
     "away": "Beşiktaş",
-    "home_pct": 29.015536857561642,
-    "draw_pct": 27.028342695780495,
-    "away_pct": 43.95612044665786,
-    "logged_at": "2026-08-17"
+    "home_pct": 28.97144838902524,
+    "draw_pct": 27.05074957734517,
+    "away_pct": 43.977802033629594,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 33,
     "date": "2027-05-16",
     "home": "Çorum",
     "away": "Gençlerbirliği",
-    "home_pct": 43.05809878449992,
-    "draw_pct": 28.020619712871962,
-    "away_pct": 28.92128150262811,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.11829397532259,
+    "draw_pct": 27.965084675758035,
+    "away_pct": 28.916621348919385,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Amedspor",
     "away": "Fenerbahçe",
-    "home_pct": 24.11189778373577,
-    "draw_pct": 25.875077129666174,
-    "away_pct": 50.01302508659806,
-    "logged_at": "2026-08-17"
+    "home_pct": 24.04194368254248,
+    "draw_pct": 25.955607322951835,
+    "away_pct": 50.00244899450569,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Başakşehir",
     "away": "Alanyaspor",
-    "home_pct": 51.88199209282569,
-    "draw_pct": 26.0405393394789,
-    "away_pct": 22.0774685676954,
-    "logged_at": "2026-08-17"
+    "home_pct": 52.28987890615707,
+    "draw_pct": 25.898863403368534,
+    "away_pct": 21.811257690474395,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Beşiktaş",
     "away": "Göztepe",
-    "home_pct": 52.17297918664102,
-    "draw_pct": 25.71065469370059,
-    "away_pct": 22.11636611965839,
-    "logged_at": "2026-08-17"
+    "home_pct": 53.731020164518014,
+    "draw_pct": 25.337275787367403,
+    "away_pct": 20.931704048114582,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Galatasaray",
     "away": "Gaziantep",
-    "home_pct": 72.21357330392044,
-    "draw_pct": 18.23349184957361,
-    "away_pct": 9.552934846505941,
-    "logged_at": "2026-08-17"
+    "home_pct": 73.67362112265981,
+    "draw_pct": 17.69464284254175,
+    "away_pct": 8.63173603479845,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Gençlerbirliği",
     "away": "Rizespor",
-    "home_pct": 41.21819868299962,
-    "draw_pct": 27.904915409829606,
-    "away_pct": 30.876885907170777,
-    "logged_at": "2026-08-17"
+    "home_pct": 43.671310699516255,
+    "draw_pct": 27.554818542511732,
+    "away_pct": 28.773870757972013,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Kasımpaşa",
     "away": "Kocaelispor",
-    "home_pct": 42.14072980879406,
-    "draw_pct": 28.894692089275477,
-    "away_pct": 28.964578101930456,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.8352880183682,
+    "draw_pct": 28.77503175967353,
+    "away_pct": 28.389680221958276,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Konyaspor",
     "away": "Çorum",
-    "home_pct": 42.01224652982533,
-    "draw_pct": 28.050969582552142,
-    "away_pct": 29.936783887622525,
-    "logged_at": "2026-08-17"
+    "home_pct": 42.57488773317106,
+    "draw_pct": 27.93295534478069,
+    "away_pct": 29.492156922048245,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Samsunspor",
     "away": "Eyüpspor",
-    "home_pct": 48.22243644837438,
-    "draw_pct": 27.274043535250115,
-    "away_pct": 24.50352001637551,
-    "logged_at": "2026-08-17"
+    "home_pct": 49.398704061206615,
+    "draw_pct": 26.913825822682647,
+    "away_pct": 23.687470116110738,
+    "logged_at": "2026-08-28"
   },
   {
     "round": 34,
     "date": "2027-05-23",
     "home": "Trabzonspor",
     "away": "Erzurumspor",
-    "home_pct": 57.17059719721048,
-    "draw_pct": 24.53821551306096,
-    "away_pct": 18.291187289728565,
-    "logged_at": "2026-08-17"
+    "home_pct": 58.00393687713058,
+    "draw_pct": 24.212704192463477,
+    "away_pct": 17.783358930405942,
+    "logged_at": "2026-08-28"
   }
 ]
