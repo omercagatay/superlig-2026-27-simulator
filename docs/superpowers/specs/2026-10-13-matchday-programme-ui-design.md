@@ -25,7 +25,7 @@ The night edition is a designed variant (evening kickoff programme), follows `pr
 - Newsreader — sentence headlines, captions, notes.
 - Archivo Narrow with tabular figures — tables and fixture data.
 
-**Typesetting.** Turkish edition: `%59,9`, decimal comma, `toLocaleUpperCase("tr")` so İ/ı are correct, Turkish dates. English edition: `59.9%`.
+**Typesetting.** Turkish edition: `%59,9`, decimal comma, Turkish dates. Uppercase is CSS on elements marked `lang="tr"` (every club name is), so İ/ı are correct in both editions. English edition: `59.9%`.
 
 **Print motifs.** Double and single rules; page numbers (`s. 2`); fixtures numbered `№`; the matchday shown as an issue (`Sayı 8 · 16–19 Ekim`); fixtures as ticket stubs with a perforated edge; probability bars with a halftone-dot fill; a two-stripe scarf swatch per club.
 
