@@ -218,6 +218,25 @@ pub fn blend_lambdas(
             )
         }
     };
+    // Heavy underdogs score more than the blend predicts (backtest: 0.66
+    // expected, 0.88 scored), so lift low λs part of the way to the pivot.
+    let lift = |l: f64| {
+        if l < data::UNDERDOG_PIVOT {
+            l + data::UNDERDOG_LIFT * (data::UNDERDOG_PIVOT - l)
+        } else {
+            l
+        }
+    };
+    // The favourite's λ follows the underdog's relative lift by FAV_FOLLOW,
+    // so extra goals in mismatches need not all become upsets.
+    let (lo, hi) = if lh < la { (lh, la) } else { (la, lh) };
+    let lo_new = lift(lo);
+    let hi_new = hi * (1.0 + data::FAV_FOLLOW * (lo_new / lo - 1.0));
+    let (lh, la) = if lh < la {
+        (lo_new, hi_new)
+    } else {
+        (hi_new, lo_new)
+    };
     (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
 }
 

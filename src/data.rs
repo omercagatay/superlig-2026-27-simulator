@@ -43,6 +43,13 @@ pub const PRESEASON_K: f64 = 20.0;
 /// Starting rating of a club with no top-flight result since 2012-13.
 pub const NEW_CLUB_ELO: f64 = 1450.0;
 
+/// Expected goals below `UNDERDOG_PIVOT` are lifted `UNDERDOG_LIFT` of the
+/// way back to it: heavy underdogs score more often than the rating gap
+/// implies. Chosen by walk-forward backtest (`examples/backtest.rs`).
+pub const UNDERDOG_PIVOT: f64 = 0.9;
+pub const UNDERDOG_LIFT: f64 = 0.7;
+pub const FAV_FOLLOW: f64 = 0.5;
+
 pub const N_TEAMS: usize = 18;
 pub const N_ROUNDS: usize = 34;
 pub const N_FIXTURES: usize = 306;
