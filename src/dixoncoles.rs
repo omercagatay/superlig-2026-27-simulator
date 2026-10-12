@@ -15,6 +15,12 @@ const LAM_MIN: f64 = 1e-3;
 const LAM_MAX: f64 = 50.0;
 const RHO_CLAMP: f64 = 0.4;
 const TAU_FLOOR: f64 = 1e-6;
+/// Log draw multiplier for evenly matched sides, and its fall per goal of
+/// expected-goal gap: draws get `exp(DRAW_BOOST - DRAW_DECAY·|λh-λa|)` times
+/// their Dixon-Coles mass. Chosen by walk-forward backtest
+/// (`examples/backtest.rs`). Prediction only — fitting uses `tau_factor`.
+pub const DRAW_BOOST: f64 = 0.12;
+pub const DRAW_DECAY: f64 = 0.15;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DcParams {
@@ -90,11 +96,15 @@ pub fn score_table(
     let lpa = poisson_pmf(lambda_a);
     let rho = rho.clamp(-RHO_CLAMP, RHO_CLAMP);
 
+    // Even with ρ, Poisson tables put too little mass on draws between evenly
+    // matched sides and too much between mismatched ones; scale the diagonal
+    // by how close the expected goals are.
+    let draw_mult = (DRAW_BOOST - DRAW_DECAY * (lambda_h - lambda_a).abs()).exp();
     let mut table = [[0.0_f64; MAX_GOALS + 1]; MAX_GOALS + 1];
     for x in 0..=MAX_GOALS {
         for y in 0..=MAX_GOALS {
             let tau = tau_factor(x, y, lambda_h, lambda_a, rho).max(TAU_FLOOR);
-            table[x][y] = tau * lph[x] * lpa[y];
+            table[x][y] = tau * lph[x] * lpa[y] * if x == y { draw_mult } else { 1.0 };
         }
     }
     let z: f64 = table.iter().flat_map(|r| r.iter()).sum();
