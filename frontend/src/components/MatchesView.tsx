@@ -72,7 +72,6 @@ function ForecastRow({
   const f = m.forecast;
   if (!f) return null;
   const homeFavored = f.home_win_pct >= f.away_win_pct;
-  const mk = m.market;
   return (
     <div className="match-card">
       <div className="fixture-teams">
@@ -100,7 +99,6 @@ function ForecastRow({
             </th>
             <th scope="col">{tr("probability")}</th>
             <th scope="col">{tr("fairOdds")}</th>
-            {mk && <th scope="col">{tr("bookmaker")}</th>}
           </tr>
         </thead>
         <tbody>
@@ -111,7 +109,6 @@ function ForecastRow({
             </td>
             <td>{f.home_win_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.home_odds)}</td>
-            {mk && <td className="mt-book">{mk.home_odds.toFixed(2)}</td>}
           </tr>
           <tr>
             <td className="mt-label">
@@ -120,7 +117,6 @@ function ForecastRow({
             </td>
             <td>{f.draw_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.draw_odds)}</td>
-            {mk && <td className="mt-book">{mk.draw_odds.toFixed(2)}</td>}
           </tr>
           <tr className="mt-group-end">
             <td className="mt-label">
@@ -129,38 +125,24 @@ function ForecastRow({
             </td>
             <td>{f.away_win_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.away_odds)}</td>
-            {mk && <td className="mt-book">{mk.away_odds.toFixed(2)}</td>}
           </tr>
           <tr>
             <td className="mt-label">{tr("over25")}</td>
             <td>{f.over25_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.over25_odds)}</td>
-            {mk && <td />}
           </tr>
           <tr>
             <td className="mt-label">{tr("under25")}</td>
             <td>{(100 - f.over25_pct).toFixed(1)}%</td>
             <td>{fmtOdds(f.under25_odds)}</td>
-            {mk && <td />}
           </tr>
           <tr>
             <td className="mt-label">{tr("btts")}</td>
             <td>{f.btts_pct.toFixed(1)}%</td>
             <td>{fmtOdds(f.btts_odds)}</td>
-            {mk && <td />}
           </tr>
         </tbody>
       </table>
-      {mk && (
-        <div className="edge-line">
-          <span className="edge-label">{tr("vsBookmaker")}</span>
-          <span className={`edge-val${mk.edge_pct >= 0 ? " edge-up" : " edge-down"}`}>
-            {mk.edge_pct >= 0 ? "+" : ""}
-            {mk.edge_pct.toFixed(1)} {tr("ptsOn")} {mk.edge_outcome}
-          </span>
-          <span className="edge-margin">{tr("bookMargin")} {((mk.overround - 1) * 100).toFixed(1)}%</span>
-        </div>
-      )}
       <PinButtons m={m} pinned={pinned} onPin={onPin} />
       <div className="score-chips">
         <span className="score-chips-label">{tr("mostLikelyScores")}</span>

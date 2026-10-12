@@ -57,7 +57,6 @@ The dummy-layer `rm -rf` globs and the binary copy path both key on the **packag
 `src/main.rs` builds one `AppState` (`Arc<AppState>`) holding:
 - `world: Arc<RwLock<World>>` — the live simulation state (clubs, Elo ratings, fixture calendar, already-played results)
 - `live_data: Arc<RwLock<Option<LiveData>>>` — cached scrape results
-- `market: Arc<RwLock<Option<MarketSnapshot>>>` — last good bookmaker snapshot
 - `simulation_slots: Arc<Semaphore>` — global CPU-heavy request bound
 - `kimi_api_key: Option<String>`
 
@@ -67,7 +66,6 @@ Routes (`src/handlers.rs`), each with its own per-IP rate limit (`src/rate_limit
 - `POST /api/refresh` (5/min) — validates all 306 TFF fixture rows before applying played results, then **does** mutate the shared `World` and caches the raw scrape. Partial or regressive snapshots keep the last good state.
 - `GET /api/upcoming` (30/min) — home/draw/away probabilities for the next matchday's unplayed fixtures.
 - `GET /api/matches` (30/min) — the whole calendar with per-fixture 1X2, over/under 2.5 and BTTS prices. Probabilities are exact sums over the Dixon-Coles scoreline table (`World::fixture_probs`), not Monte Carlo — the table truncates at 10 goals a side, so the 1X2 triple is renormalized to sum to exactly 100. Played fixtures carry the real score and no forecast (retrodicting with current ratings would mislead).
-- `GET /api/coupon` (30/min) — `src/coupon.rs` compares the independently computed 1X2 probabilities with a fresh licensed-market snapshot for the next genuinely future matchday. It returns at most one guarded selection per fixture and three total, or an explicit unavailable/stale/no-value status. It never submits a wager or processes payment.
 - `GET /api/live`, `GET /api/health` — read-only.
 
 Everything not matching `/api/*` falls back to `ServeDir::new("frontend/dist")`, so in production this is a single binary serving both API and SPA.
@@ -126,13 +124,9 @@ A weekly job (Fridays 06:00 UTC, before the weekend's matches) re-runs `scripts/
 
 `log_forecast` refreshes an entry only while its fixture is still in the future and unplayed; once the match date arrives, that prediction is frozen forever. So the thing being scored is the model's most recent view *before* kick-off, not a preseason guess about matchday 34. The weekly workflow runs it; a fixture already played when the log is written is skipped, so the tracker reads 0 scored until a logged matchday completes — the honest state, not a bug.
 
-### Market odds (`src/market.rs`)
+### No licensed betting sources
 
-Nesine's public pre-match bulletin (`cdnbulten.nesine.com`, league code 584 = Süper Lig, market type 1 = 1X2) is fetched on the same timer as the TFF scrape and cached in `AppState.market`. Nothing from it feeds the season simulation: `/api/matches` reports the model-minus-market probability gap, while `/api/coupon` filters independently computed model probabilities against fresh prices.
-
-Every failure degrades to "no market data" rather than an error: a failed fetch keeps the previous snapshot, and an unmapped club name drops that fixture. Bookmaker club names carry shifting corporate suffixes, so `canonical_club` compares on an ASCII-folded, suffix-stripped form and refuses ambiguous matches — attaching real prices to the wrong fixture is worse than showing none.
-
-`src/coupon.rs` refuses snapshots older than 90 minutes, ignores fixtures whose Turkey-time kick-off has passed, considers only the next active round, and requires all four thresholds: model ≥30%, model-minus-margin-free-market edge ≥2 points, `p × odds ≥1.02`, and odds ≤4.00. It emits no more than three selections. Do not weaken these safeguards to keep the panel populated: `NoValue` is an intended result. The six operator links are plain/non-affiliate and carry a checked-on date; re-verify their first-party legal statements before changing that date or list. The UI must retain the 18+, no-guarantee, independence caveat, and YEDAM 115 language.
+The app does not use Nesine or any other licensed betting operator, and must not. The Nesine bulletin fetch, the model-vs-bookmaker gap on `/api/matches`, and the daily coupon (`/api/coupon`) were removed on 2026-10-12 at the owner's instruction. The fair odds shown in the UI are the model's own `1 / p` (`src/odds.rs`), not bookmaker prices. To benchmark accuracy against the market, compare offline with football-data.co.uk closing odds (no Pinnacle for 2026-27; Betfair Exchange `BFEC*` and average `AvgC*` are the sharpest columns).
 
 ### Season dispersion (`examples/arena.rs`)
 
@@ -150,7 +144,7 @@ Calls the Kimi/Moonshot chat completions API (`kimi-k2.6`, thinking disabled for
 
 ### Frontend (`frontend/src/`)
 
-`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `DailyCouponResponse`, `LiveData`) — when changing Rust response structs, update `api.ts` in the same change. `App.tsx` owns simulation state and drives the child components (`ForecastView`, `ResultsTable`, `PositionGrid`, `LeagueTable`, `DailyCouponView`, `LiveStats`); there's no separate state management library.
+`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `LiveData`) — when changing Rust response structs, update `api.ts` in the same change. `App.tsx` owns simulation state and drives the child components (`ForecastView`, `ResultsTable`, `PositionGrid`, `LeagueTable`, `LiveStats`); there's no separate state management library.
 
 ## Data-source traps
 

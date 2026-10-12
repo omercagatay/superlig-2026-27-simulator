@@ -14,10 +14,6 @@ pub struct AppState {
     pub world: Arc<RwLock<World>>,
     pub kimi_api_key: Option<String>,
     pub live_data: Arc<RwLock<Option<LiveData>>>,
-    /// Latest bookmaker prices, for comparison only — never an input to the
-    /// simulation. `None` until the first successful fetch, and left at the
-    /// last good snapshot if a later fetch fails.
-    pub market: Arc<RwLock<Option<crate::market::MarketSnapshot>>>,
     /// Global bound for CPU-heavy season simulations. Rayon already uses all
     /// cores within one request, so unbounded overlapping requests only add
     /// memory pressure and latency.
@@ -145,16 +141,6 @@ pub async fn perform_live_refresh(state: &AppState) -> anyhow::Result<LiveData> 
 
     *state.live_data.write().await = Some(live.clone());
 
-    // Market odds are a nice-to-have reference: a failure here must not fail
-    // the results refresh, which is the part the simulation depends on.
-    match crate::market::fetch().await {
-        Ok(snapshot) => {
-            tracing::info!("Market odds refreshed: {} fixtures", snapshot.prices.len());
-            *state.market.write().await = Some(snapshot);
-        }
-        Err(e) => tracing::warn!("Market odds refresh failed (keeping last): {e:#}"),
-    }
-
     Ok(live)
 }
 
@@ -215,58 +201,15 @@ pub async fn matches(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<crate::models::MatchesResponse>, (StatusCode, String)> {
     let world = state.world.read().await.clone();
-    let market = state.market.read().await.clone();
-    let resp = tokio::task::spawn_blocking(move || {
-        crate::models::build_matches_response(&world, market.as_ref())
-    })
-    .await
-    .map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Match forecast task failed: {e}"),
-        )
-    })?;
+    let resp = tokio::task::spawn_blocking(move || crate::models::build_matches_response(&world))
+        .await
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Match forecast task failed: {e}"),
+            )
+        })?;
     Ok(Json(resp))
-}
-
-/// A conservative 1X2 coupon for the next active matchday. The model is
-/// computed independently; fresh licensed-market prices are used only to
-/// filter and rank discrepancies. Missing/stale odds produce an explicit
-/// unavailable state rather than stale betting information.
-pub async fn daily_coupon(
-    State(state): State<Arc<AppState>>,
-) -> Result<Json<crate::coupon::DailyCouponResponse>, (StatusCode, String)> {
-    let now = chrono::Utc::now();
-    let cached = state.market.read().await.clone();
-    let market = if cached
-        .as_ref()
-        .is_some_and(|snapshot| crate::coupon::snapshot_is_fresh(snapshot, now))
-    {
-        cached
-    } else {
-        match crate::market::fetch().await {
-            Ok(snapshot) => {
-                *state.market.write().await = Some(snapshot.clone());
-                Some(snapshot)
-            }
-            Err(error) => {
-                tracing::warn!("Daily coupon market refresh failed: {error:#}");
-                cached
-            }
-        }
-    };
-    let world = state.world.read().await.clone();
-    let response = tokio::task::spawn_blocking(move || {
-        crate::coupon::build_daily_coupon(&world, market.as_ref())
-    })
-    .await
-    .map_err(|error| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Daily coupon task failed: {error}"),
-        )
-    })?;
-    Ok(Json(response))
 }
 
 /// How the model has actually done against its own frozen predictions.

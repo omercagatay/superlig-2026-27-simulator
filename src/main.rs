@@ -61,7 +61,6 @@ async fn main() -> anyhow::Result<()> {
         world: Arc::new(RwLock::new(world)),
         kimi_api_key,
         live_data: Arc::new(RwLock::new(None)),
-        market: Arc::new(RwLock::new(None)),
         simulation_slots: Arc::new(Semaphore::new(simulation_capacity)),
     });
 
@@ -117,7 +116,6 @@ async fn main() -> anyhow::Result<()> {
             Router::new()
                 .route("/api/upcoming", get(handlers::upcoming))
                 .route("/api/matches", get(handlers::matches))
-                .route("/api/coupon", get(handlers::daily_coupon))
                 .route("/api/accuracy", get(handlers::accuracy))
                 .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
         )
