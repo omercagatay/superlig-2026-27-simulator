@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Monte Carlo simulator for the 2026-27 Trendyol Süper Lig (18 clubs, 34 matchdays, 306 fixtures). Rust/axum backend runs the simulation and serves a built React frontend as static files; an LLM (Kimi/Moonshot) turns natural-language "what if" scenarios into Elo adjustments that get re-simulated.
 
-The local directory is still named `wc2026-sim`, but the GitHub repository is `superlig-2026-27-simulator` and the crate/binary are `superlig-sim`. The separate `worldcup-2026-simulator` repository and Railway project are different projects and must not be touched.
+The local directory and GitHub repository are `superlig-2026-27-simulator`; the crate/binary are `superlig-sim`. The separate `worldcup-2026-simulator` repository and Railway project are different projects and must not be touched.
 
 ## Commands
 
