@@ -118,6 +118,9 @@ fn parse_csv(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
         let Ok(as_) = r.away_score.trim().parse::<u16>() else {
             continue;
         };
+        if is_unplayed_award(date, &r.home_team, &r.away_team) {
+            continue;
+        }
         let neutral = matches!(r.neutral.trim().to_ascii_uppercase().as_str(), "TRUE" | "1");
         out.push(HistoricalMatch {
             date,
@@ -134,6 +137,18 @@ fn parse_csv(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
         min_year
     );
     out
+}
+
+/// Results recorded but never played. After the 6 February 2023 earthquake
+/// Hatayspor and Gaziantep withdrew, and every remaining 2022-23 fixture of
+/// theirs was awarded 3-0. Those scorelines say nothing about strength.
+fn is_unplayed_award(date: NaiveDate, home: &str, away: &str) -> bool {
+    let quake = NaiveDate::from_ymd_opt(2023, 2, 6).expect("valid date");
+    let season_end = NaiveDate::from_ymd_opt(2023, 7, 31).expect("valid date");
+    (quake..=season_end).contains(&date)
+        && [home, away]
+            .iter()
+            .any(|t| *t == "Hatayspor" || *t == "Gaziantep")
 }
 
 fn parse_date(raw: &str) -> Option<NaiveDate> {
@@ -207,6 +222,29 @@ mod tests {
     /// The name-drift regression net. Source display names change over time;
     /// an unmapped variant sends a real club's history into the bucket,
     /// silently weakening it. Asserting season coverage makes that loud.
+    #[test]
+    fn earthquake_walkover_awards_are_not_treated_as_results() {
+        let ms = load_history();
+        let after_quake = |m: &&HistoricalMatch| {
+            m.date >= NaiveDate::from_ymd_opt(2023, 2, 6).unwrap()
+                && m.date <= NaiveDate::from_ymd_opt(2023, 7, 31).unwrap()
+        };
+        for club in ["Hatayspor", "Gaziantep"] {
+            let involved = |m: &&HistoricalMatch| m.home_team == club || m.away_team == club;
+            assert!(
+                ms.iter().filter(after_quake).filter(involved).count() == 0,
+                "{club}"
+            );
+            // Their real 2022-23 matches before the withdrawal are kept.
+            assert!(ms
+                .iter()
+                .filter(|m| m.date.year() == 2023 && m.date.month() == 2 && m.date.day() < 6)
+                .any(|m| involved(&m)));
+        }
+        // Everyone else's post-quake matches are untouched.
+        assert!(ms.iter().filter(after_quake).count() > 100);
+    }
+
     #[test]
     fn every_ever_present_club_has_full_season_coverage() {
         use std::collections::HashSet;

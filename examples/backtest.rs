@@ -25,6 +25,9 @@
 //!   EVAL_BASE=1.35          Elo→goals base rate
 //!   EVAL_PROMO=1450         Elo of a club never seen before
 //!   EVAL_REGRESS=0          preseason pull towards the league mean, 0..1
+//!   EVAL_PROMO_REL=-60      promoted clubs start at last season's league
+//!                           mean plus this offset [off: new clubs at
+//!                           EVAL_PROMO, returning clubs keep old rating]
 //!   EVAL_DUMP=path.csv      write one row per scored match
 //!
 //! Run: cargo run --release --example backtest
@@ -61,6 +64,7 @@ struct Cfg {
     d_div: f64,
     base: f64,
     promo: f64,
+    promo_rel: Option<f64>,
     regress: f64,
     /// True when every Elo knob is at its production value, so the shared
     /// production functions are called rather than the local variants.
@@ -105,6 +109,9 @@ impl Cfg {
             d_div,
             base,
             promo: env_f("EVAL_PROMO", 1450.0),
+            promo_rel: std::env::var("EVAL_PROMO_REL")
+                .ok()
+                .map(|v| v.parse().expect("EVAL_PROMO_REL")),
             regress: env_f("EVAL_REGRESS", 0.0),
             production_elo: k == data::ELO_K
                 && home_adv == data::HOME_ADV
@@ -258,10 +265,19 @@ fn main() {
             .iter()
             .flat_map(|m| [m.home_team.clone(), m.away_team.clone()])
             .collect();
+        let prev_mean = (!prev_clubs.is_empty())
+            .then(|| prev_clubs.iter().map(|c| elo[c]).sum::<f64>() / prev_clubs.len() as f64);
         for c in &clubs {
-            elo.entry(c.clone()).or_insert(cfg.promo);
+            match (cfg.promo_rel, prev_mean) {
+                (Some(rel), Some(mean)) if !prev_clubs.contains(c) => {
+                    elo.insert(c.clone(), mean + rel);
+                }
+                _ => {
+                    elo.entry(c.clone()).or_insert(cfg.promo);
+                }
+            }
         }
-        if cfg.regress > 0.0 {
+        if cfg.regress != 0.0 {
             let mean = clubs.iter().map(|c| elo[c]).sum::<f64>() / clubs.len() as f64;
             for c in &clubs {
                 let r = elo.get_mut(c).expect("inserted above");
