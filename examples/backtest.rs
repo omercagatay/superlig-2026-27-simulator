@@ -30,17 +30,21 @@
 //!                           mean plus this offset [off: new clubs at
 //!                           EVAL_PROMO, returning clubs keep old rating]
 //!   EVAL_DUMP=path.csv      write one row per scored match
+//!   EVAL_SEASON_SIM=2000    also replay each scored season from its start
+//!                           with the production season simulator and
+//!                           compare the spread of final points to reality
 //!
 //! Run: cargo run --release --example backtest
 
 use std::collections::{HashMap, HashSet};
 
 use chrono::{Datelike, NaiveDate};
+use rand::{rngs::SmallRng, SeedableRng};
 use superlig_sim::data;
 use superlig_sim::dixoncoles::{self, MAX_GOALS};
 use superlig_sim::history::{self, HistoricalMatch, TeamIndex};
 use superlig_sim::piratings::PiRatings;
-use superlig_sim::sim::{self, Ensemble};
+use superlig_sim::sim::{self, Ensemble, FixtureDate, LeagueFixture, World};
 
 const DEV: std::ops::RangeInclusive<i32> = 2017..=2024;
 const HOLDOUT: [i32; 2] = [2025, 2026];
@@ -237,6 +241,93 @@ impl Acc {
     }
 }
 
+/// Replay a season from its start `n` times with the production simulator
+/// and print the spread of final points against what actually happened.
+fn season_sim(
+    year: i32,
+    season: &[&HistoricalMatch],
+    idx: &TeamIndex,
+    elo: &HashMap<String, f64>,
+    ens: &Ensemble,
+    n: usize,
+) {
+    let teams = idx.league_names.clone();
+    let pos: HashMap<String, usize> = teams
+        .iter()
+        .enumerate()
+        .map(|(i, t)| (t.clone(), i))
+        .collect();
+    let fixtures = season
+        .iter()
+        .map(|m| LeagueFixture {
+            round: 1,
+            home: pos[&m.home_team],
+            away: pos[&m.away_team],
+        })
+        .collect();
+    let dates = season
+        .iter()
+        .map(|m| FixtureDate {
+            date: m.date.to_string(),
+            kickoff: None,
+        })
+        .collect();
+    let ratings: Vec<f64> = teams.iter().map(|t| elo[t]).collect();
+    let world = World {
+        idx: pos.clone(),
+        teams: teams.clone(),
+        elo: ratings.clone(),
+        elo_baseline: ratings,
+        fixtures,
+        dates,
+        played: HashMap::new(),
+        ensemble: Some(ens.clone()),
+    };
+    let points = |pts: &[f64]| {
+        let mean = pts.iter().sum::<f64>() / pts.len() as f64;
+        let sd = (pts.iter().map(|p| (p - mean).powi(2)).sum::<f64>() / pts.len() as f64).sqrt();
+        (sd, pts.iter().cloned().fold(f64::MIN, f64::max))
+    };
+    let mut actual = vec![0.0; teams.len()];
+    for m in season {
+        let (h, a) = (pos[&m.home_team], pos[&m.away_team]);
+        match m.home_score.cmp(&m.away_score) {
+            std::cmp::Ordering::Greater => actual[h] += 3.0,
+            std::cmp::Ordering::Equal => {
+                actual[h] += 1.0;
+                actual[a] += 1.0;
+            }
+            std::cmp::Ordering::Less => actual[a] += 3.0,
+        }
+    }
+    let (act_sd, act_max) = points(&actual);
+    let mut rng = SmallRng::seed_from_u64(year as u64);
+    let (mut sds, mut maxes) = (Vec::with_capacity(n), Vec::with_capacity(n));
+    for _ in 0..n {
+        let r = world.simulate_one(&mut rng);
+        let pts: Vec<f64> = r.records.iter().map(|t| t.points as f64).collect();
+        let (sd, max) = points(&pts);
+        sds.push(sd);
+        maxes.push(max);
+    }
+    sds.sort_by(f64::total_cmp);
+    maxes.sort_by(f64::total_cmp);
+    let q = |v: &[f64], f: f64| v[((v.len() - 1) as f64 * f) as usize];
+    let p_ge = maxes.iter().filter(|&&m| m >= act_max).count() as f64 / n as f64;
+    println!(
+        "season-sim {}-{:02}: points sd actual {:.1} | simulated median {:.1} (p10 {:.1}, p90 {:.1}) | champion actual {:.0} | simulated median {:.0}, P(>=actual) {:.1}%",
+        year - 1,
+        year % 100,
+        act_sd,
+        q(&sds, 0.5),
+        q(&sds, 0.1),
+        q(&sds, 0.9),
+        act_max,
+        q(&maxes, 0.5),
+        100.0 * p_ge
+    );
+}
+
 fn main() {
     let cfg = Cfg::from_env();
     let mut all = history::load_history_with_cutoff(history::CUTOFF_YEAR);
@@ -299,6 +390,16 @@ fn main() {
         let scored = cfg.seasons.contains(&year);
         let idx = index_for(&season);
         let mut ens = scored.then(|| fit_ensemble(&cfg, &before_season, &idx, season_start));
+        if let (Some(e), Ok(n)) = (ens.as_ref(), std::env::var("EVAL_SEASON_SIM")) {
+            season_sim(
+                year,
+                &season,
+                &idx,
+                &elo_in,
+                e,
+                n.parse().expect("EVAL_SEASON_SIM"),
+            );
+        }
         let mut last_fit = season_start;
         let mut games: HashMap<&str, u32> = HashMap::new();
         let mut acc = Acc::default();
