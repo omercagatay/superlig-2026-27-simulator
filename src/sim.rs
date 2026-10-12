@@ -125,6 +125,113 @@ pub struct FixtureProbs {
     pub top_scores: [(u8, u8, f64); 3],
 }
 
+// The model's per-match rules as free functions, so `World` and the
+// walk-forward backtest (`examples/eval.rs`) run the identical code.
+
+/// Home side's Elo change after one result; the away side gets the negation.
+pub fn elo_delta(home_elo: f64, away_elo: f64, home_goals: u16, away_goals: u16) -> f64 {
+    let dr = home_elo - away_elo + data::HOME_ADV;
+    let expected = 1.0 / (1.0 + 10f64.powf(-dr / data::ELO_DIV));
+    let actual = match home_goals.cmp(&away_goals) {
+        std::cmp::Ordering::Greater => 1.0,
+        std::cmp::Ordering::Equal => 0.5,
+        std::cmp::Ordering::Less => 0.0,
+    };
+    // Margin of victory matters, with diminishing returns — a 4-0 is
+    // stronger evidence than a 1-0, but not four times stronger.
+    let margin = ((home_goals as f64 - away_goals as f64).abs())
+        .max(1.0)
+        .sqrt();
+    data::ELO_K * margin * (actual - expected)
+}
+
+/// Expected goals `(λ_home, λ_away)` from the two clubs' Elo ratings.
+pub fn elo_lambdas(home_elo: f64, away_elo: f64) -> (f64, f64) {
+    let dr = home_elo - away_elo + data::HOME_ADV;
+    (
+        data::BASE * (10.0_f64).powf(dr / data::D_DIV),
+        data::BASE * (10.0_f64).powf(-dr / data::D_DIV),
+    )
+}
+
+/// Blend Elo λs with the ensemble's Dixon-Coles/pi λs (club indices in the
+/// ensemble's own index), clamped to the range the score table supports.
+pub fn blend_lambdas(
+    (lh_elo, la_elo): (f64, f64),
+    ensemble: Option<&Ensemble>,
+    home: usize,
+    away: usize,
+) -> (f64, f64) {
+    let ensemble_lam = ensemble.and_then(|e| e.lam_pair(home, away).map(|l| (e, l)));
+    let (lh, la) = match ensemble_lam {
+        None => (lh_elo, la_elo),
+        Some((e, (eh, ea))) => {
+            let w_models = e.w_dc + e.w_pi;
+            let total = e.w_elo + w_models;
+            (
+                (e.w_elo * lh_elo + w_models * eh) / total,
+                (e.w_elo * la_elo + w_models * ea) / total,
+            )
+        }
+    };
+    (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
+}
+
+/// ρ for the joint score table; `Some` only while Dixon-Coles carries weight.
+pub fn score_rho(ensemble: Option<&Ensemble>) -> Option<f64> {
+    ensemble.filter(|e| e.w_dc > 0.0).map(|e| e.dc.rho)
+}
+
+/// Exact outcome and market probabilities from λs, summed over the joint
+/// scoreline table.
+pub fn probs_from_lambdas(lh: f64, la: f64, rho: f64) -> FixtureProbs {
+    let t = crate::dixoncoles::score_table(lh, la, rho);
+
+    let (mut hw, mut dr, mut aw, mut over25, mut btts) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    for (x, row) in t.iter().enumerate() {
+        for (y, &p) in row.iter().enumerate() {
+            match x.cmp(&y) {
+                std::cmp::Ordering::Greater => hw += p,
+                std::cmp::Ordering::Equal => dr += p,
+                std::cmp::Ordering::Less => aw += p,
+            }
+            if x + y >= 3 {
+                over25 += p;
+            }
+            if x >= 1 && y >= 1 {
+                btts += p;
+            }
+        }
+    }
+    // The three most probable exact scorelines.
+    let mut top = [(0u8, 0u8, 0.0f64); 3];
+    for (x, row) in t.iter().enumerate() {
+        for (y, &p) in row.iter().enumerate() {
+            if p > top[2].2 {
+                top[2] = (x as u8, y as u8, p);
+                top.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+            }
+        }
+    }
+
+    // The table truncates at MAX_GOALS per side; normalize so the 1X2
+    // triple sums to exactly 100 even for extreme-mismatch lambdas.
+    let total = hw + dr + aw;
+    for score in &mut top {
+        score.2 = score.2 / total * 100.0;
+    }
+    FixtureProbs {
+        home_win_pct: hw / total * 100.0,
+        draw_pct: dr / total * 100.0,
+        away_win_pct: aw / total * 100.0,
+        over25_pct: over25 / total * 100.0,
+        btts_pct: btts / total * 100.0,
+        home_xg: lh,
+        away_xg: la,
+        top_scores: top,
+    }
+}
+
 /// One simulated season: finishing order plus each club's final record.
 #[derive(Clone, Debug)]
 pub struct SeasonResult {
@@ -383,17 +490,7 @@ impl World {
             let Some(&(hs, as_)) = self.played.get(&(f.home, f.away)) else {
                 continue;
             };
-            let dr = self.elo[f.home] - self.elo[f.away] + data::HOME_ADV;
-            let expected = 1.0 / (1.0 + 10f64.powf(-dr / data::ELO_DIV));
-            let actual = match hs.cmp(&as_) {
-                std::cmp::Ordering::Greater => 1.0,
-                std::cmp::Ordering::Equal => 0.5,
-                std::cmp::Ordering::Less => 0.0,
-            };
-            // Margin of victory matters, with diminishing returns — a 4-0 is
-            // stronger evidence than a 1-0, but not four times stronger.
-            let margin = ((hs as f64 - as_ as f64).abs()).max(1.0).sqrt();
-            let delta = data::ELO_K * margin * (actual - expected);
+            let delta = elo_delta(self.elo[f.home], self.elo[f.away], hs, as_);
             self.elo[f.home] += delta;
             self.elo[f.away] -= delta;
         }
@@ -453,26 +550,12 @@ impl World {
     /// As `lam_pair`, but against a supplied rating vector — used by
     /// `simulate_one`, which draws a season's ratings from their uncertainty.
     fn lam_pair_with(&self, elo: &[f64], home: usize, away: usize) -> (f64, f64) {
-        let dr = elo[home] - elo[away] + data::HOME_ADV;
-        let lh_elo = data::BASE * (10.0_f64).powf(dr / data::D_DIV);
-        let la_elo = data::BASE * (10.0_f64).powf(-dr / data::D_DIV);
-
-        let ensemble_lam = self
-            .ensemble
-            .as_ref()
-            .and_then(|e| e.lam_pair(home, away).map(|l| (e, l)));
-        let (lh, la) = match ensemble_lam {
-            None => (lh_elo, la_elo),
-            Some((e, (eh, ea))) => {
-                let w_models = e.w_dc + e.w_pi;
-                let total = e.w_elo + w_models;
-                (
-                    (e.w_elo * lh_elo + w_models * eh) / total,
-                    (e.w_elo * la_elo + w_models * ea) / total,
-                )
-            }
-        };
-        (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
+        blend_lambdas(
+            elo_lambdas(elo[home], elo[away]),
+            self.ensemble.as_ref(),
+            home,
+            away,
+        )
     }
 
     fn sample_poisson(rng: &mut SmallRng, lambda: f64) -> i64 {
@@ -484,10 +567,7 @@ impl World {
     /// component carries weight, so `ENSEMBLE_WEIGHTS=1,0,0` (and plain
     /// `World::new()`) keep the independent-Poisson behavior.
     fn score_rho(&self) -> Option<f64> {
-        self.ensemble
-            .as_ref()
-            .filter(|e| e.w_dc > 0.0)
-            .map(|e| e.dc.rho)
+        score_rho(self.ensemble.as_ref())
     }
 
     /// Draw a 90-minute scoreline: from the Dixon-Coles joint distribution
@@ -518,52 +598,7 @@ impl World {
     /// which reduces to independent Poissons.
     pub fn fixture_probs(&self, home: usize, away: usize) -> FixtureProbs {
         let (lh, la) = self.lam_pair(home, away);
-        let rho = self.score_rho().unwrap_or(0.0);
-        let t = crate::dixoncoles::score_table(lh, la, rho);
-
-        let (mut hw, mut dr, mut aw, mut over25, mut btts) = (0.0, 0.0, 0.0, 0.0, 0.0);
-        for (x, row) in t.iter().enumerate() {
-            for (y, &p) in row.iter().enumerate() {
-                match x.cmp(&y) {
-                    std::cmp::Ordering::Greater => hw += p,
-                    std::cmp::Ordering::Equal => dr += p,
-                    std::cmp::Ordering::Less => aw += p,
-                }
-                if x + y >= 3 {
-                    over25 += p;
-                }
-                if x >= 1 && y >= 1 {
-                    btts += p;
-                }
-            }
-        }
-        // The three most probable exact scorelines.
-        let mut top = [(0u8, 0u8, 0.0f64); 3];
-        for (x, row) in t.iter().enumerate() {
-            for (y, &p) in row.iter().enumerate() {
-                if p > top[2].2 {
-                    top[2] = (x as u8, y as u8, p);
-                    top.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
-                }
-            }
-        }
-
-        // The table truncates at MAX_GOALS per side; normalize so the 1X2
-        // triple sums to exactly 100 even for extreme-mismatch lambdas.
-        let total = hw + dr + aw;
-        for score in &mut top {
-            score.2 = score.2 / total * 100.0;
-        }
-        FixtureProbs {
-            home_win_pct: hw / total * 100.0,
-            draw_pct: dr / total * 100.0,
-            away_win_pct: aw / total * 100.0,
-            over25_pct: over25 / total * 100.0,
-            btts_pct: btts / total * 100.0,
-            home_xg: lh,
-            away_xg: la,
-            top_scores: top,
-        }
+        probs_from_lambdas(lh, la, self.score_rho().unwrap_or(0.0))
     }
 
     /// Unplayed fixtures of the earliest round that still has any — the
