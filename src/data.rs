@@ -3,7 +3,7 @@ use serde::Deserialize;
 /// Baseline expected goals for an evenly-matched fixture.
 pub const BASE: f64 = 1.35;
 /// Elo points corresponding to one decade of scoring-rate ratio.
-pub const D_DIV: f64 = 1600.0;
+pub const D_DIV: f64 = 1200.0;
 /// Home-ground advantage, in Elo points, applied to the fixture's home side.
 /// Used both when converting a rating gap to expected goals (via `D_DIV`) and
 /// when forming a win expectancy for in-season rating updates (via `ELO_DIV`)
@@ -32,7 +32,7 @@ pub const RATING_SIGMA: f64 = 75.0;
 
 /// In-season Elo update rate for one league match, before the goal-difference
 /// multiplier; larger values chase form, smaller ones ignore it.
-pub const ELO_K: f64 = 20.0;
+pub const ELO_K: f64 = 60.0;
 
 /// Update rate of the preseason rating track: each season's starting ratings
 /// are every historical result since 2012-13 replayed with this K
