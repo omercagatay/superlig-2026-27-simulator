@@ -126,7 +126,7 @@ pub struct FixtureProbs {
 }
 
 // The model's per-match rules as free functions, so `World` and the
-// walk-forward backtest (`examples/eval.rs`) run the identical code.
+// walk-forward backtest (`examples/backtest.rs`) run the identical code.
 
 /// Home side's Elo change after one result; the away side gets the negation.
 pub fn elo_delta(home_elo: f64, away_elo: f64, home_goals: u16, away_goals: u16) -> f64 {
