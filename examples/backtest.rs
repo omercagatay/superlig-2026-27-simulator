@@ -19,7 +19,10 @@
 //!   EVAL_REFIT=season|week  when Dixon-Coles/pi see new results [season]
 //!   EVAL_W=0.5,0.3,0.2      blend weights elo,dc,pi
 //!   EVAL_HL=1460            Dixon-Coles half-life in days
-//!   EVAL_K=20               Elo K
+//!   EVAL_K=20               Elo K (in-season updates)
+//!   EVAL_K_PRE=20           K of a separate track that sets each season's
+//!                           starting ratings, standing in for ClubElo
+//!                           [off: one track, K throughout]
 //!   EVAL_HA=80              Elo home advantage (update and λ)
 //!   EVAL_DDIV=1600          Elo→goals scale
 //!   EVAL_BASE=1.35          Elo→goals base rate
@@ -60,6 +63,7 @@ struct Cfg {
     w: (f64, f64, f64),
     half_life: f64,
     k: f64,
+    k_pre: Option<f64>,
     home_adv: f64,
     d_div: f64,
     base: f64,
@@ -105,6 +109,9 @@ impl Cfg {
             w: (w[0], w[1], w[2]),
             half_life: env_f("EVAL_HL", 1460.0),
             k,
+            k_pre: std::env::var("EVAL_K_PRE")
+                .ok()
+                .map(|v| v.parse().expect("EVAL_K_PRE")),
             home_adv,
             d_div,
             base,
@@ -120,8 +127,8 @@ impl Cfg {
         }
     }
 
-    fn elo_delta(&self, rh: f64, ra: f64, hs: u16, as_: u16) -> f64 {
-        if self.production_elo {
+    fn elo_delta(&self, k: f64, rh: f64, ra: f64, hs: u16, as_: u16) -> f64 {
+        if self.production_elo && k == data::ELO_K {
             return sim::elo_delta(rh, ra, hs, as_);
         }
         let dr = rh - ra + self.home_adv;
@@ -132,7 +139,7 @@ impl Cfg {
             std::cmp::Ordering::Less => 0.0,
         };
         let margin = ((hs as f64 - as_ as f64).abs()).max(1.0).sqrt();
-        self.k * margin * (actual - expected)
+        k * margin * (actual - expected)
     }
 
     fn elo_lambdas(&self, rh: f64, ra: f64) -> (f64, f64) {
@@ -285,6 +292,8 @@ fn main() {
             }
         }
 
+        // In-season ratings start from the preseason track each season.
+        let mut elo_in = elo.clone();
         let scored = cfg.seasons.contains(&year);
         let idx = index_for(&season);
         let season_start = season[0].date;
@@ -315,7 +324,7 @@ fn main() {
             if let Some(e) = ens.as_ref() {
                 for m in &season[i..j] {
                     let (h, a) = (idx.canonical(&m.home_team), idx.canonical(&m.away_team));
-                    let (rh, ra) = (elo[&m.home_team], elo[&m.away_team]);
+                    let (rh, ra) = (elo_in[&m.home_team], elo_in[&m.away_team]);
                     let (lh, la) = sim::blend_lambdas(cfg.elo_lambdas(rh, ra), Some(e), h, a);
                     let rho = sim::score_rho(Some(e)).unwrap_or(0.0);
                     let p = sim::probs_from_lambdas(lh, la, rho);
@@ -383,20 +392,24 @@ fn main() {
             }
             // Then reveal the day's results.
             for m in &season[i..j] {
-                let d = cfg.elo_delta(
-                    elo[&m.home_team],
-                    elo[&m.away_team],
-                    m.home_score,
-                    m.away_score,
-                );
-                *elo.get_mut(&m.home_team).expect("club") += d;
-                *elo.get_mut(&m.away_team).expect("club") -= d;
+                let (h, a) = (&m.home_team, &m.away_team);
+                let d = cfg.elo_delta(cfg.k, elo_in[h], elo_in[a], m.home_score, m.away_score);
+                *elo_in.get_mut(h).expect("club") += d;
+                *elo_in.get_mut(a).expect("club") -= d;
+                if let Some(k_pre) = cfg.k_pre {
+                    let d = cfg.elo_delta(k_pre, elo[h], elo[a], m.home_score, m.away_score);
+                    *elo.get_mut(h).expect("club") += d;
+                    *elo.get_mut(a).expect("club") -= d;
+                }
                 *games.entry(m.home_team.as_str()).or_default() += 1;
                 *games.entry(m.away_team.as_str()).or_default() += 1;
             }
             i = j;
         }
 
+        if cfg.k_pre.is_none() {
+            elo = elo_in;
+        }
         if scored {
             println!(
                 "season {}-{:02}: n={} 1x2_ll={:.4} rps={:.4} ou25_ll={:.4} btts_ll={:.4} score_ll={:.4} acc={:.3}",
