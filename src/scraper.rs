@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn every_current_club_has_a_tff_name_mapping() {
-        for (canonical, _) in crate::data::elo() {
+        for canonical in crate::data::clubs() {
             assert!(
                 TFF_NAMES.iter().any(|(_, c)| *c == canonical),
                 "no TFF name maps to {canonical}"

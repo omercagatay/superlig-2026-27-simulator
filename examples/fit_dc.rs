@@ -44,7 +44,7 @@ fn main() {
         }
     );
 
-    // Print attack/defense for a sample of clubs by index order in data::elo().
+    // Print attack/defense for a sample of clubs by index order in data::clubs().
     let names = idx.league_names.clone();
     let mut ranked: Vec<(usize, String, f64, f64)> = (0..names.len())
         .map(|i| (i, names[i].clone(), params.attack(i), params.defense(i)))

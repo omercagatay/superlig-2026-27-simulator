@@ -7,7 +7,9 @@ use crate::llm;
 use crate::models::{build_response, ScenarioRequest, SimRequest, SimResponse};
 use crate::scraper::{self, LiveData};
 use crate::sim::{SimConfig, World};
-use crate::validation::{validate_elo_overrides, validate_n_sims, validate_prompt};
+use crate::validation::{
+    scenario_overrides, validate_elo_overrides, validate_n_sims, validate_prompt,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -99,16 +101,17 @@ pub async fn scenario(
         .map_err(|e| (StatusCode::BAD_GATEWAY, format!("LLM error: {e}")))?;
 
     let world = state.world.read().await.clone();
-    validate_elo_overrides(&world, &impact.adjustments)
+    // The LLM returns rating changes; apply them to the current ratings.
+    let overrides = scenario_overrides(&world, &impact.adjustments)
         .map_err(|e| (StatusCode::BAD_REQUEST, e))?;
 
     let mut world = world;
-    world.apply_overrides(&impact.adjustments);
+    world.apply_overrides(&overrides);
 
     let config = SimConfig {
         n_sims,
         seed: req.seed.unwrap_or(12345),
-        elo_overrides: impact.adjustments.clone(),
+        elo_overrides: overrides,
         forced: HashMap::new(),
     };
     let resp = simulate_off_runtime(

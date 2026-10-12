@@ -29,14 +29,14 @@ pub struct TeamIndex {
 }
 
 impl TeamIndex {
-    /// Built from `data::elo()` order so Dixon-Coles and pi-rating team
+    /// Built from `data::clubs()` order so Dixon-Coles and pi-rating team
     /// indices coincide with `World` indices, plus a trailing bucket.
     ///
     /// The bucket absorbs every match of every club not in the current 18 —
     /// relegated and defunct sides alike. It is a *league-average departed
     /// club*, not a newly-promoted baseline.
     pub fn league() -> Self {
-        let league_names: Vec<String> = data::elo().iter().map(|(t, _)| t.to_string()).collect();
+        let league_names: Vec<String> = data::clubs().iter().map(|t| t.to_string()).collect();
         let mut idx_to_name = league_names.clone();
         idx_to_name.push(OTHER_TEAM_NAME.to_string());
         let other_idx = idx_to_name.len() - 1;
@@ -278,7 +278,7 @@ mod tests {
         }
         // Every other current club must have at least one season, or its
         // alias mapping is broken.
-        for (name, _) in crate::data::elo() {
+        for name in crate::data::clubs() {
             if matches!(name, "Amedspor" | "Çorum") {
                 continue;
             }

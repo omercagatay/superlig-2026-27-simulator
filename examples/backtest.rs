@@ -7,10 +7,9 @@
 //! Elo updated after every result, Dixon-Coles and pi-ratings frozen at the
 //! start of each season, blend 0.5/0.3/0.2.
 //!
-//! Known gap: production starts each season from a ClubElo snapshot, which
-//! cannot be reconstructed for past seasons. Here a separate Elo track with
-//! a fixed K (`CLUBELO_STANDIN_K`) carried forward from 2012-13 supplies the
-//! preseason ratings; in-season updates use production's `data::ELO_K`.
+//! Each season starts from production's own preseason ratings
+//! (`sim::preseason_ratings_with` over every earlier result, `PRESEASON_K`);
+//! in-season updates use `data::ELO_K`.
 //!
 //! Development seasons 2016-17..2023-24 are always scored. The holdout
 //! seasons 2024-25 and 2025-26 are scored only with `EVAL_HOLDOUT=1`.
@@ -21,11 +20,11 @@
 //!   EVAL_W=0.5,0.3,0.2      blend weights elo,dc,pi
 //!   EVAL_HL=1460            Dixon-Coles half-life in days
 //!   EVAL_K=20               in-season Elo K [data::ELO_K]
-//!   EVAL_K_PRE=20           K of the preseason (ClubElo stand-in) track
+//!   EVAL_K_PRE=20           preseason track K [data::PRESEASON_K]
 //!   EVAL_HA=80              Elo home advantage (update and λ)
 //!   EVAL_DDIV=1600          Elo→goals scale
 //!   EVAL_BASE=1.35          Elo→goals base rate
-//!   EVAL_PROMO=1450         Elo of a club never seen before
+//!   EVAL_PROMO=1450         Elo of a club never seen before [data::NEW_CLUB_ELO]
 //!   EVAL_REGRESS=0          preseason pull towards the league mean, 0..1
 //!   EVAL_PROMO_REL=-60      promoted clubs start at last season's league
 //!                           mean plus this offset [off: new clubs at
@@ -45,10 +44,6 @@ use superlig_sim::sim::{self, Ensemble};
 
 const DEV: std::ops::RangeInclusive<i32> = 2017..=2024;
 const HOLDOUT: [i32; 2] = [2025, 2026];
-/// K of the track standing in for ClubElo's preseason snapshot. Fixed here,
-/// not `data::ELO_K`, so tuning production's in-season K cannot also
-/// rewrite the simulated snapshot.
-const CLUBELO_STANDIN_K: f64 = 20.0;
 
 fn env_f(key: &str, default: f64) -> f64 {
     std::env::var(key)
@@ -112,11 +107,11 @@ impl Cfg {
             w: (w[0], w[1], w[2]),
             half_life: env_f("EVAL_HL", 1460.0),
             k,
-            k_pre: env_f("EVAL_K_PRE", CLUBELO_STANDIN_K),
+            k_pre: env_f("EVAL_K_PRE", data::PRESEASON_K),
             home_adv,
             d_div,
             base,
-            promo: env_f("EVAL_PROMO", 1450.0),
+            promo: env_f("EVAL_PROMO", data::NEW_CLUB_ELO),
             promo_rel: std::env::var("EVAL_PROMO_REL")
                 .ok()
                 .map(|v| v.parse().expect("EVAL_PROMO_REL")),
@@ -256,7 +251,6 @@ fn main() {
         (p, s)
     });
 
-    let mut elo: HashMap<String, f64> = HashMap::new();
     let mut prev_clubs: HashSet<String> = HashSet::new();
     let (mut dev, mut hold) = (Acc::default(), Acc::default());
     let first_season = season_end_year(all[0].date);
@@ -273,6 +267,14 @@ fn main() {
             .iter()
             .flat_map(|m| [m.home_team.clone(), m.away_team.clone()])
             .collect();
+        let season_start = season[0].date;
+        let before_season: Vec<HistoricalMatch> = all
+            .iter()
+            .filter(|m| m.date < season_start)
+            .cloned()
+            .collect();
+        // Production's preseason rule, over everything before this season.
+        let mut elo = sim::preseason_ratings_with(&before_season, cfg.k_pre, cfg.promo);
         let prev_mean = (!prev_clubs.is_empty())
             .then(|| prev_clubs.iter().map(|c| elo[c]).sum::<f64>() / prev_clubs.len() as f64);
         for c in &clubs {
@@ -293,16 +295,9 @@ fn main() {
             }
         }
 
-        // In-season ratings start from the preseason track each season.
-        let mut elo_in = elo.clone();
+        let mut elo_in = elo;
         let scored = cfg.seasons.contains(&year);
         let idx = index_for(&season);
-        let season_start = season[0].date;
-        let before_season: Vec<HistoricalMatch> = all
-            .iter()
-            .filter(|m| m.date < season_start)
-            .cloned()
-            .collect();
         let mut ens = scored.then(|| fit_ensemble(&cfg, &before_season, &idx, season_start));
         let mut last_fit = season_start;
         let mut games: HashMap<&str, u32> = HashMap::new();
@@ -397,9 +392,6 @@ fn main() {
                 let d = cfg.elo_delta(cfg.k, elo_in[h], elo_in[a], m.home_score, m.away_score);
                 *elo_in.get_mut(h).expect("club") += d;
                 *elo_in.get_mut(a).expect("club") -= d;
-                let d = cfg.elo_delta(cfg.k_pre, elo[h], elo[a], m.home_score, m.away_score);
-                *elo.get_mut(h).expect("club") += d;
-                *elo.get_mut(a).expect("club") -= d;
                 *games.entry(m.home_team.as_str()).or_default() += 1;
                 *games.entry(m.away_team.as_str()).or_default() += 1;
             }

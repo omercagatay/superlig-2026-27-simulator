@@ -94,9 +94,51 @@ pub fn validate_elo_overrides(
     Ok(())
 }
 
+/// Largest rating change a scenario may apply to one club, in Elo points.
+pub const MAX_SCENARIO_SHIFT: f64 = 150.0;
+
+/// Turn an LLM scenario's per-club rating changes into absolute overrides on
+/// the world's current ratings. The LLM's output is untrusted, so names and
+/// the size of every change are checked here.
+pub fn scenario_overrides(
+    world: &World,
+    shifts: &HashMap<String, f64>,
+) -> Result<HashMap<String, f64>, String> {
+    let mut overrides = HashMap::with_capacity(shifts.len());
+    for (team, shift) in shifts {
+        let Some(&i) = world.idx.get(team) else {
+            return Err(format!("Unknown team in scenario: {team}"));
+        };
+        if !shift.is_finite() || shift.abs() > MAX_SCENARIO_SHIFT {
+            return Err(format!(
+                "Scenario change for {team} must be within ±{MAX_SCENARIO_SHIFT:.0} points, got {shift:.1}"
+            ));
+        }
+        overrides.insert(team.clone(), world.elo[i] + shift);
+    }
+    validate_elo_overrides(world, &overrides)?;
+    Ok(overrides)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn scenario_changes_apply_to_current_ratings_and_are_bounded() {
+        let world = World::new();
+        let gs = world.idx["Galatasaray"];
+        let shifts = HashMap::from([("Galatasaray".to_string(), -40.0)]);
+        let o = scenario_overrides(&world, &shifts).unwrap();
+        assert!((o["Galatasaray"] - (world.elo[gs] - 40.0)).abs() < 1e-9);
+
+        let too_big = HashMap::from([("Galatasaray".to_string(), -500.0)]);
+        assert!(scenario_overrides(&world, &too_big).is_err());
+        let unknown = HashMap::from([("Real Madrid".to_string(), 10.0)]);
+        assert!(scenario_overrides(&world, &unknown).is_err());
+        let nan = HashMap::from([("Galatasaray".to_string(), f64::NAN)]);
+        assert!(scenario_overrides(&world, &nan).is_err());
+    }
 
     #[test]
     fn n_sims_within_bounds_is_ok() {
@@ -154,7 +196,8 @@ mod tests {
     /// scenario could never restore a club to its own baseline.
     #[test]
     fn every_club_baseline_rating_is_within_bounds() {
-        for (club, rating) in crate::data::elo() {
+        let world = crate::sim::World::new();
+        for (club, &rating) in world.teams.iter().zip(&world.elo_baseline) {
             assert!(
                 (MIN_ELO..=MAX_ELO).contains(&rating),
                 "{club} baseline {rating} outside [{MIN_ELO}, {MAX_ELO}]"

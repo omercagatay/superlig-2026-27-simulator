@@ -7,9 +7,9 @@ const KIMI_MODEL: &str = "kimi-k2.6";
 
 const SYSTEM_PROMPT: &str = r#"You are a football analyst for a Monte Carlo simulation of the 2026-27 Trendyol Süper Lig (Turkish top flight).
 
-The simulation models club strength with Elo ratings on the ClubElo scale. Clubs in this league rate roughly 1500-1780. A 50-point swing changes a club's expected points over a season by roughly 4-6.
+The simulation models club strength with Elo-style ratings computed from match results. A 50-point swing changes a club's expected points over a season by roughly 4-6.
 
-When the user describes a scenario (injury, suspension, transfer, manager change, European fixture congestion, etc.), assess its impact on the affected club(s) and return a JSON object of new Elo ratings.
+When the user describes a scenario (injury, suspension, transfer, manager change, European fixture congestion, etc.), assess its impact on the affected club(s) and return a JSON object of rating changes.
 
 Rules:
 - A star player injury (a club's leading scorer or first-choice keeper): 25-60 points.
@@ -21,13 +21,13 @@ Rules:
 - Multiple compounding effects: add them, capped at 120 points of movement for a single club.
 - Use the EXACT club names from this list:
   Galatasaray, Fenerbahçe, Beşiktaş, Amedspor, Trabzonspor, Başakşehir, Göztepe, Samsunspor, Erzurumspor, Gençlerbirliği, Rizespor, Alanyaspor, Çorum, Kocaelispor, Eyüpspor, Konyaspor, Kasımpaşa, Gaziantep
-- Return absolute new ratings, not deltas. Keep every value between 1200 and 2000.
+- Return rating changes in points (negative weakens a club), not absolute ratings. Keep every change between -150 and +150.
 
 Return ONLY valid JSON (no markdown fences) in this format:
 {
   "analysis": "brief explanation of the impact",
   "adjustments": {
-    "ClubName": new_elo_value_as_float,
+    "ClubName": rating_change_as_float,
     ...
   }
 }

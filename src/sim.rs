@@ -31,7 +31,7 @@ pub struct World {
     /// every result played so far. Never mutate directly — set
     /// `elo_baseline` or `played` and call `refresh_ratings`.
     pub elo: Vec<f64>,
-    /// Preseason ratings from `data::elo()`, kept so in-season updates can be
+    /// Preseason ratings from `preseason_ratings()`, kept so in-season updates can be
     /// recomputed from scratch instead of compounding on themselves.
     pub elo_baseline: Vec<f64>,
     /// The official 306-fixture calendar, in round order.
@@ -48,7 +48,7 @@ pub struct World {
 
 /// Weighted blend of the three strength models. Dixon-Coles and pi-rating
 /// club indices coincide with `World` club indices because
-/// `history::TeamIndex::league()` is built from the same `data::elo()` order.
+/// `history::TeamIndex::league()` is built from the same `data::clubs()` order.
 #[derive(Clone)]
 pub struct Ensemble {
     pub dc: crate::dixoncoles::DcParams,
@@ -128,8 +128,52 @@ pub struct FixtureProbs {
 // The model's per-match rules as free functions, so `World` and the
 // walk-forward backtest (`examples/backtest.rs`) run the identical code.
 
-/// Home side's Elo change after one result; the away side gets the negation.
+/// Home side's in-season Elo change after one result; the away side gets the
+/// negation.
 pub fn elo_delta(home_elo: f64, away_elo: f64, home_goals: u16, away_goals: u16) -> f64 {
+    elo_delta_k(data::ELO_K, home_elo, away_elo, home_goals, away_goals)
+}
+
+/// Preseason ratings: every result in `history` replayed in date order with
+/// `k`, clubs entering at `new_club`. Production uses the embedded history
+/// with `data::PRESEASON_K` (`preseason_ratings`); the backtest calls this
+/// with the matches before each season it replays.
+pub fn preseason_ratings_with(
+    history: &[crate::history::HistoricalMatch],
+    k: f64,
+    new_club: f64,
+) -> HashMap<String, f64> {
+    let mut ordered: Vec<&crate::history::HistoricalMatch> = history.iter().collect();
+    ordered.sort_by_key(|m| m.date);
+    let mut ratings: HashMap<String, f64> = HashMap::new();
+    for m in ordered {
+        let rh = *ratings.entry(m.home_team.clone()).or_insert(new_club);
+        let ra = *ratings.entry(m.away_team.clone()).or_insert(new_club);
+        let d = elo_delta_k(k, rh, ra, m.home_score, m.away_score);
+        *ratings.get_mut(&m.home_team).expect("inserted") += d;
+        *ratings.get_mut(&m.away_team).expect("inserted") -= d;
+    }
+    ratings
+}
+
+/// This season's starting ratings for `data::clubs()`, in that order, from
+/// the embedded results history.
+pub fn preseason_ratings() -> Vec<f64> {
+    static RATINGS: std::sync::OnceLock<Vec<f64>> = std::sync::OnceLock::new();
+    RATINGS
+        .get_or_init(|| {
+            let history = crate::history::load_history_with_cutoff(crate::history::CUTOFF_YEAR);
+            let r = preseason_ratings_with(&history, data::PRESEASON_K, data::NEW_CLUB_ELO);
+            data::clubs()
+                .iter()
+                .map(|c| r.get(*c).copied().unwrap_or(data::NEW_CLUB_ELO))
+                .collect()
+        })
+        .clone()
+}
+
+/// `elo_delta` with an explicit update rate.
+pub fn elo_delta_k(k: f64, home_elo: f64, away_elo: f64, home_goals: u16, away_goals: u16) -> f64 {
     let dr = home_elo - away_elo + data::HOME_ADV;
     let expected = 1.0 / (1.0 + 10f64.powf(-dr / data::ELO_DIV));
     let actual = match home_goals.cmp(&away_goals) {
@@ -142,7 +186,7 @@ pub fn elo_delta(home_elo: f64, away_elo: f64, home_goals: u16, away_goals: u16)
     let margin = ((home_goals as f64 - away_goals as f64).abs())
         .max(1.0)
         .sqrt();
-    data::ELO_K * margin * (actual - expected)
+    k * margin * (actual - expected)
 }
 
 /// Expected goals `(λ_home, λ_away)` from the two clubs' Elo ratings.
@@ -428,13 +472,13 @@ impl Default for World {
 
 impl World {
     pub fn new() -> Self {
-        let teams: Vec<String> = data::elo().iter().map(|(t, _)| t.to_string()).collect();
+        let teams: Vec<String> = data::clubs().iter().map(|t| t.to_string()).collect();
         let idx: HashMap<String, usize> = teams
             .iter()
             .enumerate()
             .map(|(i, t)| (t.clone(), i))
             .collect();
-        let elo: Vec<f64> = data::elo().iter().map(|(_, e)| *e).collect();
+        let elo = preseason_ratings();
 
         let mut fixtures = Vec::with_capacity(data::N_FIXTURES);
         let mut dates = Vec::with_capacity(data::N_FIXTURES);
@@ -501,7 +545,7 @@ impl World {
     /// baseline, so a bad fetch degrades to "no new information".
     ///
     /// Elo ratings are not scraped directly: club ratings start at
-    /// `data::elo()` and are replayed through every recorded result.
+    /// `preseason_ratings()` and are replayed through every recorded result.
     pub fn update_from_live(&mut self, live: &crate::scraper::LiveData) -> usize {
         let mut applied = 0;
         for m in &live.played_matches {

@@ -16,7 +16,7 @@ pub const ELO_DIV: f64 = 400.0;
 
 /// One-sigma uncertainty in a club's true strength, in Elo points, resampled
 /// per simulated season. Ratings are estimates, not facts: squads change, form
-/// is unobserved, and ClubElo itself carries error. Treating them as exact
+/// is unobserved, and the ratings themselves carry error. Treating them as exact
 /// makes favourites' title odds run hot and the tails too thin.
 ///
 /// Calibrated in `examples/arena.rs` against the spread of real final tables:
@@ -30,10 +30,18 @@ pub const ELO_DIV: f64 = 400.0;
 /// from played fixtures remain only about a 7% replay event.
 pub const RATING_SIGMA: f64 = 75.0;
 
-/// Elo update rate for one league match, before the goal-difference
-/// multiplier. 20 is the usual club-football value and is what ClubElo-scale
-/// ratings expect; larger values chase form, smaller ones ignore it.
+/// In-season Elo update rate for one league match, before the goal-difference
+/// multiplier; larger values chase form, smaller ones ignore it.
 pub const ELO_K: f64 = 20.0;
+
+/// Update rate of the preseason rating track: each season's starting ratings
+/// are every historical result since 2012-13 replayed with this K
+/// (`sim::preseason_ratings`), so they are reproducible and backtested rather
+/// than an external snapshot.
+pub const PRESEASON_K: f64 = 20.0;
+
+/// Starting rating of a club with no top-flight result since 2012-13.
+pub const NEW_CLUB_ELO: f64 = 1450.0;
 
 pub const N_TEAMS: usize = 18;
 pub const N_ROUNDS: usize = 34;
@@ -52,29 +60,29 @@ const _: () = {
     assert!(TOP_FOUR_PLACES + RELEGATION_SPOTS < N_TEAMS);
 };
 
-/// 2026-27 Trendyol Süper Lig clubs with ClubElo ratings as of 2026-08-16.
-/// Order defines team indices throughout the simulator; `history::TeamIndex`
-/// is built from this same order so Dixon-Coles and pi-rating indices agree.
-pub fn elo() -> Vec<(&'static str, f64)> {
-    vec![
-        ("Galatasaray", 1779.0),
-        ("Fenerbahçe", 1764.0),
-        ("Beşiktaş", 1667.0),
-        ("Amedspor", 1663.0),
-        ("Trabzonspor", 1647.0),
-        ("Başakşehir", 1616.0),
-        ("Göztepe", 1607.0),
-        ("Samsunspor", 1603.0),
-        ("Erzurumspor", 1574.0),
-        ("Gençlerbirliği", 1548.0),
-        ("Rizespor", 1541.0),
-        ("Alanyaspor", 1541.0),
-        ("Çorum", 1539.0),
-        ("Kocaelispor", 1538.0),
-        ("Eyüpspor", 1538.0),
-        ("Konyaspor", 1530.0),
-        ("Kasımpaşa", 1527.0),
-        ("Gaziantep", 1509.0),
+/// The 2026-27 Trendyol Süper Lig clubs. Order defines team indices
+/// throughout the simulator; `history::TeamIndex` is built from this same
+/// order so Dixon-Coles and pi-rating indices agree.
+pub fn clubs() -> [&'static str; N_TEAMS] {
+    [
+        "Galatasaray",
+        "Fenerbahçe",
+        "Beşiktaş",
+        "Amedspor",
+        "Trabzonspor",
+        "Başakşehir",
+        "Göztepe",
+        "Samsunspor",
+        "Erzurumspor",
+        "Gençlerbirliği",
+        "Rizespor",
+        "Alanyaspor",
+        "Çorum",
+        "Kocaelispor",
+        "Eyüpspor",
+        "Konyaspor",
+        "Kasımpaşa",
+        "Gaziantep",
     ]
 }
 
@@ -107,10 +115,8 @@ mod tests {
     use std::collections::{HashMap, HashSet};
 
     #[test]
-    fn elo_has_eighteen_distinct_clubs() {
-        let e = elo();
-        assert_eq!(e.len(), N_TEAMS);
-        let names: HashSet<&str> = e.iter().map(|(n, _)| *n).collect();
+    fn eighteen_distinct_clubs() {
+        let names: HashSet<&str> = clubs().into_iter().collect();
         assert_eq!(names.len(), N_TEAMS, "club names must be distinct");
     }
 
@@ -119,7 +125,7 @@ mod tests {
         let f = fixtures();
         assert_eq!(f.len(), N_FIXTURES);
 
-        let known: HashSet<&str> = elo().iter().map(|(n, _)| *n).collect();
+        let known: HashSet<&str> = clubs().into_iter().collect();
         let mut per_club: HashMap<&str, usize> = HashMap::new();
         let mut ordered: HashSet<(&str, &str)> = HashSet::new();
         let mut unordered: HashMap<(&str, &str), usize> = HashMap::new();
