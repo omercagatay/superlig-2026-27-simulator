@@ -44,7 +44,7 @@ Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift d
 
 Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki modelle harmanlanır:
 
-- **Elo (0,5):** ClubElo ölçeğinde güncel kulüp gücü ve 80 puanlık ev sahibi düzeltmesi.
+- **Elo (0,5):** 2012-13'ten bu yana tüm üst lig sonuçlarından hesaplanan ve bu sezon her maçtan sonra güncellenen kulüp gücü, artı 80 puanlık ev sahibi düzeltmesi.
 - **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; gerçek tarihleri korunan 4.590 maç üzerinde kalibre edilmiştir.
 - **Pi-rating (0,2):** aynı geçmiş üzerinde ardışık ev/deplasman güç güncellemeleri.
 
@@ -164,7 +164,7 @@ cargo run --release
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
 | `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
 
-Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla (ClubElo kulüp ölçeği, uluslararası Elo'ya göre daha dardır), istek gövdeleri 1 MiB ile sınırlıdır.
+Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla, LLM senaryolarının döndürdüğü puan değişiklikleri ±150 ile, istek gövdeleri 1 MiB ile sınırlıdır.
 
 ### Temel simülasyon
 

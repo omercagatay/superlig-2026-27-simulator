@@ -20,7 +20,8 @@ cargo fmt -- --check            # CI formatting check
 cargo clippy --all-targets -- -D warnings   # CI lint (warnings are hard errors)
 cargo build --release
 cargo run --release --example fit_dc        # refit Dixon-Coles against data/superlig_results.csv
-cargo run --release --example arena         # backtest 10 candidate models on held-out seasons
+cargo run --release --example backtest      # walk-forward replay of the production model (see "Walk-forward backtest")
+cargo run --release --example arena         # older frozen-season comparison of 10 candidate models
 cargo run --release --example log_forecast  # freeze predictions for unplayed fixtures (run before each matchday)
 ```
 
@@ -81,7 +82,7 @@ Per trial (`simulate_one`):
 
 Across trials, `simulate` uses Rayon fold/reduce accumulators instead of retaining every season. It aggregates position, title/top-two/third/fourth/top-four/relegation counts, record sums, fixed-size points histograms, and a flat n×n `pairwise_above` matrix. A separate deterministic sample season remains as a test anchor. The projected-table view is built from per-club **expected** records.
 
-**Ratings are recomputed, never accumulated.** `World.elo_baseline` holds the preseason `data::elo()` ratings; `World::elo` is `refresh_ratings()` replaying every played result over that baseline in kick-off order. `update_from_live` calls it after inserting results. Doing it any other way (mutating `elo` in place) double-counts on the timer-driven refresh — there is a test for this.
+**Ratings are recomputed, never accumulated.** `World.elo_baseline` holds the preseason ratings from `sim::preseason_ratings()` (every result since 2012-13 replayed with `PRESEASON_K`; clubs with no top-flight result start at `NEW_CLUB_ELO`); `World::elo` is `refresh_ratings()` replaying every played result over that baseline in kick-off order. `update_from_live` calls it after inserting results. Doing it any other way (mutating `elo` in place) double-counts on the timer-driven refresh — there is a test for this.
 
 **Home advantage is per fixture, not per club.** The World Cup version carried a `host: Vec<bool>` flag; `lam_pair(home, away)` now applies `HOME_ADV` to whichever club is at home in that fixture.
 
@@ -93,7 +94,7 @@ Head-to-head is applied **once** per block of clubs level on points. Clubs still
 
 ### Data layer (`src/data.rs`)
 
-18 clubs with ClubElo ratings, the `Fixture` struct, and `fixtures()` reading `data/fixtures_2026_27.json` via `include_str!`. Constants: `N_TEAMS`/`N_ROUNDS`/`N_FIXTURES`, `TOP_TWO_PLACES`/`TOP_FOUR_PLACES`/`RELEGATION_SPOTS`, and the Elo model's `BASE`/`D_DIV`/`HOME_ADV`. Do not turn the upper-table cutoffs into UEFA labels: qualification also depends on the cup and access list.
+The 18 clubs (`clubs()`; order defines indices), the `Fixture` struct, and `fixtures()` reading `data/fixtures_2026_27.json` via `include_str!`. Constants: `N_TEAMS`/`N_ROUNDS`/`N_FIXTURES`, `TOP_TWO_PLACES`/`TOP_FOUR_PLACES`/`RELEGATION_SPOTS`, the Elo model's `BASE`/`D_DIV`/`HOME_ADV`, in-season `ELO_K` and preseason `PRESEASON_K`/`NEW_CLUB_ELO`, and the underdog lift `UNDERDOG_PIVOT`/`UNDERDOG_LIFT`/`FAV_FOLLOW`. All model constants were chosen with `examples/backtest.rs`. Do not turn the upper-table cutoffs into UEFA labels: qualification also depends on the cup and access list.
 
 Changing the club list means re-running both Python scripts, refitting DC, and updating `TFF_NAMES` in `src/scraper.rs`.
 
@@ -104,15 +105,23 @@ The simulation blends three strength models into each match's expected goals (λ
 - **Dixon-Coles** attack/defense params, fit offline against `data/superlig_results.csv` with `cargo run --release --example fit_dc`, which writes `data/dc_params.json`; the server loads that file via `include_str!` at startup. The runtime uses DC λs and, when DC has weight, its joint scoreline distribution (ρ correction).
 - **Pi-ratings** (Constantinou–Fenton), computed in one fast pass over the same history at startup (`src/piratings.rs`).
 
-`World.ensemble: Option<Ensemble>` holds the blend; `None` (as in `World::new()` and most tests) means pure Elo. Club indices in DC/pi coincide with `World` indices because `history::TeamIndex::league()` is built from the same `data::elo()` order, plus a trailing `"Other Club"` bucket.
+`World.ensemble: Option<Ensemble>` holds the blend; `None` (as in `World::new()` and most tests) means pure Elo. Club indices in DC/pi coincide with `World` indices because `history::TeamIndex::league()` is built from the same `data::clubs()` order, plus a trailing `"Other Club"` bucket.
+
+After blending, `blend_lambdas` lifts any λ below `UNDERDOG_PIVOT` (0.9) by `UNDERDOG_LIFT` (0.7) of the gap, and raises the favourite's λ by `FAV_FOLLOW` (0.5) of that relative lift: heavy underdogs scored 0.88 goals where the blend said 0.66, and both-teams-to-score was badly underpredicted in mismatches.
 
 **The bucket is a league-average departed club, not a promoted-club baseline.** It absorbs every match of every club outside the current 18 — relegated and defunct sides alike. Promoted clubs (Amedspor, Çorum for 2026-27) have α=β=0 in the DC fit, i.e. the neutral baseline; only their Elo distinguishes them.
 
 Elo overrides from scenarios act through the Elo component only. `GET /api/health` reports the active model and weights.
 
+### Walk-forward backtest (`examples/backtest.rs`)
+
+The yardstick for every model change. It replays seasons 2016-17..2023-24 (development) match day by match day: each match is priced with the production rules (`sim::elo_delta`, `elo_lambdas`, `blend_lambdas`, `probs_from_lambdas`, `preseason_ratings_with`) using only earlier dates, and same-day results are revealed only after pricing. It prints `dev_*` metrics (1X2 log-loss, RPS, over/under 2.5, BTTS and exact-score log-loss). `EVAL_HOLDOUT=1` adds 2024-25 and 2025-26 (`hold_*`); `EVAL_SEASON_SIM=N` replays each season with the production simulator and compares the spread of final points; `EVAL_DUMP=file.csv` writes per-match rows. `EVAL_*` knobs (documented in the file header) override constants for screening; with none set it runs exactly what ships.
+
+Results of the October 2026 tuning run (dev 1X2 log-loss 1.0068 → 0.9991; holdout 0.9805 → 0.9759, every aspect better on both, BTTS significantly): in-season `ELO_K` 20→60 with `D_DIV` 1600→1200, and the underdog lift. Most of the gap to closing odds opens after matchday 10, so in-season learning was the lever; the preseason prior is not where the error is. Tried and rejected (do not re-run without a new idea): promoted-club priors, regressing or widening preseason ratings, weekly in-season Dixon-Coles/pi refits (redundant once Elo is fast), early-season K schedules, phase-dependent blend weights, log/linear/no margin multipliers, goal-difference Elo (much worse), geometric blending, model-driven goal totals, pi-rating learning-rate changes, and a closeness-dependent draw boost (won on dev, failed the holdout). The holdout seasons informed two decisions in that run, so treat them as lightly used; the live 2026-27 season is the clean test.
+
 ### Model selection (`examples/arena.rs`)
 
-The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. ML has been tried and lost: a walk-forward logistic stacker (in the arena, `logit-stack`) and sklearn GBM/RF/MLP (side experiment, `ARENA_DUMP_DIR=<dir>` dumps the feature CSV) all scored behind the ensemble on the 2025-26 test season — results-only features don't give ML room to win here. The arena's Elo is self-computed from the match history (ClubElo snapshots are unreachable), so its Elo component is the same family as production's, not identical ratings.
+The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the arena fits every candidate on past seasons and scores them on held-out 2024-25 (validation) and 2025-26 (test). The production blend won the test season and is the only model in the top group on both; weights grid-fitted to the validation season overfit it. Re-run the arena before changing `ENSEMBLE_WEIGHTS` defaults. ML has been tried and lost: a walk-forward logistic stacker (in the arena, `logit-stack`) and sklearn GBM/RF/MLP (side experiment, `ARENA_DUMP_DIR=<dir>` dumps the feature CSV) all scored behind the ensemble on the 2025-26 test season — results-only features don't give ML room to win here. The arena freezes every rating for a whole season and its Elo is its own reimplementation; `examples/backtest.rs` supersedes it for anything production-facing.
 
 ### Scheduled refresh and scraper canary (`.github/workflows/refresh-data.yml`)
 
@@ -136,11 +145,11 @@ Residual known limitation: even at the calibrated sigma, an 86-point played-matc
 
 ### Calibration (`tests/calibration.rs`)
 
-ClubElo's scale is compressed relative to international Elo, so `BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. Current fit: 44.7% home wins (empirical 45.3%), 24.5% draws (empirical 25.8%).
+`BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. Current fit: 44.7% home wins (empirical 45.3%), 24.5% draws (empirical 25.8%).
 
 ### LLM scenario analysis (`src/llm.rs`)
 
-Calls the Kimi/Moonshot chat completions API (`kimi-k2.6`, thinking disabled for latency) with a system prompt that enumerates all 18 valid club names and Elo-adjustment heuristics. Expects strict JSON back (`{"analysis": ..., "adjustments": {...}}`); `strip_fences` tolerates markdown code fences some models add. `validate_elo_overrides` re-checks names and the 1200-2000 bound server-side since the LLM output isn't trusted.
+Calls the Kimi/Moonshot chat completions API (`kimi-k2.6`, thinking disabled for latency) with a system prompt that enumerates all 18 valid club names and Elo-adjustment heuristics. Expects strict JSON back (`{"analysis": ..., "adjustments": {...}}`); `strip_fences` tolerates markdown code fences some models add. The LLM returns rating **changes**, not absolute ratings (self-computed ratings are not on ClubElo's scale); `validation::scenario_overrides` re-checks names, caps each change at ±150 and applies it to the current rating, then `validate_elo_overrides` enforces the 1200-2000 bound, since the LLM output isn't trusted.
 
 ### Frontend (`frontend/src/`)
 
@@ -154,5 +163,6 @@ These cost real debugging time; they are not obvious from the code:
 - **tff.org serves an incomplete TLS chain**, omitting the GlobalSign intermediate that signs its leaf. Browsers recover via the certificate's AIA URL; `reqwest`, `curl` and Python `urllib` do not, and fail with "unable to get local issuer certificate". This is TFF's misconfiguration, *not* a network block — do not diagnose it as one, and never reach for `-k`/`verify=False`/`danger_accept_invalid_certs`. The server embeds the intermediate (`data/tff_intermediate.pem`, added via `add_root_certificate`); the Python script AIA-fetches it pinned by SHA-256.
 - **Historical chronology is model input.** The MIT-licensed Club Football Match Data archive supplies real dates through 2024-25; official TFF weekly pages supply 2025-26. `fetch_history.py` rejects partial downloads and unexpected season/week counts before writing.
 - **The August season boundary is intentional.** It keeps the pandemic-delayed July 2020 matches in 2019-20.
+- **Walkover awards are not results.** After the 6 February 2023 earthquake Hatayspor and Gaziantep withdrew and their 29 remaining 2022-23 fixtures were awarded 3-0 unplayed. `history::is_unplayed_award` drops them; they had been training Dixon-Coles, pi-ratings and Elo.
 - **Club display names drift between sources.** An unmapped current club falls into the "Other Club" bucket and quietly weakens it; aliases plus `every_ever_present_club_has_full_season_coverage` are the regression net.
 - **TFF is authoritative for current-season fixtures and results.** The live Rust scraper validates the complete fixture set before accepting any played-result snapshot.

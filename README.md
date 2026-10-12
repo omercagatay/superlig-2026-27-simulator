@@ -44,7 +44,7 @@ Home advantage is a property of the **fixture**, not of the club: every club get
 
 By default those rates are blended with two models trained on real Süper Lig history:
 
-- **Elo (0.5):** current club strength on the ClubElo scale, plus an 80-point home adjustment.
+- **Elo (0.5):** current club strength, computed from every top-flight result since 2012-13 and updated after each match this season, plus an 80-point home adjustment.
 - **Dixon–Coles (0.3):** time-decayed attack/defence strengths and low-score correlation, fitted over 4,590 chronologically dated matches with a four-year half-life.
 - **Pi-ratings (0.2):** sequential home/away strength updates from the same history.
 
@@ -65,9 +65,9 @@ The sigma is calibrated, not guessed. The arena replays each held-out season fro
 
 Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes most of that gap. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 archive excludes unplayed administrative awards, so this diagnostic deliberately compares points from played fixtures on both sides.
 
-**A known residual:** the model remains somewhat under-dispersed on 2024-25; an 86-point played-match leader occurs in roughly 7% of σ≈75 replays. Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
+**A known residual:** the model remains somewhat under-dispersed on 2024-25; an 86-point played-match leader occurs in roughly 12% of replays from the season's start (`EVAL_SEASON_SIM` in `examples/backtest.rs`). Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
 
-**Ratings move with the season.** The Elo component starts from the preseason ClubElo baseline and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
+**Ratings move with the season.** The Elo component starts from a preseason rating computed from the results history and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 
 Manual overrides and Kimi scenarios update the Elo component. The embedded Dixon–Coles and pi-rating parameters stay unchanged until the historical models are explicitly refitted.
 
@@ -201,7 +201,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 
 `/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline — the model keeps drawing until the result matches, so goal difference stays honest. Pinning an already-played or non-existent fixture is an error rather than a silent no-op.
 
-Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000 (the ClubElo club scale is compressed relative to international Elo), and request bodies are limited to 1 MiB.
+Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000; LLM scenarios return rating changes of at most ±150 points, and request bodies are limited to 1 MiB.
 
 ### Baseline simulation
 
