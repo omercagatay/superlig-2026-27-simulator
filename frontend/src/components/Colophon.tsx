@@ -50,7 +50,7 @@ export function Colophon({
             inputMode="numeric"
             min={100}
             max={200000}
-            step={1000}
+            step={100}
             value={nSims}
             aria-label={t("sims")}
             onChange={(e) => onSims(Number(e.target.value))}
