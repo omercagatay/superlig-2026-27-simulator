@@ -874,3 +874,153 @@ button.race-item:hover .club-name {
   font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Puan Durumu (table) ---- */
+
+.league td.pts {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 19px;
+}
+
+.league .rule-after td {
+  border-bottom: 1px solid var(--rule);
+}
+
+.league .rule-red td {
+  border-top: 2px dashed var(--red);
+}
+
+/* ---- Kulüp sayfası (club page) ---- */
+
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 24px var(--gutter);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.club-sheet {
+  width: 100%;
+  max-width: 780px;
+  margin: auto 0;
+  padding: 18px 20px 22px;
+  border: 2px solid var(--rule);
+  background-color: var(--paper);
+  background-image: var(--grain);
+}
+
+.club-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 3px double var(--rule);
+}
+
+.club-sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(32px, 7vw, 52px);
+  line-height: 0.95;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.club-sheet-title .swatch {
+  width: 22px;
+  height: 30px;
+}
+
+.club-sheet section {
+  margin-top: 18px;
+}
+
+.posbars {
+  display: grid;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  align-items: end;
+  gap: 2px;
+  height: 110px;
+}
+
+.posbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.posbar-fill {
+  display: block;
+  width: 100%;
+  min-height: 1px;
+  border: 1px solid var(--rule-soft);
+  background-color: color-mix(in srgb, var(--ink) 18%, transparent);
+  background-image: radial-gradient(circle at center, var(--ink) 1.1px, transparent 1.4px);
+  background-size: 4px 4px;
+}
+
+.posbar-rel .posbar-fill {
+  background-color: color-mix(in srgb, var(--red) 18%, transparent);
+  background-image: radial-gradient(circle at center, var(--red) 1.1px, transparent 1.4px);
+}
+
+.posbar-num {
+  margin-top: 3px;
+  font-family: var(--narrow);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.form-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--narrow);
+  font-size: 13px;
+}
+
+.form {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px 2px 2px;
+  border: 1px solid var(--rule-soft);
+}
+
+.form-res {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: var(--paper-2);
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.form-W .form-res {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.form-L .form-res {
+  background: var(--red);
+  color: var(--paper);
+}
