@@ -1162,3 +1162,176 @@ button.race-item:hover .club-name {
   margin-bottom: 22px;
   break-inside: avoid;
 }
+
+/* ---- Masthead and contents ---- */
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 20px 0 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.mast-kicker {
+  margin: 0;
+  font-family: var(--narrow);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--red-ink);
+}
+
+.mast-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(52px, 13vw, 118px);
+  line-height: 0.82;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+
+.mast-issue {
+  margin: 6px 0 0;
+  font-family: var(--narrow);
+  font-weight: 600;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mast-flag {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red-ink);
+}
+
+@media (min-width: 760px) {
+  .masthead {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 24px;
+  }
+  .mast-kicker {
+    grid-column: 1 / -1;
+  }
+  .mast-issue {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.contents {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: baseline;
+  gap: 0 18px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 0 0;
+  border-bottom: 3px double var(--rule);
+  background-color: var(--paper);
+  background-image: var(--grain);
+}
+
+.contents::-webkit-scrollbar {
+  display: none;
+}
+
+.contents-label {
+  font-style: italic;
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--ink-3);
+}
+
+.contents button {
+  flex: none;
+  padding: 4px 0 8px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-family: var(--narrow);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.contents button[aria-current="page"] {
+  border-bottom-color: var(--red);
+}
+
+.contents-no {
+  margin-right: 5px;
+  font-family: var(--display);
+  font-weight: 900;
+  color: var(--red-ink);
+}
+
+@media (max-width: 520px) {
+  .contents-label {
+    display: none;
+  }
+}
+
+/* ---- Printer's note ---- */
+
+.colophon {
+  display: grid;
+  gap: 12px;
+  margin-top: 48px;
+  padding-top: 14px;
+  border-top: 3px double var(--rule);
+  font-family: var(--narrow);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.colophon-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+}
+
+.colophon-label {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.colophon input {
+  width: 6.5em;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1.5px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+.colophon-actions,
+.colophon-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.colophon-actions {
+  width: 100%;
+}
+
+.legal {
+  margin: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13.5px;
+}

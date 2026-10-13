@@ -3,22 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0e0c" />
+    <meta name="theme-color" content="#f2ecdf" />
     <meta name="description" content="2026-27 Trendyol Süper Lig sezonu için Monte Carlo tahmini — Monte Carlo forecast for the 2026-27 Turkish Süper Lig season" />
-    <title>Süper Lig 2026-27 Forecast</title>
+    <title>Süper Lig 2026–27 · Maç Programı</title>
     <script>
-      // Apply the saved (or OS-preferred) theme before first paint to avoid
-      // a dark flash for light-theme users. Mirrors initialTheme() in App.tsx.
+      // Apply the saved (or OS-preferred) edition before first paint, so a
+      // night-edition reader never sees a flash of day paper. Mirrors
+      // initialTheme() in App.tsx.
       (function () {
         try {
           var t = localStorage.getItem("theme");
           if (t !== "light" && t !== "dark")
-            t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+            t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
           document.documentElement.dataset.theme = t;
-          if (t === "light")
+          if (t === "dark")
             document
               .querySelector('meta[name="theme-color"]')
-              .setAttribute("content", "#e9ede7");
+              .setAttribute("content", "#0f1724");
         } catch (e) {}
       })();
     </script>

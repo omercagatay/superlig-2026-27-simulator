@@ -6,60 +6,33 @@ export type Lang = "en" | "tr";
    stays legible; Turkish is the other half of the pair, not an afterthought —
    this is a Süper Lig tool and most of its readers are Turkish. */
 const DICT = {
-  brandSub: ["2026-27 Monte Carlo season simulator", "2026-27 Monte Carlo sezon simülatörü"],
-  tabForecast: ["Forecast", "Tahmin"],
-  tabPositions: ["Positions", "Sıralama"],
-  tabRaces: ["Races", "Yarışlar"],
-  tabTable: ["Table", "Puan durumu"],
-  tabLive: ["Live", "Canlı"],
   sims: ["Sims", "Simülasyon"],
   seed: ["Seed", "Tohum"],
-  run: ["Run", "Çalıştır"],
-  running: ["Running…", "Çalışıyor…"],
   updateLive: ["Update live data", "Canlı veriyi güncelle"],
   updating: ["Updating…", "Güncelleniyor…"],
-  updated: ["updated", "güncellendi"],
   noForecast: ["No forecast yet", "Henüz tahmin yok"],
   noForecastBody: [
     "Run the simulation to see how the 2026-27 season plays out.",
     "2026-27 sezonunun nasıl geçeceğini görmek için simülasyonu çalıştırın.",
   ],
   runSimulation: ["Run simulation", "Simülasyonu çalıştır"],
-  simulating: ["Simulating", "Simüle ediliyor"],
-  simulatingBody: ["seasons, in parallel. A few seconds.", "sezon, paralel olarak. Birkaç saniye."],
-  toLight: ["Switch to light theme", "Açık temaya geç"],
-  toDark: ["Switch to dark theme", "Koyu temaya geç"],
 
-  // Forecast summary tiles
-  titleFavorite: ["Title favourite", "Şampiyonluk favorisi"],
-  relegationRisk: ["Relegation risk", "Küme düşme riski"],
-  seasonProgress: ["Season progress", "Sezon ilerlemesi"],
-  nextMatchday: ["Next matchday", "Gelecek hafta"],
-  ofSeasons: ["of seasons", "sezonda"],
-  fairOddsShort: ["fair odds", "adil oran"],
-  fixturesToPlay: ["fixtures to play", "maç oynanacak"],
-  fixtureToPlay: ["fixture to play", "maç oynanacak"],
+  // Shared race and calendar copy
   calendarLoading: ["calendar loading", "fikstür yükleniyor"],
 
   titleRace: ["Title race", "Şampiyonluk yarışı"],
-  seasonsSeed: ["seasons · seed", "sezon · tohum"],
   aboveWhom: ["Who finishes above whom", "Kim kimin üstünde bitirir"],
   /* Turkish word order would need a genitive suffix that varies by club name
      ("Trabzonspor'un üstünde"), so the comparison uses a symbol there — which
      the panel heading already explains. */
   above: ["above", ">"],
-  allLiveResults: ["All live results →", "Tüm canlı sonuçlar →"],
 
   // Season outcomes table
   seasonOutcomes: ["Season outcomes", "Sezon çıktıları"],
-  clickAClub: ["Click a club", "Bir kulübe tıklayın"],
   club: ["Club", "Kulüp"],
   title: ["Title", "Şampiyon"],
-  odds: ["Odds", "Oran"],
   topTwo: ["Top two", "İlk iki"],
   topFour: ["Top four", "İlk dört"],
-  thirdPlace: ["3rd place", "3. sıra"],
-  fourthPlace: ["4th place", "4. sıra"],
   topTwoShort: ["Top 2", "İlk 2"],
   thirdShort: ["3rd", "3."],
   fourthShort: ["4th", "4."],
@@ -74,34 +47,11 @@ const DICT = {
   tipRelegation: ["Finishes in the bottom three", "Son üçte bitirir"],
   tipXpts: ["Expected points over 34 matches", "34 maçta beklenen puan"],
   tipXgd: ["Expected goal difference", "Beklenen averaj"],
-  tipDecimalOdds: ["Decimal odds", "Ondalık oran"],
 
   // Matches
-  matchPredictions: ["Match predictions", "Maç tahminleri"],
   matchday: ["Matchday", "Hafta"],
-  prevMatchday: ["Previous matchday", "Önceki hafta"],
-  nextMatchdayAria: ["Next matchday", "Sonraki hafta"],
-  matchesNote: [
-    "Fair odds are 100 / probability, with no bookmaker margin. Model estimates, not betting advice.",
-    "Adil oran, 100 / olasılık şeklindedir ve bahis marjı içermez. Model tahminidir, bahis tavsiyesi değildir.",
-  ],
-  finalScores: ["Final scores", "Maç sonuçları"],
-  market: ["Market", "Bahis"],
-  probability: ["Probability", "Olasılık"],
-  fairOdds: ["Fair odds", "Adil oran"],
-  win: ["win", "kazanır"],
-  draw: ["Draw", "Beraberlik"],
-  over25: ["Over 2.5 goals", "2.5 üstü gol"],
-  under25: ["Under 2.5 goals", "2.5 altı gol"],
-  btts: ["Both teams score", "Karşılıklı gol"],
-  mostLikelyScores: ["Most likely scores", "En olası skorlar"],
 
   // What-if
-  whatIf: ["What if…", "Ya olsaydı…"],
-  whatIfNote: [
-    "Pin results you want to assume, then run again. The outcome is fixed; the model still decides the scoreline.",
-    "Varsaymak istediğiniz sonuçları sabitleyin ve yeniden çalıştırın. Sonuç sabittir; skoru yine model belirler.",
-  ],
   clearPins: ["Clear", "Temizle"],
   assuming: ["Assuming", "Varsayım"],
   pinHome: ["Assume home win", "Ev sahibi kazanır"],
@@ -144,12 +94,10 @@ const DICT = {
   noClubAbove: ["No club is above 0.5%.", "%0,5'in üzerinde kulüp yok."],
 
   // Accuracy
-  forecastAccuracy: ["Forecast accuracy", "Tahmin isabeti"],
   accuracyEmpty: [
     "Predictions are frozen before kick-off and scored once the matches are played. Nothing to score yet — the tracker fills in from the next completed matchday.",
     "Tahminler maç öncesinde dondurulur ve maçlar oynandıkça puanlanır. Henüz puanlanacak bir şey yok — takip, tamamlanan ilk haftadan itibaren dolmaya başlar.",
   ],
-  scored: ["scored", "puanlandı"],
   calledCorrectly: ["Called correctly", "Doğru bilinen"],
   logLoss: ["Log-loss", "Log kaybı"],
   vsBaseRates: ["vs base rates", "temel oranlara karşı"],
@@ -165,7 +113,6 @@ const DICT = {
   played: ["Played", "Oynanan"],
   remainingFixtures: ["Remaining fixtures", "Kalan maçlar"],
   md: ["MD", "H"],
-  mdShort: ["MD", "Hafta"],
   date: ["Date", "Tarih"],
   opponent: ["Opponent", "Rakip"],
   winCol: ["Win", "Galibiyet"],
@@ -176,17 +123,11 @@ const DICT = {
   easiest: ["Easiest", "En kolay"],
 
   // Live
-  matchesPlayed: ["Matches played", "Oynanan maç"],
-  remaining: ["Remaining", "Kalan"],
-  goalsScored: ["Goals scored", "Atılan gol"],
   liveSource: [
     "Live results scraped from the Türkiye Futbol Federasyonu fixture page",
     "Canlı sonuçlar Türkiye Futbol Federasyonu fikstür sayfasından alınmıştır",
   ],
   fetched: ["fetched", "alındı"],
-  projectedChampion: ["Projected champion", "Tahminî şampiyon"],
-  matchesRemaining: ["Matches remaining", "Kalan maç"],
-  mostLikelyChampion: ["Most likely champion", "En olası şampiyon"],
 
   // Masthead and contents
   mastKicker: ["Trendyol Süper Lig · 2026–27", "Trendyol Süper Lig · 2026–27"],
