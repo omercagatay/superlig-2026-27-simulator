@@ -40,10 +40,11 @@ Both are offline/manual: the committed data files are what the binary embeds via
 npm install
 npm run dev            # Vite dev server on :5173, proxies /api to http://localhost:3001 (note: not :3000 — start the backend with PORT=3001 for the dev proxy to work, or run `npm run build` and hit the backend directly on :3000)
 npx tsc --noEmit        # CI type check
+npm test                # node:test unit tests for src/clubs.ts (Node >= 22.6, --experimental-strip-types)
 npm run build           # tsc + vite build -> frontend/dist (served by the Rust binary in prod/docker)
 ```
 
-CI (`.github/workflows/ci.yml`) runs stable backend checks, a Rust 1.87 MSRV check, RustSec/npm audits, and the frontend type check/build.
+CI (`.github/workflows/ci.yml`) runs stable backend checks, a Rust 1.87 MSRV check, RustSec/npm audits, and the frontend type check, build and unit tests (Node 22.12).
 
 ### Docker
 
@@ -135,7 +136,7 @@ A weekly job (Fridays 06:00 UTC, before the weekend's matches) re-runs `scripts/
 
 ### No licensed betting sources
 
-The app does not use Nesine or any other licensed betting operator, and must not. The Nesine bulletin fetch, the model-vs-bookmaker gap on `/api/matches`, and the daily coupon (`/api/coupon`) were removed on 2026-10-12 at the owner's instruction. The fair odds shown in the UI are the model's own `1 / p` (`src/odds.rs`), not bookmaker prices. To benchmark accuracy against the market, compare offline with football-data.co.uk closing odds (no Pinnacle for 2026-27; Betfair Exchange `BFEC*` and average `AvgC*` are the sharpest columns).
+The app does not use Nesine or any other licensed betting operator, and must not. The Nesine bulletin fetch, the model-vs-bookmaker gap on `/api/matches`, and the daily coupon (`/api/coupon`) were removed on 2026-10-12 at the owner's instruction. The `*_odds` fields in the API are the model's own `1 / p` (`src/odds.rs`), not bookmaker prices; the UI does not show odds at all. To benchmark accuracy against the market, compare offline with football-data.co.uk closing odds (no Pinnacle for 2026-27; Betfair Exchange `BFEC*` and average `AvgC*` are the sharpest columns).
 
 ### Season dispersion (`examples/arena.rs`)
 
@@ -153,7 +154,9 @@ Calls the Kimi/Moonshot chat completions API (`kimi-k2.6`, thinking disabled for
 
 ### Frontend (`frontend/src/`)
 
-`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `LiveData`) — when changing Rust response structs, update `api.ts` in the same change. `App.tsx` owns simulation state and drives the child components (`ForecastView`, `ResultsTable`, `PositionGrid`, `LeagueTable`, `LiveStats`); there's no separate state management library.
+`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `LiveData`) — when changing Rust response structs, update `api.ts` in the same change. `App.tsx` owns simulation, calendar, live-data, what-if and theme state and is otherwise a shell: `Masthead` (issue line plus the sticky contents strip), one page component from `pages/` chosen by hash route (`#cover`, `#fixtures`, `#table`, `#races`, `#results` → `CoverPage`, `FixturesPage`, `TablePage`, `RacesPage`, `ResultsPage`), the `Colophon` printer's note (sims/seed, reprint, refresh, language and night-edition toggles), and the `ClubDetail` sheet. There's no separate state management library.
+
+The look is a printed matchday programme: two inks on paper with a night edition, tokens on `:root` and `:root[data-theme="dark"]` in `styles.css` (no hard-coded colours elsewhere except club stripes). All number, percent and date formatting goes through `clubs.ts` (Turkish `%59,9` vs English `59.9%`, `"–"` for zero, `"<%0,1"` for traces) alongside the club colour map; it is pure so `clubs.test.mjs` can test it. Shared print pieces (`Swatch`, `ClubName`, `Bar`, `PageHead`, `ResultLine`) live in `components/Print.tsx`. Every club name must render inside `lang="tr"` (use `ClubName`) so CSS uppercase gives `İ` in both editions. No odds, bookmaker or betting figures appear anywhere in the UI.
 
 ## Data-source traps
 

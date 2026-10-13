@@ -60,7 +60,8 @@ test("dates read as a programme issue line", () => {
 
 test("the cover headline says how settled the title race is", () => {
   assert.equal(coverHeadline("Galatasaray", 59.9, "tr"), "Zirvede Galatasaray: şampiyonluk ihtimali %59,9");
-  assert.equal(coverHeadline("Galatasaray", 59.9, "en"), "Galatasaray on top: a 59.9% title chance");
+  assert.equal(coverHeadline("Galatasaray", 59.9, "en"), "Galatasaray on top: 59.9% title chance");
+  assert.equal(coverHeadline("Galatasaray", 80.2, "en"), "Galatasaray on top: 80.2% title chance");
   assert.equal(coverHeadline("Fenerbahçe", 31.2, "tr"), "Yarış açık: Fenerbahçe %31,2 ile önde");
   assert.equal(coverHeadline("Fenerbahçe", 31.2, "en"), "An open race: Fenerbahçe lead on 31.2%");
 });

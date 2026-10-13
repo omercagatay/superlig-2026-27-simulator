@@ -8,8 +8,8 @@ import { ClubName } from "./Print";
 const intensity = (p: number) => Math.min(1, Math.sqrt(p / 100));
 
 /** The 18×18 finishing-position grid as a screen tint. The tint tops out
- *  at 46% ink, so the figures in every cell stay readable in both
- *  editions. */
+ *  at --tint-max (46% ink by day, 36% at night), so the figures in every
+ *  cell keep 4.5:1 contrast in both editions. */
 export function PositionGrid({ positions }: { positions: PositionRow[] }) {
   const t = useT();
   const { lang } = useLang();

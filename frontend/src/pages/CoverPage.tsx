@@ -9,12 +9,15 @@ import { Bar, ClubName, PageHead } from "../components/Print";
 export function CoverPage({
   data,
   matches,
+  calendarNote,
   accuracy,
   onOpenFixtures,
   onSelectClub,
 }: {
   data: SimResponse;
   matches: MatchesResponse | null;
+  /** What to say while there is no calendar: loading, or failed. */
+  calendarNote: string;
   accuracy: AccuracyReport | null;
   onOpenFixtures: () => void;
   onSelectClub: (team: string) => void;
@@ -75,7 +78,7 @@ export function CoverPage({
         <aside>
           <h3 className="section-title">{t("thisWeek")}</h3>
           {upcoming.length === 0 ? (
-            <p className="note">{matches ? t("noFixturesLeft") : t("calendarLoading")}</p>
+            <p className="note">{matches ? t("noFixturesLeft") : calendarNote}</p>
           ) : (
             <ul className="teasers">
               {upcoming.map((m) => (

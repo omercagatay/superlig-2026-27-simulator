@@ -59,9 +59,25 @@ export function ClubDetail({
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key !== "Tab") return;
+      // A modal keeps Tab inside itself: wrap from the last control to the
+      // first and back, and pull stray focus back in.
+      const sheet = closeRef.current?.closest(".club-sheet");
+      const items = sheet?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input, select, [tabindex]:not([tabindex="-1"])',
+      );
+      if (!sheet || !items?.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const at = document.activeElement;
+      if (!sheet.contains(at) || (e.shiftKey && at === first) || (!e.shiftKey && at === last)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
     };
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -69,6 +85,7 @@ export function ClubDetail({
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = overflow;
+      opener?.focus();
     };
   }, [onClose]);
 

@@ -18,6 +18,7 @@
   --rule-soft: rgba(30, 27, 23, 0.2);
   --red: #c1272d;
   --red-ink: #a61f25; /* red for small text: 6.3:1 on --paper */
+  --tint-max: 46%; /* strongest position-grid tint: ink figures stay 5.1:1 */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.12 0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
@@ -38,6 +39,7 @@
   --rule-soft: rgba(237, 230, 214, 0.22);
   --red: #e2514f;
   --red-ink: #ef6b68;
+  --tint-max: 36%; /* light ink on a light tint: 46% would drop to 3.7:1 */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.93 0 0 0 0 0.9 0 0 0 0 0.84 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
@@ -1127,7 +1129,7 @@ button.race-item:hover .club-name {
 }
 
 .posgrid td {
-  background: color-mix(in srgb, var(--ink) calc(var(--i) * 46%), transparent);
+  background: color-mix(in srgb, var(--ink) calc(var(--i) * var(--tint-max)), transparent);
 }
 
 /* ---- Sonuçlar (results) ---- */

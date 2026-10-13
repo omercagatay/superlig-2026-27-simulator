@@ -34,6 +34,7 @@ export default function App() {
   const [data, setData] = useState<SimResponse | null>(null);
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
+  const [matchesFailed, setMatchesFailed] = useState(false);
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,9 +95,9 @@ export default function App() {
       });
     getMatches()
       .then(setMatchesData)
-      .catch(() => {
-        /* the calendar is optional on every page but "Bu Hafta" */
-      });
+      // The calendar is optional on every page but "Bu Hafta"; say it failed
+      // rather than "loading" forever. "Update live data" fetches it again.
+      .catch(() => setMatchesFailed(true));
     getAccuracy()
       .then(setAccuracy)
       .catch(() => {
@@ -131,6 +132,7 @@ export default function App() {
   const issueDates =
     matchesData?.rounds.find((r) => r.round === issue)?.matches.map((m) => m.date) ?? [];
   const selected = data?.teams.find((x) => x.team === club) ?? null;
+  const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
 
   return (
     <div className="sheet">
@@ -170,6 +172,7 @@ export default function App() {
               <CoverPage
                 data={data}
                 matches={matchesData}
+                calendarNote={calendarNote}
                 accuracy={accuracy}
                 onOpenFixtures={() => go("fixtures")}
                 onSelectClub={setClub}
@@ -185,7 +188,7 @@ export default function App() {
                   busy={loading}
                 />
               ) : (
-                <p className="note">{t("calendarLoading")}</p>
+                <p className="note">{calendarNote}</p>
               ))}
             {page === "table" && <TablePage table={data.table} onSelectClub={setClub} />}
             {page === "races" && <RacesPage data={data} onSelectClub={setClub} />}

@@ -39,7 +39,9 @@ export function Masthead({
   return (
     <>
       <header className="masthead">
-        <p className="mast-kicker">{t("mastKicker")}</p>
+        <p className="mast-kicker" lang="tr">
+          {t("mastKicker")}
+        </p>
         <h1 className="mast-title">{t("mastTitle")}</h1>
         <p className="mast-issue">
           {issue != null && `${t("issue")} ${issue}`}

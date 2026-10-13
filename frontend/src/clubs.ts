@@ -137,7 +137,7 @@ export function coverHeadline(team: string, titlePct: number, lang: Lang): strin
   if (titlePct >= 50) {
     return lang === "tr"
       ? `Zirvede ${team}: şampiyonluk ihtimali ${chance}`
-      : `${team} on top: a ${chance} title chance`;
+      : `${team} on top: ${chance} title chance`;
   }
   return lang === "tr"
     ? `Yarış açık: ${team} ${chance} ile önde`

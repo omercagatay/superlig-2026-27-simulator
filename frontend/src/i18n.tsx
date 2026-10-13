@@ -19,6 +19,10 @@ const DICT = {
 
   // Shared race and calendar copy
   calendarLoading: ["calendar loading", "fikstür yükleniyor"],
+  calendarUnavailable: [
+    "The fixture calendar could not be loaded. Try \"Update live data\" in the printer's note below.",
+    "Fikstür alınamadı. Aşağıdaki baskı notundaki \"Canlı veriyi güncelle\" ile yeniden deneyin.",
+  ],
 
   titleRace: ["Title race", "Şampiyonluk yarışı"],
   aboveWhom: ["Who finishes above whom", "Kim kimin üstünde bitirir"],
