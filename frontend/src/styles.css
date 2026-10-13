@@ -600,3 +600,277 @@ button.race-item:hover .club-name {
   grid-column: 2;
   color: var(--ink-2);
 }
+
+/* ---- Bu Hafta (this week) ---- */
+
+.issue-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.issue-nav select {
+  padding: 7px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  font-family: var(--narrow);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.issue-dates {
+  font-family: var(--narrow);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.assume-slip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--red);
+  font-family: var(--narrow);
+  font-size: 14px;
+}
+
+.assume-label {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--red-ink);
+}
+
+.assume-list {
+  flex: 1 1 14em;
+  min-width: 0;
+}
+
+.stubs {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 760px) {
+  .stubs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1140px) {
+  .stubs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.stub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1.5px solid var(--rule);
+  background: var(--paper);
+}
+
+.stub-main {
+  min-width: 0;
+  padding: 12px 14px;
+}
+
+.stub-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0 0 6px;
+  font-family: var(--narrow);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stub-no {
+  color: var(--red-ink);
+}
+
+.stub-teams {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 21px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.stub-v {
+  color: var(--ink-3);
+}
+
+.probbar {
+  display: flex;
+  height: 16px;
+  margin: 0 0 6px;
+  border: 1.5px solid var(--rule);
+}
+
+.seg {
+  display: block;
+  min-width: 3px;
+  height: 100%;
+}
+
+.seg-team {
+  background: linear-gradient(var(--c1) 0 66%, var(--c2) 66% 100%);
+}
+
+.seg-draw {
+  border-right: 1.5px solid var(--rule);
+  border-left: 1.5px solid var(--rule);
+  background-color: var(--paper-2);
+  background-image: radial-gradient(circle at center, var(--ink-3) 0.9px, transparent 1.2px);
+  background-size: 4px 4px;
+}
+
+.outcomes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 8px;
+  font-family: var(--narrow);
+}
+
+.outcomes > div:nth-child(2) {
+  text-align: center;
+}
+
+.outcomes > div:nth-child(3) {
+  text-align: right;
+}
+
+.outcomes dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.outcomes dd {
+  margin: 0;
+  font-weight: 700;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Perforated tear-off with half-moon notches top and bottom. */
+.stub-tear {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border-left: 2px dashed var(--rule-soft);
+  background: var(--paper-2);
+}
+
+.stub-tear::before,
+.stub-tear::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--rule);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.stub-tear::before {
+  top: -9px;
+}
+
+.stub-tear::after {
+  bottom: -9px;
+}
+
+.pins-label {
+  font-family: var(--narrow);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.stamp {
+  width: 40px;
+  height: 34px;
+  padding: 0;
+  border: 1.5px solid var(--ink);
+  background: transparent;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stamp:hover {
+  background: var(--paper);
+}
+
+.stamp[aria-pressed="true"] {
+  border: 2px solid var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red-ink);
+  transform: rotate(-5deg);
+}
+
+.played-block {
+  margin-top: 28px;
+}
+
+.results-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--narrow);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.result-line > .club:first-child {
+  justify-self: end;
+}
+
+.score {
+  min-width: 3.4em;
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}

@@ -57,3 +57,26 @@ export function PageHead({ title, page }: { title: string; page: number }) {
     </header>
   );
 }
+
+/** One played match, home name right-aligned against the score. */
+export function ResultLine({
+  home,
+  away,
+  homeScore,
+  awayScore,
+}: {
+  home: string;
+  away: string;
+  homeScore: number;
+  awayScore: number;
+}) {
+  return (
+    <li className="result-line">
+      <ClubName team={home} flip />
+      <span className="score">
+        {homeScore}–{awayScore}
+      </span>
+      <ClubName team={away} />
+    </li>
+  );
+}
