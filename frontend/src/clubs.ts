@@ -1,14 +1,13 @@
-/* Programme typesetting: club colours, and every number, percentage and
-   date the pages print. Pure functions with no React, so they are tested
-   directly (clubs.test.mjs). Colours and names only — crests are
-   trademarks and are never drawn. */
+/* Club colours and the formatting for every number, percentage and date on
+   the site. Pure functions with no React, so clubs.test.mjs tests them
+   directly. Colours and names only: crests are trademarks and never drawn. */
 
 export type Lang = "en" | "tr";
 
 export interface ClubColours {
-  /** First scarf stripe. */
+  /** Primary colour. */
   c1: string;
-  /** Second scarf stripe. */
+  /** Secondary colour. */
   c2: string;
 }
 
@@ -33,7 +32,7 @@ export const CLUB_COLOURS: Record<string, ClubColours> = {
   Gaziantep: { c1: "#E30613", c2: "#111111" },
 };
 
-const FALLBACK: ClubColours = { c1: "var(--ink)", c2: "var(--paper)" };
+const FALLBACK: ClubColours = { c1: "var(--text)", c2: "var(--bg)" };
 
 export function clubColours(team: string): ClubColours {
   return CLUB_COLOURS[team] ?? FALLBACK;
@@ -43,7 +42,7 @@ function locale(lang: Lang): string {
   return lang === "tr" ? "tr-TR" : "en-GB";
 }
 
-/** A plain number with the edition's separators: "50.000" / "50,000". */
+/** A plain number with the language's separators: "50.000" / "50,000". */
 export function num(value: number, lang: Lang, digits = 0): string {
   return new Intl.NumberFormat(locale(lang), {
     minimumFractionDigits: digits,
@@ -94,7 +93,7 @@ export function shortDate(iso: string, lang: Lang): string {
   }).format(d);
 }
 
-/** A matchday's span for the issue line: "16–19 Ekim", or across months
+/** A matchday's date span: "16–19 Ekim", or across months
  *  "30 Eylül – 2 Ekim". */
 export function dateSpan(isos: string[], lang: Lang): string {
   const days = [...new Set(isos)]
@@ -131,15 +130,11 @@ export function stamp(rfc3339: string, lang: Lang): string | null {
   }).format(new Date(ms));
 }
 
-/** The cover's lead line, written from the title favourite's chance. */
-export function coverHeadline(team: string, titlePct: number, lang: Lang): string {
-  const chance = pct(titlePct, lang);
-  if (titlePct >= 50) {
-    return lang === "tr"
-      ? `Zirvede ${team}: şampiyonluk ihtimali ${chance}`
-      : `${team} on top: ${chance} title chance`;
-  }
-  return lang === "tr"
-    ? `Yarış açık: ${team} ${chance} ile önde`
-    : `An open race: ${team} lead on ${chance}`;
+/** Sort comparator: by date, then kick-off time ("HH:MM"), unknown kick-offs
+ *  last within their day. */
+export function kickoffOrder(
+  a: { date: string; kickoff?: string | null },
+  b: { date: string; kickoff?: string | null },
+): number {
+  return a.date.localeCompare(b.date) || (a.kickoff ?? "99:99").localeCompare(b.kickoff ?? "99:99");
 }

@@ -1,6 +1,6 @@
 # Matchday programme UI — design
 
-Date: 2026-10-13. Status: approved in conversation, section by section.
+Date: 2026-10-13. Status: superseded the same day by a plain redesign (branch `plain-ui`); the programme look read as AI-generated. Kept for history.
 
 ## Intent
 

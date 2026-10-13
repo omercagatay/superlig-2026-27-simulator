@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 import {
   CLUB_COLOURS,
   clubColours,
-  coverHeadline,
   dateSpan,
+  kickoffOrder,
   matchdayLabel,
   num,
   pct,
@@ -14,16 +14,16 @@ import {
   stamp,
 } from "./clubs.ts";
 
-test("every club has two hex colours; an unknown club falls back to the inks", () => {
+test("every club has two hex colours; an unknown club falls back to the text colours", () => {
   assert.equal(Object.keys(CLUB_COLOURS).length, 18);
   for (const [club, c] of Object.entries(CLUB_COLOURS)) {
     assert.match(c.c1, /^#[0-9A-F]{6}$/i, club);
     assert.match(c.c2, /^#[0-9A-F]{6}$/i, club);
   }
-  assert.deepEqual(clubColours("Real Madrid"), { c1: "var(--ink)", c2: "var(--paper)" });
+  assert.deepEqual(clubColours("Real Madrid"), { c1: "var(--text)", c2: "var(--bg)" });
 });
 
-test("percentages are typeset per edition, with dashes and traces", () => {
+test("percentages follow each language, with dashes and traces", () => {
   assert.equal(pct(59.94, "tr"), "%59,9");
   assert.equal(pct(59.94, "en"), "59.9%");
   assert.equal(pct(51.3, "tr", 0), "%51");
@@ -34,7 +34,7 @@ test("percentages are typeset per edition, with dashes and traces", () => {
   assert.equal(pct(0.02, "en"), "<0.1%");
 });
 
-test("numbers use the edition's separators and a true minus", () => {
+test("numbers use each language's separators and a true minus", () => {
   assert.equal(num(50000, "tr"), "50.000");
   assert.equal(num(50000, "en"), "50,000");
   assert.equal(num(74.31, "tr", 1), "74,3");
@@ -44,7 +44,7 @@ test("numbers use the edition's separators and a true minus", () => {
   assert.equal(signed(0, "tr", 0), "0");
 });
 
-test("dates read as a programme issue line", () => {
+test("dates and matchday labels read naturally in both languages", () => {
   assert.equal(dateSpan(["2026-10-19", "2026-10-16", "2026-10-17"], "tr"), "16–19 Ekim");
   assert.equal(dateSpan(["2026-10-16", "2026-10-19"], "en"), "16–19 October");
   assert.equal(dateSpan(["2026-09-30", "2026-10-02"], "tr"), "30 Eylül – 2 Ekim");
@@ -58,10 +58,15 @@ test("dates read as a programme issue line", () => {
   assert.match(stamp("2026-10-12T23:25:28Z", "tr"), /Eki/);
 });
 
-test("the cover headline says how settled the title race is", () => {
-  assert.equal(coverHeadline("Galatasaray", 59.9, "tr"), "Zirvede Galatasaray: şampiyonluk ihtimali %59,9");
-  assert.equal(coverHeadline("Galatasaray", 59.9, "en"), "Galatasaray on top: 59.9% title chance");
-  assert.equal(coverHeadline("Galatasaray", 80.2, "en"), "Galatasaray on top: 80.2% title chance");
-  assert.equal(coverHeadline("Fenerbahçe", 31.2, "tr"), "Yarış açık: Fenerbahçe %31,2 ile önde");
-  assert.equal(coverHeadline("Fenerbahçe", 31.2, "en"), "An open race: Fenerbahçe lead on 31.2%");
+test("fixtures sort by date, then kick-off, unknown kick-offs last", () => {
+  const ms = [
+    { date: "2026-10-18", kickoff: "13:30" },
+    { date: "2026-10-17", kickoff: "19:00" },
+    { date: "2026-10-17", kickoff: null },
+    { date: "2026-10-17", kickoff: "16:00" },
+  ];
+  assert.deepEqual(
+    [...ms].sort(kickoffOrder).map((m) => `${m.date} ${m.kickoff}`),
+    ["2026-10-17 16:00", "2026-10-17 19:00", "2026-10-17 null", "2026-10-18 13:30"],
+  );
 });

@@ -1,33 +1,32 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { MatchCard, MatchForecast, MatchesResponse, WhatIf } from "../api";
-import { useLang, useT } from "../i18n";
-import { clubColours, dateSpan, num, pct, shortDate } from "../clubs";
-import { ClubName, PageHead, ResultLine } from "../components/Print";
+import { useLang, useT, type Key } from "../i18n";
+import { clubColours, dateSpan, kickoffOrder, matchdayLabel, num, pct, shortDate } from "../clubs";
+import { ClubName, ResultLine } from "../components/Common";
 
 type Outcome = "home" | "draw" | "away";
 
-/** Home, draw and away as one bar: each side in its own colours, the draw
- *  as a neutral halftone. */
+const OUTCOME_KEY: Record<Outcome, Key> = { home: "pickHome", draw: "pickDraw", away: "pickAway" };
+
+/** Home, draw and away as one bar, each side in its club colour. */
 function ChanceBar({ m, f }: { m: MatchCard; f: MatchForecast }) {
-  const home = clubColours(m.home);
-  const away = clubColours(m.away);
   return (
     <div className="probbar" aria-hidden="true">
       <span
         className="seg seg-team"
-        style={{ width: `${f.home_win_pct}%`, "--c1": home.c1, "--c2": home.c2 } as CSSProperties}
+        style={{ width: `${f.home_win_pct}%`, "--c": clubColours(m.home).c1 } as CSSProperties}
       />
       <span className="seg seg-draw" style={{ width: `${f.draw_pct}%` }} />
       <span
         className="seg seg-team"
-        style={{ width: `${f.away_win_pct}%`, "--c1": away.c1, "--c2": away.c2 } as CSSProperties}
+        style={{ width: `${f.away_win_pct}%`, "--c": clubColours(m.away).c1 } as CSSProperties}
       />
     </div>
   );
 }
 
-/** The tear-off end of a stub: stamp a result to assume it. */
-function Stamps({
+/** Pick a result to assume it in the next calculation. */
+function Pick({
   m,
   pinned,
   onPin,
@@ -37,103 +36,88 @@ function Stamps({
   onPin: (o: Outcome | null) => void;
 }) {
   const t = useT();
-  const options: [Outcome, string, string][] = [
-    ["home", t("stampHome"), t("pinHome")],
-    ["draw", t("stampDraw"), t("pinDraw")],
-    ["away", t("stampAway"), t("pinAway")],
-  ];
   return (
-    <div className="stub-tear" role="group" aria-label={`${t("pinsLabel")}: ${m.home} – ${m.away}`}>
-      <span className="pins-label">{t("pinsLabel")}</span>
-      {options.map(([value, glyph, label]) => (
-        <button
-          key={value}
-          type="button"
-          className="stamp"
-          aria-pressed={pinned === value}
-          aria-label={label}
-          title={label}
-          onClick={() => onPin(pinned === value ? null : value)}
-        >
-          {glyph}
-        </button>
-      ))}
+    <div className="pick">
+      <span aria-hidden="true">{t("pickLabel")}</span>
+      <div className="segmented" role="group" aria-label={`${t("pickLabel")}: ${m.home}–${m.away}`}>
+        {(Object.keys(OUTCOME_KEY) as Outcome[]).map((o) => (
+          <button
+            key={o}
+            type="button"
+            aria-pressed={pinned === o}
+            onClick={() => onPin(pinned === o ? null : o)}
+          >
+            {t(OUTCOME_KEY[o])}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
 
-function Stub({
+function Fixture({
   m,
   f,
-  no,
   pinned,
   onPin,
 }: {
   m: MatchCard;
   f: MatchForecast;
-  no: number;
   pinned: Outcome | null;
   onPin: (o: Outcome | null) => void;
 }) {
   const t = useT();
   const { lang } = useLang();
   return (
-    <article className="stub">
-      <div className="stub-main">
-        <p className="stub-meta">
-          <span className="stub-no">№ {no}</span>
-          <span>
-            {shortDate(m.date, lang)}
-            {m.kickoff ? ` · ${m.kickoff}` : ""}
-          </span>
-        </p>
-        <h3 className="stub-teams">
-          <ClubName team={m.home} />
-          <span className="stub-v">–</span>
-          <ClubName team={m.away} />
-        </h3>
-        <ChanceBar m={m} f={f} />
-        <dl className="outcomes">
-          <div>
-            <dt>{t("outHome")}</dt>
-            <dd>{pct(f.home_win_pct, lang)}</dd>
-          </div>
-          <div>
-            <dt>{t("outDraw")}</dt>
-            <dd>{pct(f.draw_pct, lang)}</dd>
-          </div>
-          <div>
-            <dt>{t("outAway")}</dt>
-            <dd>{pct(f.away_win_pct, lang)}</dd>
-          </div>
-        </dl>
-        <p className="small-print">
-          xG {num(f.home_xg, lang, 2)} – {num(f.away_xg, lang, 2)} · {t("over25Short")}{" "}
-          {pct(f.over25_pct, lang, 0)} · {t("bttsShort")} {pct(f.btts_pct, lang, 0)}
-        </p>
-        <p className="small-print">
-          {t("likely")}:{" "}
-          {f.likely_scores.map((s) => `${s.home}–${s.away} ${pct(s.pct, lang, 0)}`).join(" · ")}
-        </p>
-      </div>
-      <Stamps m={m} pinned={pinned} onPin={onPin} />
-    </article>
+    <li className="fixture">
+      <p className="fixture-when">
+        {shortDate(m.date, lang)}
+        {m.kickoff ? `, ${m.kickoff}` : ""}
+      </p>
+      <h3 className="fixture-teams">
+        <ClubName team={m.home} />
+        <span className="vs">–</span>
+        <ClubName team={m.away} />
+      </h3>
+      <ChanceBar m={m} f={f} />
+      <dl className="outcomes">
+        <div>
+          <dt>{t("outHome")}</dt>
+          <dd>{pct(f.home_win_pct, lang)}</dd>
+        </div>
+        <div>
+          <dt>{t("outDraw")}</dt>
+          <dd>{pct(f.draw_pct, lang)}</dd>
+        </div>
+        <div>
+          <dt>{t("outAway")}</dt>
+          <dd>{pct(f.away_win_pct, lang)}</dd>
+        </div>
+      </dl>
+      <p className="fixture-detail">
+        xG {num(f.home_xg, lang, 2)}–{num(f.away_xg, lang, 2)}, {t("threePlusGoals")}{" "}
+        {pct(f.over25_pct, lang, 0)}, {t("bothScore")} {pct(f.btts_pct, lang, 0)}
+      </p>
+      <p className="fixture-detail">
+        {t("likely")}: {f.likely_scores.map((s) => `${s.home}–${s.away} (${pct(s.pct, lang, 0)})`).join(", ")}
+      </p>
+      <Pick m={m} pinned={pinned} onPin={onPin} />
+    </li>
   );
 }
 
-/** Page 2: one matchday as an issue — ticket stubs for the fixtures still
- *  to play, a results column for those already played. */
+/** One matchday: forecasts for fixtures still to play, results for the rest. */
 export function FixturesPage({
   data,
   whatIf,
   onWhatIf,
-  onReprint,
+  onRecalculate,
   busy,
 }: {
   data: MatchesResponse;
   whatIf: WhatIf[];
   onWhatIf: (next: WhatIf[]) => void;
-  onReprint: () => void;
+  onRecalculate: () => void;
   busy: boolean;
 }) {
   const t = useT();
@@ -147,7 +131,7 @@ export function FixturesPage({
   const current = data.rounds.find((r) => r.round === round) ?? data.rounds[0];
   if (!current) return null;
 
-  const toPlay = current.matches.filter((m) => !m.played && m.forecast);
+  const toPlay = current.matches.filter((m) => !m.played && m.forecast).sort(kickoffOrder);
   const played = current.matches.filter(
     (m) => m.played && m.home_score != null && m.away_score != null,
   );
@@ -157,20 +141,17 @@ export function FixturesPage({
     const rest = whatIf.filter((w) => !(w.home === m.home && w.away === m.away));
     onWhatIf(o ? [...rest, { home: m.home, away: m.away, outcome: o }] : rest);
   };
-  const fixtureNo = (m: MatchCard) =>
-    (current.round - 1) * current.matches.length + current.matches.indexOf(m) + 1;
-  const sign = (o: string) => (o === "home" ? ">" : o === "away" ? "<" : "=");
 
   return (
-    <article className="page">
-      <PageHead title={t("pageFixtures")} page={2} />
-      <nav className="issue-nav" aria-label={t("matchday")}>
+    <>
+      <h1 className="page-title">{t("pageFixtures")}</h1>
+      <nav className="md-nav" aria-label={t("matchday")}>
         <button
           type="button"
           className="btn"
           onClick={() => setRound(Math.max(first, current.round - 1))}
           disabled={current.round <= first}
-          aria-label={t("prevIssue")}
+          aria-label={t("prevMatchday")}
         >
           ‹
         </button>
@@ -179,7 +160,7 @@ export function FixturesPage({
           <select value={current.round} onChange={(e) => setRound(Number(e.target.value))}>
             {data.rounds.map((r) => (
               <option key={r.round} value={r.round}>
-                {t("issue")} {r.round}
+                {matchdayLabel(r.round, lang)}
               </option>
             ))}
           </select>
@@ -189,44 +170,47 @@ export function FixturesPage({
           className="btn"
           onClick={() => setRound(Math.min(last, current.round + 1))}
           disabled={current.round >= last}
-          aria-label={t("nextIssue")}
+          aria-label={t("nextMatchday")}
         >
           ›
         </button>
-        <span className="issue-dates">{dateSpan(current.matches.map((m) => m.date), lang)}</span>
+        <span className="muted">{dateSpan(current.matches.map((m) => m.date), lang)}</span>
       </nav>
-      <p className="note">{t("fixturesNote")}</p>
+      <p className="muted">{t("fixturesNote")}</p>
       {whatIf.length > 0 && (
-        <div className="assume-slip" role="status">
-          <span className="assume-label">{t("assuming")}</span>
-          <span className="assume-list" lang="tr">
-            {whatIf.map((w) => `${w.home} ${sign(w.outcome)} ${w.away}`).join(" · ")}
+        <div className="picks-bar" role="status">
+          <span>
+            <strong>{t("assumedResults")}:</strong>{" "}
+            <span lang="tr">
+              {whatIf.map((w) => `${w.home}–${w.away} (${t(OUTCOME_KEY[w.outcome as Outcome])})`).join(", ")}
+            </span>
           </span>
-          <button type="button" className="btn btn-red" onClick={onReprint} disabled={busy}>
-            {busy ? t("printing") : t("reprintWithPins")}
-          </button>
-          <button type="button" className="btn" onClick={() => onWhatIf([])}>
-            {t("clearPins")}
-          </button>
+          <span className="picks-actions">
+            <button type="button" className="btn btn-primary" onClick={onRecalculate} disabled={busy}>
+              {busy ? t("recalculating") : t("recalculate")}
+            </button>
+            <button type="button" className="btn" onClick={() => onWhatIf([])}>
+              {t("clearPicks")}
+            </button>
+          </span>
         </div>
       )}
       {toPlay.length > 0 && (
-        <div className="stubs">
+        <ul className="fixture-list">
           {toPlay.map((m) => (
-            <Stub
+            <Fixture
               key={`${m.home}-${m.away}`}
               m={m}
               f={m.forecast!}
-              no={fixtureNo(m)}
               pinned={pinOf(m)}
               onPin={(o) => setPin(m, o)}
             />
           ))}
-        </div>
+        </ul>
       )}
       {played.length > 0 && (
-        <section className="played-block">
-          <h3 className="section-title">{t("playedThisWeek")}</h3>
+        <section>
+          <h2 className="section-title">{t("playedThisWeek")}</h2>
           <ul className="results-list">
             {played.map((m) => (
               <ResultLine
@@ -240,6 +224,6 @@ export function FixturesPage({
           </ul>
         </section>
       )}
-    </article>
+    </>
   );
 }

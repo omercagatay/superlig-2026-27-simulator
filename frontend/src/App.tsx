@@ -13,13 +13,16 @@ import {
 } from "./api";
 import { useT } from "./i18n";
 import { ClubDetail } from "./components/ClubDetail";
-import { Colophon, type Theme } from "./components/Colophon";
-import { Masthead, pageFromHash, type Page } from "./components/Masthead";
-import { CoverPage } from "./pages/CoverPage";
+import { Footer, type Theme } from "./components/Footer";
+import { Header, pageFromHash, type Page } from "./components/Header";
 import { FixturesPage } from "./pages/FixturesPage";
-import { RacesPage } from "./pages/RacesPage";
+import { OverviewPage } from "./pages/OverviewPage";
+import { ProbabilitiesPage } from "./pages/ProbabilitiesPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { TablePage } from "./pages/TablePage";
+
+// Must match --bg in styles.css and the pre-paint script in index.html.
+const THEME_COLOR: Record<Theme, string> = { light: "#ffffff", dark: "#16181c" };
 
 // index.html makes the same choice before first paint; this only has to
 // agree with it so React state matches the attribute already set.
@@ -51,7 +54,7 @@ export default function App() {
     localStorage.setItem("theme", theme);
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "dark" ? "#0f1724" : "#f2ecdf");
+      ?.setAttribute("content", THEME_COLOR[theme]);
   }, [theme]);
 
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function App() {
   }, [nSims, seed, whatIf]);
 
   // First load: hydrate cached live data (the backend refreshes it in the
-  // background) and print a first edition without any clicks.
+  // background) and run a first simulation without any clicks.
   const bootedRef = useRef(false);
   useEffect(() => {
     if (bootedRef.current) return;
@@ -112,7 +115,7 @@ export default function App() {
     try {
       setLiveData(await refreshLiveData());
       // The refresh moves the backend's played results and ratings on;
-      // reprint every derived page so none keeps the old edition.
+      // recompute every derived view so none shows stale numbers.
       const [result, matches, report] = await Promise.all([
         runSimulation({ n_sims: nSims, seed, what_if: whatIf }),
         getMatches().catch(() => null),
@@ -128,48 +131,39 @@ export default function App() {
     }
   }, [nSims, seed, whatIf]);
 
-  const issue = matchesData?.current_round ?? null;
-  const issueDates =
-    matchesData?.rounds.find((r) => r.round === issue)?.matches.map((m) => m.date) ?? [];
   const selected = data?.teams.find((x) => x.team === club) ?? null;
   const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
+  const assumed = data?.what_if.length ?? 0;
 
   return (
-    <div className="sheet">
-      <Masthead
-        issue={issue}
-        dates={issueDates}
-        conditional={(data?.what_if.length ?? 0) > 0}
-        page={page}
-        onGo={go}
-      />
+    <>
+      <Header page={page} onGo={go} />
+      {assumed > 0 && (
+        <p className="notice">
+          {t("whatIfNotice")} ({assumed}).
+        </p>
+      )}
       {error && (
-        <p className="erratum" role="alert">
-          <strong>{t("pressError")}:</strong> {error}
+        <p className="notice notice-error" role="alert">
+          <strong>{t("errorLabel")}:</strong> {error}
         </p>
       )}
       <main>
         {!data ? (
           loading ? (
-            <p className="in-press">
-              {t("inPress")}
-              <small>{t("inPressBody")}</small>
-            </p>
+            <p className="muted">{t("simulating")}</p>
           ) : (
-            <div className="in-press">
-              {t("noForecast")}
-              <small>{t("noForecastBody")}</small>
-              <p>
-                <button type="button" className="btn btn-red" onClick={() => void handleSimulate()}>
-                  {t("runSimulation")}
-                </button>
-              </p>
+            <div>
+              <p className="muted">{t("noForecast")}</p>
+              <button type="button" className="btn btn-primary" onClick={() => void handleSimulate()}>
+                {t("runSimulation")}
+              </button>
             </div>
           )
         ) : (
           <>
-            {page === "cover" && (
-              <CoverPage
+            {page === "overview" && (
+              <OverviewPage
                 data={data}
                 matches={matchesData}
                 calendarNote={calendarNote}
@@ -184,25 +178,25 @@ export default function App() {
                   data={matchesData}
                   whatIf={whatIf}
                   onWhatIf={setWhatIf}
-                  onReprint={() => void handleSimulate()}
+                  onRecalculate={() => void handleSimulate()}
                   busy={loading}
                 />
               ) : (
-                <p className="note">{calendarNote}</p>
+                <p className="muted">{calendarNote}</p>
               ))}
             {page === "table" && <TablePage table={data.table} onSelectClub={setClub} />}
-            {page === "races" && <RacesPage data={data} onSelectClub={setClub} />}
+            {page === "probabilities" && <ProbabilitiesPage data={data} onSelectClub={setClub} />}
             {page === "results" &&
-              (liveData ? <ResultsPage liveData={liveData} /> : <p className="note">{t("noLiveData")}</p>)}
+              (liveData ? <ResultsPage liveData={liveData} /> : <p className="muted">{t("noLiveData")}</p>)}
           </>
         )}
       </main>
-      <Colophon
+      <Footer
         nSims={nSims}
         seed={seed}
         onSims={setNSims}
         onSeed={setSeed}
-        onReprint={() => void handleSimulate()}
+        onRun={() => void handleSimulate()}
         onRefresh={() => void handleRefresh()}
         loading={loading}
         refreshing={refreshing}
@@ -218,6 +212,6 @@ export default function App() {
           onClose={closeClub}
         />
       )}
-    </div>
+    </>
   );
 }

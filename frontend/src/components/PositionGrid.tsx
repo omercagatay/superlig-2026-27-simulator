@@ -2,14 +2,13 @@ import type { CSSProperties } from "react";
 import type { PositionRow } from "../api";
 import { useLang, useT } from "../i18n";
 import { pct } from "../clubs";
-import { ClubName } from "./Print";
+import { ClubName } from "./Common";
 
 /** Square-root ramp so small but real chances stay visible. */
 const intensity = (p: number) => Math.min(1, Math.sqrt(p / 100));
 
-/** The 18×18 finishing-position grid as a screen tint. The tint tops out
- *  at --tint-max (46% ink by day, 36% at night), so the figures in every
- *  cell keep 4.5:1 contrast in both editions. */
+/** The 18×18 finishing-position grid as a heat map. The tint tops out at
+ *  --heat-max, which keeps every figure at 4.5:1 contrast in both themes. */
 export function PositionGrid({ positions }: { positions: PositionRow[] }) {
   const t = useT();
   const { lang } = useLang();
@@ -18,9 +17,8 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
 
   return (
     <section>
-      <h3 className="section-title">{t("finishingPositions")}</h3>
-      <p className="note">{t("finishingNote")}</p>
-      <div className="table-frame">
+      <h2 className="section-title">{t("finishingPositions")}</h2>
+      <div className="table-wrap">
         <table className="posgrid">
           <thead>
             <tr>
@@ -60,7 +58,7 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="key key-bold" /> {t("topFourPlaces")}
+          <span className="key" /> {t("topFourPlaces")}
         </li>
         <li>
           <span className="key key-red" /> {t("relegationZone")}

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { MatchCard, MatchesResponse, PositionRow, TeamRow } from "../api";
 import { useLang, useT } from "../i18n";
 import { num, pct, shortDate } from "../clubs";
-import { ClubName, Swatch } from "./Print";
+import { ClubName, Swatch } from "./Common";
 
 /** The club's own view of a fixture: who it plays, where, its chances. */
 type ClubFixture = {
@@ -42,7 +42,7 @@ function clubFixtures(club: string, data: MatchesResponse): ClubFixture[] {
   return out;
 }
 
-/** A club's own programme page, laid over the current one. */
+/** A club's page, shown as a dialog over the current one. */
 export function ClubDetail({
   team,
   position,
@@ -66,7 +66,7 @@ export function ClubDetail({
       if (e.key !== "Tab") return;
       // A modal keeps Tab inside itself: wrap from the last control to the
       // first and back, and pull stray focus back in.
-      const sheet = closeRef.current?.closest(".club-sheet");
+      const sheet = closeRef.current?.closest(".modal");
       const items = sheet?.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), input, select, [tabindex]:not([tabindex="-1"])',
       );
@@ -111,16 +111,16 @@ export function ClubDetail({
   const where = (f: ClubFixture) => `${f.atHome ? "" : "@ "}${f.opponent}`;
 
   return (
-    <div className="sheet-overlay" onClick={onClose} role="presentation">
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="club-sheet"
+        className="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="club-sheet-title"
+        aria-labelledby="club-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="club-sheet-head">
-          <h2 id="club-sheet-title" className="club-sheet-title" lang="tr">
+        <header className="modal-head">
+          <h2 id="club-title" className="modal-title" lang="tr">
             <Swatch team={team.team} />
             {team.team}
           </h2>
@@ -154,7 +154,7 @@ export function ClubDetail({
 
         {position && (
           <section>
-            <h3 className="section-title">{t("whereItFinishes")}</h3>
+            <h3 className="sub-title">{t("whereItFinishes")}</h3>
             <div className="posbars">
               {position.position_pct.map((p, i) => (
                 <span
@@ -171,7 +171,7 @@ export function ClubDetail({
         )}
 
         {runIn != null && (
-          <p className="note">
+          <p className="muted">
             {t("runIn")}: {remaining.length} {t("toPlayAvg")} <strong>{pct(runIn, lang, 0)}</strong>.
             {hardest && ` ${t("hardest")}: ${where(hardest)} (${pct(hardest.winPct ?? 0, lang, 0)}).`}
             {easiest && ` ${t("easiest")}: ${where(easiest)} (${pct(easiest.winPct ?? 0, lang, 0)}).`}
@@ -180,7 +180,7 @@ export function ClubDetail({
 
         {playedSoFar.length > 0 && (
           <section>
-            <h3 className="section-title">{t("played")}</h3>
+            <h3 className="sub-title">{t("played")}</h3>
             <ul className="form-list">
               {playedSoFar.map((f) => (
                 <li key={f.round} className={`form form-${f.result}`}>
@@ -194,9 +194,9 @@ export function ClubDetail({
 
         {remaining.length > 0 && (
           <section>
-            <h3 className="section-title">{t("remainingFixtures")}</h3>
-            <div className="table-frame">
-              <table className="print">
+            <h3 className="sub-title">{t("remainingFixtures")}</h3>
+            <div className="table-wrap">
+              <table className="data">
                 <thead>
                   <tr>
                     <th scope="col">{t("md")}</th>

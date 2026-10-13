@@ -1,25 +1,25 @@
 import type { RaceThreshold, RivalryPair, SimResponse, TeamRow } from "../api";
 import { useLang, useT, type Key } from "../i18n";
 import { num, pct, signed } from "../clubs";
-import { Bar, ClubName, PageHead } from "../components/Print";
+import { Bar, ClubName } from "../components/Common";
 import { PositionGrid } from "../components/PositionGrid";
 
-/** Screen tint for a probability cell: ink (red for relegation) at a
- *  strength that follows the value. */
+/** Cell tint for a probability: accent (red for relegation), stronger with
+ *  the value. */
 const tint = (p: number, red = false) =>
   p > 0
     ? {
-        background: `color-mix(in srgb, var(${red ? "--red" : "--ink"}) ${(4 + (p / 100) * 24).toFixed(1)}%, transparent)`,
+        background: `color-mix(in srgb, var(${red ? "--red" : "--accent"}) ${(4 + (p / 100) * 22).toFixed(1)}%, transparent)`,
       }
     : undefined;
 
-type Race = { title: Key; note: Key; pick: (x: TeamRow) => number; tone: "ink" | "red" };
+type Race = { title: Key; pick: (x: TeamRow) => number; tone: "accent" | "red" };
 
 const RACES: Race[] = [
-  { title: "title", note: "raceTitleNote", pick: (x) => x.title_pct, tone: "ink" },
-  { title: "topTwo", note: "raceTopTwoNote", pick: (x) => x.top_two_pct, tone: "ink" },
-  { title: "topFour", note: "raceTopFourNote", pick: (x) => x.top_four_pct, tone: "ink" },
-  { title: "relegation", note: "raceRelNote", pick: (x) => x.relegation_pct, tone: "red" },
+  { title: "title", pick: (x) => x.title_pct, tone: "accent" },
+  { title: "topTwo", pick: (x) => x.top_two_pct, tone: "accent" },
+  { title: "topFour", pick: (x) => x.top_four_pct, tone: "accent" },
+  { title: "relegation", pick: (x) => x.relegation_pct, tone: "red" },
 ];
 
 const PLACE: Record<string, Key> = {
@@ -39,16 +39,15 @@ function OutcomeTable({
   const t = useT();
   const { lang } = useLang();
   return (
-    <div className="table-frame">
-      <table className="print">
-        <caption className="sr-only">{t("seasonOutcomes")}</caption>
+    <div className="table-wrap">
+      <table className="data">
         <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col" className="l">
               {t("club")}
             </th>
-            <th scope="col" title={t("raceTitleNote")}>
+            <th scope="col" title={t("tipTitle")}>
               {t("title")}
             </th>
             <th scope="col" title={t("tipTopTwo")}>
@@ -100,7 +99,7 @@ function OutcomeTable({
 }
 
 /** One race: the clubs still meaningfully involved, biggest share first. */
-function RaceCard({ race, teams }: { race: Race; teams: TeamRow[] }) {
+function RaceList({ race, teams }: { race: Race; teams: TeamRow[] }) {
   const t = useT();
   const { lang } = useLang();
   const rows = teams
@@ -109,15 +108,14 @@ function RaceCard({ race, teams }: { race: Race; teams: TeamRow[] }) {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
   return (
-    <section className="race-card">
-      <h3 className="section-title">{t(race.title)}</h3>
-      <p className="small-print">{t(race.note)}</p>
+    <section>
+      <h3 className="sub-title">{t(race.title)}</h3>
       {rows.length === 0 ? (
-        <p className="note">{t("noClubAbove")}</p>
+        <p className="muted">{t("noClubAbove")}</p>
       ) : (
-        <ol className="race-list">
+        <ol className="rank-list">
           {rows.map((r) => (
-            <li key={r.team} className="race-row">
+            <li key={r.team} className="rank-row rank-row-plain">
               <ClubName team={r.team} />
               <Bar value={r.value} tone={race.tone} />
               <span className="val">{pct(r.value, lang)}</span>
@@ -129,22 +127,21 @@ function RaceCard({ race, teams }: { race: Race; teams: TeamRow[] }) {
   );
 }
 
-function Thresholds({ rows }: { rows: RaceThreshold[] }) {
+function PointsNeeded({ rows }: { rows: RaceThreshold[] }) {
   const t = useT();
   return (
     <section>
-      <h3 className="section-title">{t("whatItTakes")}</h3>
-      <p className="note">{t("whatItTakesNote")}</p>
-      <div className="table-frame">
-        <table className="print">
+      <h2 className="section-title">{t("pointsNeeded")}</h2>
+      <div className="table-wrap">
+        <table className="data">
           <thead>
             <tr>
               <th scope="col" className="l">
                 {t("place")}
               </th>
-              <th scope="col">{t("halfTheTime")}</th>
-              <th scope="col">{t("threeInFour")}</th>
-              <th scope="col">{t("nineInTen")}</th>
+              <th scope="col">{t("chance50")}</th>
+              <th scope="col">{t("chance75")}</th>
+              <th scope="col">{t("chance90")}</th>
             </tr>
           </thead>
           <tbody>
@@ -153,9 +150,7 @@ function Thresholds({ rows }: { rows: RaceThreshold[] }) {
                 <td className="l">{PLACE[r.label] ? t(PLACE[r.label]) : r.label}</td>
                 <td>{r.p50}</td>
                 <td>{r.p75}</td>
-                <td>
-                  <strong>{r.p90}</strong>
-                </td>
+                <td className="pts">{r.p90}</td>
               </tr>
             ))}
           </tbody>
@@ -169,14 +164,14 @@ function Rivals({ pairs }: { pairs: RivalryPair[] }) {
   const t = useT();
   const { lang } = useLang();
   return (
-    <section className="races-block">
-      <h3 className="section-title">{t("aboveWhom")}</h3>
-      <ul className="rivals">
+    <section>
+      <h2 className="section-title">{t("aboveWhom")}</h2>
+      <ul className="rank-list">
         {pairs.slice(0, 8).map((r) => (
-          <li key={`${r.a}-${r.b}`} className="rival">
+          <li key={`${r.a}-${r.b}`} className="rival-row">
             <span className="rival-pair">
               <ClubName team={r.a} />
-              <span className="rival-op">{t("above")}</span>
+              <span className="muted">{t("above")}</span>
               <ClubName team={r.b} />
             </span>
             <span className="val">{pct(r.a_above_pct, lang)}</span>
@@ -187,9 +182,9 @@ function Rivals({ pairs }: { pairs: RivalryPair[] }) {
   );
 }
 
-/** Page 4: every season outcome, the four races, the points each place
- *  takes, and the 18×18 grid. */
-export function RacesPage({
+/** Every season outcome, the four races, the points each place takes, and
+ *  the 18×18 grid. */
+export function ProbabilitiesPage({
   data,
   onSelectClub,
 }: {
@@ -198,27 +193,20 @@ export function RacesPage({
 }) {
   const t = useT();
   return (
-    <article className="page">
-      <PageHead title={t("pageRaces")} page={4} />
-      <section>
-        <h3 className="section-title">{t("seasonOutcomes")}</h3>
-        <p className="note">{t("outcomesNote")}</p>
-        <OutcomeTable teams={data.teams} onSelectClub={onSelectClub} />
-      </section>
-      <div className="spread races-block">
-        <div className="race-cards">
-          {RACES.map((race) => (
-            <RaceCard key={race.title} race={race} teams={data.teams} />
-          ))}
-        </div>
-        <aside>
-          <Thresholds rows={data.thresholds} />
-          {data.rivalries.length > 0 && <Rivals pairs={data.rivalries} />}
-        </aside>
+    <>
+      <h1 className="page-title">{t("pageProbabilities")}</h1>
+      <h2 className="section-title">{t("seasonOutcomes")}</h2>
+      <OutcomeTable teams={data.teams} onSelectClub={onSelectClub} />
+      <div className="race-grid">
+        {RACES.map((race) => (
+          <RaceList key={race.title} race={race} teams={data.teams} />
+        ))}
       </div>
-      <div className="races-block">
-        <PositionGrid positions={data.positions} />
+      <div className="columns">
+        <PointsNeeded rows={data.thresholds} />
+        {data.rivalries.length > 0 && <Rivals pairs={data.rivalries} />}
       </div>
-    </article>
+      <PositionGrid positions={data.positions} />
+    </>
   );
 }
