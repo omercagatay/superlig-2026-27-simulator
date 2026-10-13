@@ -1,0 +1,66 @@
+// npm test  (node --experimental-strip-types --test src/clubs.test.mjs)
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import {
+  CLUB_COLOURS,
+  clubColours,
+  coverHeadline,
+  dateSpan,
+  matchdayLabel,
+  num,
+  pct,
+  shortDate,
+  signed,
+  stamp,
+} from "./clubs.ts";
+
+test("every club has two hex colours; an unknown club falls back to the inks", () => {
+  assert.equal(Object.keys(CLUB_COLOURS).length, 18);
+  for (const [club, c] of Object.entries(CLUB_COLOURS)) {
+    assert.match(c.c1, /^#[0-9A-F]{6}$/i, club);
+    assert.match(c.c2, /^#[0-9A-F]{6}$/i, club);
+  }
+  assert.deepEqual(clubColours("Real Madrid"), { c1: "var(--ink)", c2: "var(--paper)" });
+});
+
+test("percentages are typeset per edition, with dashes and traces", () => {
+  assert.equal(pct(59.94, "tr"), "%59,9");
+  assert.equal(pct(59.94, "en"), "59.9%");
+  assert.equal(pct(51.3, "tr", 0), "%51");
+  assert.equal(pct(0, "tr"), "–");
+  assert.equal(pct(Number.NaN, "en"), "–");
+  assert.equal(pct(0, "tr", 0, false), "%0");
+  assert.equal(pct(0.02, "tr"), "<%0,1");
+  assert.equal(pct(0.02, "en"), "<0.1%");
+});
+
+test("numbers use the edition's separators and a true minus", () => {
+  assert.equal(num(50000, "tr"), "50.000");
+  assert.equal(num(50000, "en"), "50,000");
+  assert.equal(num(74.31, "tr", 1), "74,3");
+  assert.equal(signed(43, "tr"), "+43,0");
+  assert.equal(signed(-4.8, "en"), "−4.8");
+  assert.equal(signed(-0.01, "en"), "0.0");
+  assert.equal(signed(0, "tr", 0), "0");
+});
+
+test("dates read as a programme issue line", () => {
+  assert.equal(dateSpan(["2026-10-19", "2026-10-16", "2026-10-17"], "tr"), "16–19 Ekim");
+  assert.equal(dateSpan(["2026-10-16", "2026-10-19"], "en"), "16–19 October");
+  assert.equal(dateSpan(["2026-09-30", "2026-10-02"], "tr"), "30 Eylül – 2 Ekim");
+  assert.equal(dateSpan(["2026-10-17"], "en"), "17 October");
+  assert.equal(dateSpan([], "tr"), "");
+  assert.match(shortDate("2026-10-17", "tr"), /17 Eki/);
+  assert.equal(shortDate("not-a-date", "tr"), "not-a-date");
+  assert.equal(matchdayLabel(8, "tr"), "8. Hafta");
+  assert.equal(matchdayLabel(8, "en"), "Matchday 8");
+  assert.equal(stamp("garbage", "tr"), null);
+  assert.match(stamp("2026-10-12T23:25:28Z", "tr"), /Eki/);
+});
+
+test("the cover headline says how settled the title race is", () => {
+  assert.equal(coverHeadline("Galatasaray", 59.9, "tr"), "Zirvede Galatasaray: şampiyonluk ihtimali %59,9");
+  assert.equal(coverHeadline("Galatasaray", 59.9, "en"), "Galatasaray on top: a 59.9% title chance");
+  assert.equal(coverHeadline("Fenerbahçe", 31.2, "tr"), "Yarış açık: Fenerbahçe %31,2 ile önde");
+  assert.equal(coverHeadline("Fenerbahçe", 31.2, "en"), "An open race: Fenerbahçe lead on 31.2%");
+});

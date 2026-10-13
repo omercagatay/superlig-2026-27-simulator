@@ -187,6 +187,106 @@ const DICT = {
   projectedChampion: ["Projected champion", "Tahminî şampiyon"],
   matchesRemaining: ["Matches remaining", "Kalan maç"],
   mostLikelyChampion: ["Most likely champion", "En olası şampiyon"],
+
+  // Masthead and contents
+  mastKicker: ["Trendyol Süper Lig · 2026–27", "Trendyol Süper Lig · 2026–27"],
+  mastTitle: ["Matchday Programme", "Maç Programı"],
+  issue: ["Issue", "Sayı"],
+  contents: ["Contents", "İçindekiler"],
+  pageCover: ["Cover", "Kapak"],
+  pageFixtures: ["This Week", "Bu Hafta"],
+  pageTable: ["Table", "Puan Durumu"],
+  pageRaces: ["Races", "Yarışlar"],
+  pageResults: ["Results", "Sonuçlar"],
+  pageAbbr: ["p.", "s."],
+  conditionalEdition: ["What-if edition", "Varsayımlı baskı"],
+
+  // Cover
+  coverStandfirst: [
+    "seasons simulated from today's table onwards.",
+    "sezon, bugünkü tablodan itibaren simüle edildi.",
+  ],
+  dropLine: ["Drop zone", "Küme hattı"],
+  thisWeek: ["This week", "Bu hafta"],
+  allFixtures: ["All fixtures", "Tüm maçlar"],
+  noFixturesLeft: ["No fixtures left this season.", "Bu sezon oynanacak maç kalmadı."],
+  reportCard: ["Forecast report card", "Tahmin karnesi"],
+  scoredMatches: ["Matches scored", "Puanlanan maç"],
+  logLossNote: [
+    "Lower log-loss is better; a minus means better than always guessing the league's base rates.",
+    "Log kaybı ne kadar düşükse o kadar iyi; eksi değer, ligin genel oranlarını tahmin etmekten iyi demektir.",
+  ],
+
+  // This week
+  fixturesNote: [
+    "Chances come from the model alone, never from bookmakers. Stamp a result to assume it, then reprint to see how the season changes.",
+    "Olasılıklar yalnızca modelden gelir, bahis oranı kullanılmaz. Bir sonucu damgalayıp varsayın, sezonun nasıl değiştiğini görmek için yeniden basın.",
+  ],
+  prevIssue: ["Previous matchday", "Önceki hafta"],
+  nextIssue: ["Next matchday", "Sonraki hafta"],
+  outHome: ["Home win", "Ev sahibi"],
+  outDraw: ["Draw", "Beraberlik"],
+  outAway: ["Away win", "Deplasman"],
+  over25Short: ["over 2.5", "2,5 üst"],
+  bttsShort: ["both score", "KG var"],
+  likely: ["Likely", "Olası skor"],
+  playedThisWeek: ["Played", "Oynananlar"],
+  reprintWithPins: ["Reprint with these", "Bunlarla yeniden bas"],
+  stampHome: ["H", "E"],
+  stampDraw: ["D", "B"],
+  stampAway: ["A", "D"],
+  pinsLabel: ["What if", "Ya olursa"],
+
+  // Table
+  tapForClub: ["Tap a club for its page.", "Kulüp sayfası için bir kulübe dokunun."],
+  colPos: ["Pos", "Sıra"],
+  colP: ["P", "O"],
+  colW: ["W", "G"],
+  colD: ["D", "B"],
+  colL: ["L", "M"],
+  colF: ["F", "A"],
+  colA: ["A", "Y"],
+  colGD: ["GD", "Av"],
+  colPts: ["Pts", "P"],
+  resW: ["W", "G"],
+  resD: ["D", "B"],
+  resL: ["L", "M"],
+
+  // Races
+  relegationShort: ["Rel.", "Düşme"],
+  outcomesNote: [
+    "The share of simulated seasons in which each club finishes in each band. Tap a club for its page.",
+    "Her kulübün simüle edilmiş sezonlarda her aralıkta bitirme oranı. Kulüp sayfası için bir kulübe dokunun.",
+  ],
+
+  // Results
+  matchesPlayedLower: ["played", "maç oynandı"],
+  remainingLower: ["to play", "maç kaldı"],
+  goalsLower: ["goals", "gol"],
+  goalsPerMatch: ["goals per match", "maç başına gol"],
+  noLiveData: [
+    "No live results yet. Use \"Update live data\" in the printer's note below.",
+    "Henüz canlı sonuç yok. Aşağıdaki baskı notundaki \"Canlı veriyi güncelle\" ile alın.",
+  ],
+
+  // Printer's note
+  printRun: ["Print run", "Baskı"],
+  seasonsWord: ["seasons", "sezon"],
+  lastUpdate: ["last update", "son güncelleme"],
+  reprint: ["Reprint", "Yeniden bas"],
+  printing: ["Printing…", "Basılıyor…"],
+  nightEdition: ["Night edition", "Gece baskısı"],
+  notAdvice: [
+    "An independent model forecast — not betting advice.",
+    "Bağımsız model tahminidir, bahis tavsiyesi değildir.",
+  ],
+  sourcesNote: [
+    "Results from the Turkish Football Federation (TFF).",
+    "Sonuçlar Türkiye Futbol Federasyonu'ndan (TFF) alınır.",
+  ],
+  inPress: ["In press", "Baskıda"],
+  inPressBody: ["Simulating the season…", "Sezon simüle ediliyor…"],
+  pressError: ["Print error", "Baskı hatası"],
 } satisfies Record<string, [string, string]>;
 
 export type Key = keyof typeof DICT;
