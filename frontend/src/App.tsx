@@ -1,94 +1,78 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  runSimulation,
-  refreshLiveData,
+  getAccuracy,
   getLiveData,
   getMatches,
-  getAccuracy,
-  type SimResponse,
+  refreshLiveData,
+  runSimulation,
+  type AccuracyReport,
   type LiveData,
   type MatchesResponse,
-  type AccuracyReport,
+  type SimResponse,
   type WhatIf,
 } from "./api";
-import { ForecastView } from "./components/ForecastView";
-import { LeagueTable } from "./components/LeagueTable";
-import { PositionGrid } from "./components/PositionGrid";
-import { RacesView } from "./components/RacesView";
-import { LiveStats } from "./components/LiveStats";
-import { useT, useLang } from "./i18n";
+import { useT } from "./i18n";
+import { ClubDetail } from "./components/ClubDetail";
+import { Colophon, type Theme } from "./components/Colophon";
+import { Masthead, pageFromHash, type Page } from "./components/Masthead";
+import { CoverPage } from "./pages/CoverPage";
+import { FixturesPage } from "./pages/FixturesPage";
+import { RacesPage } from "./pages/RacesPage";
+import { ResultsPage } from "./pages/ResultsPage";
+import { TablePage } from "./pages/TablePage";
 
-type DashboardView = "forecast" | "positions" | "races" | "table" | "live";
-
-type Theme = "dark" | "light";
-
-// index.html applies the same resolution before first paint; this only
-// needs to agree with it so React state matches the pre-set attribute.
+// index.html makes the same choice before first paint; this only has to
+// agree with it so React state matches the attribute already set.
 function initialTheme(): Theme {
   const saved = localStorage.getItem("theme");
   if (saved === "light" || saved === "dark") return saved;
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-const sunIcon = (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="4.2" />
-    <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9" />
-  </svg>
-);
-
-const moonIcon = (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M20.4 14.2A8.5 8.5 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6Z" />
-  </svg>
-);
-
 export default function App() {
+  const t = useT();
   const [data, setData] = useState<SimResponse | null>(null);
   const [liveData, setLiveData] = useState<LiveData | null>(null);
+  const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
+  const [matchesFailed, setMatchesFailed] = useState(false);
+  const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nSims, setNSims] = useState(50000);
   const [seed, setSeed] = useState(12345);
-  const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
-  const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
-  const [activeView, setActiveView] = useState<DashboardView>("forecast");
   const [theme, setTheme] = useState<Theme>(initialTheme);
-  const t = useT();
-  const { lang, setLang } = useLang();
+  const [page, setPage] = useState<Page>(pageFromHash);
+  const [club, setClub] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("theme", theme);
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", theme === "light" ? "#e9ede7" : "#0b0e0c");
+      ?.setAttribute("content", theme === "dark" ? "#0f1724" : "#f2ecdf");
   }, [theme]);
+
+  useEffect(() => {
+    const onHash = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const go = useCallback((p: Page) => {
+    if (window.location.hash !== `#${p}`) window.location.hash = p;
+    setPage(p);
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const closeClub = useCallback(() => setClub(null), []);
 
   const handleSimulate = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await runSimulation({ n_sims: nSims, seed, what_if: whatIf });
-      setData(result);
-      setActiveView("forecast");
+      setData(await runSimulation({ n_sims: nSims, seed, what_if: whatIf }));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -96,9 +80,8 @@ export default function App() {
     }
   }, [nSims, seed, whatIf]);
 
-  // On first load: hydrate cached live data (the backend refreshes it in
-  // the background) and kick off an initial forecast so the dashboard is
-  // populated without any clicks.
+  // First load: hydrate cached live data (the backend refreshes it in the
+  // background) and print a first edition without any clicks.
   const bootedRef = useRef(false);
   useEffect(() => {
     if (bootedRef.current) return;
@@ -108,17 +91,17 @@ export default function App() {
         if (live) setLiveData(live);
       })
       .catch(() => {
-        /* cached live data is optional; manual refresh still available */
+        /* cached live data is optional; refresh is still available */
       });
     getMatches()
       .then(setMatchesData)
-      .catch(() => {
-        /* per-match forecasts are optional decoration */
-      });
+      // The calendar is optional on every page but "Bu Hafta"; say it failed
+      // rather than "loading" forever. "Update live data" fetches it again.
+      .catch(() => setMatchesFailed(true));
     getAccuracy()
       .then(setAccuracy)
       .catch(() => {
-        /* the accuracy tracker is optional decoration */
+        /* the report card is optional */
       });
     void handleSimulate();
   }, [handleSimulate]);
@@ -127,183 +110,114 @@ export default function App() {
     setRefreshing(true);
     setError(null);
     try {
-      const live = await refreshLiveData();
-      setLiveData(live);
-      // The refresh mutates the backend's played results and ratings. Re-run
-      // every derived view so the page cannot keep showing the old forecast.
-      const [result, matches, accuracyReport] = await Promise.all([
+      setLiveData(await refreshLiveData());
+      // The refresh moves the backend's played results and ratings on;
+      // reprint every derived page so none keeps the old edition.
+      const [result, matches, report] = await Promise.all([
         runSimulation({ n_sims: nSims, seed, what_if: whatIf }),
         getMatches().catch(() => null),
         getAccuracy().catch(() => null),
       ]);
       setData(result);
       if (matches) setMatchesData(matches);
-      if (accuracyReport) setAccuracy(accuracyReport);
-      if (!data) setActiveView("forecast");
+      if (report) setAccuracy(report);
     } catch (e) {
       setError(String(e));
     } finally {
       setRefreshing(false);
     }
-  }, [data, nSims, seed, whatIf]);
+  }, [nSims, seed, whatIf]);
 
-  const liveMatchCount = liveData ? liveData.played_matches.length : 0;
-  const lastUpdated = (() => {
-    // The scraper stamps RFC 3339 (chrono's to_rfc3339).
-    const t = Date.parse(liveData?.fetched_at ?? "");
-    return Number.isFinite(t)
-      ? new Date(t).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : null;
-  })();
-
-  const tabs: { id: DashboardView; label: string; disabled: boolean; count?: number }[] = [
-    { id: "forecast", label: t("tabForecast"), disabled: !data },
-    { id: "positions", label: t("tabPositions"), disabled: !data },
-    { id: "races", label: t("tabRaces"), disabled: !data },
-    { id: "table", label: t("tabTable"), disabled: !data },
-    { id: "live", label: t("tabLive"), disabled: !liveData, count: liveData ? liveMatchCount : undefined },
-  ];
+  const issue = matchesData?.current_round ?? null;
+  const issueDates =
+    matchesData?.rounds.find((r) => r.round === issue)?.matches.map((m) => m.date) ?? [];
+  const selected = data?.teams.find((x) => x.team === club) ?? null;
+  const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="brand">
-            <span className="brand-mark">SL</span>
-            <div>
-              <h1>Süper Lig Forecast</h1>
-              <span className="brand-sub">{t("brandSub")}</span>
-            </div>
-          </div>
-          <div className="topbar-status">
-            {lastUpdated && (
-              <span>
-                <span className="live-dot" aria-hidden="true" />
-                {t("updated")} {lastUpdated}
-              </span>
-            )}
-          </div>
-          <form
-            className="run-controls"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleSimulate();
-            }}
-          >
-            <label>
-              {t("sims")}
-              <input
-                type="number"
-                value={nSims}
-                onChange={(e) => setNSims(Number(e.target.value))}
-                min={100}
-                max={200000}
-                step={1000}
-              />
-            </label>
-            <label>
-              {t("seed")}
-              <input type="number" value={seed} onChange={(e) => setSeed(Number(e.target.value))} />
-            </label>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? t("running") : t("run")}
-            </button>
-            <button type="button" className="btn" onClick={handleRefresh} disabled={refreshing}>
-              {refreshing ? t("updating") : t("updateLive")}
-            </button>
-          </form>
-          <button
-            type="button"
-            className="theme-toggle lang-toggle"
-            onClick={() => setLang(lang === "tr" ? "en" : "tr")}
-            aria-label={lang === "tr" ? "Switch to English" : "Türkçe'ye geç"}
-            title={lang === "tr" ? "Switch to English" : "Türkçe'ye geç"}
-          >
-            {lang === "tr" ? "EN" : "TR"}
-          </button>
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label={theme === "dark" ? t("toLight") : t("toDark")}
-            title={theme === "dark" ? t("toLight") : t("toDark")}
-          >
-            {theme === "dark" ? sunIcon : moonIcon}
-          </button>
-        </div>
-        <nav className="tabs" role="tablist" aria-label="Dashboard views">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              className="tab"
-              aria-selected={activeView === t.id}
-              disabled={t.disabled}
-              onClick={() => setActiveView(t.id)}
-            >
-              {t.label}
-              {t.count != null && <span className="tab-count">{t.count}</span>}
-            </button>
-          ))}
-        </nav>
-      </header>
-
+    <div className="sheet">
+      <Masthead
+        issue={issue}
+        dates={issueDates}
+        conditional={(data?.what_if.length ?? 0) > 0}
+        page={page}
+        onGo={go}
+      />
       {error && (
-        <div className="error-banner" role="alert">
-          {error}
-        </div>
+        <p className="erratum" role="alert">
+          <strong>{t("pressError")}:</strong> {error}
+        </p>
       )}
-
-      <main className="content">
-        {!data && loading && (
-          <div className="boot-state">
-            <div className="boot-spinner" aria-hidden="true" />
-            <span className="eyebrow">{t("simulating")}</span>
-            <p>{nSims.toLocaleString()} {t("simulatingBody")}</p>
-          </div>
-        )}
-
-        {!data && !loading && (
-          <div className="boot-state">
-            <span className="eyebrow">{t("noForecast")}</span>
-            <p style={{ marginBottom: "1rem" }}>
-              {t("noForecastBody")}
+      <main>
+        {!data ? (
+          loading ? (
+            <p className="in-press">
+              {t("inPress")}
+              <small>{t("inPressBody")}</small>
             </p>
-            <button className="btn btn-primary" onClick={handleSimulate}>
-              {t("runSimulation")}
-            </button>
-          </div>
+          ) : (
+            <div className="in-press">
+              {t("noForecast")}
+              <small>{t("noForecastBody")}</small>
+              <p>
+                <button type="button" className="btn btn-red" onClick={() => void handleSimulate()}>
+                  {t("runSimulation")}
+                </button>
+              </p>
+            </div>
+          )
+        ) : (
+          <>
+            {page === "cover" && (
+              <CoverPage
+                data={data}
+                matches={matchesData}
+                calendarNote={calendarNote}
+                accuracy={accuracy}
+                onOpenFixtures={() => go("fixtures")}
+                onSelectClub={setClub}
+              />
+            )}
+            {page === "fixtures" &&
+              (matchesData ? (
+                <FixturesPage
+                  data={matchesData}
+                  whatIf={whatIf}
+                  onWhatIf={setWhatIf}
+                  onReprint={() => void handleSimulate()}
+                  busy={loading}
+                />
+              ) : (
+                <p className="note">{calendarNote}</p>
+              ))}
+            {page === "table" && <TablePage table={data.table} onSelectClub={setClub} />}
+            {page === "races" && <RacesPage data={data} onSelectClub={setClub} />}
+            {page === "results" &&
+              (liveData ? <ResultsPage liveData={liveData} /> : <p className="note">{t("noLiveData")}</p>)}
+          </>
         )}
-
-        {data && activeView === "forecast" && (
-          <ForecastView
-            data={data}
-            liveData={liveData}
-            matchesData={matchesData}
-            accuracy={accuracy}
-            whatIf={whatIf}
-            onWhatIf={setWhatIf}
-            liveMatchCount={liveMatchCount}
-            onShowLive={() => setActiveView("live")}
-          />
-        )}
-
-        {data && activeView === "positions" && <PositionGrid positions={data.positions} />}
-
-        {data && activeView === "races" && (
-          <RacesView teams={data.teams} thresholds={data.thresholds} />
-        )}
-
-        {data && activeView === "table" && <LeagueTable table={data.table} />}
-
-        {liveData && activeView === "live" && <LiveStats liveData={liveData} />}
       </main>
+      <Colophon
+        nSims={nSims}
+        seed={seed}
+        onSims={setNSims}
+        onSeed={setSeed}
+        onReprint={() => void handleSimulate()}
+        onRefresh={() => void handleRefresh()}
+        loading={loading}
+        refreshing={refreshing}
+        fetchedAt={liveData?.fetched_at ?? null}
+        theme={theme}
+        onTheme={setTheme}
+      />
+      {selected && data && (
+        <ClubDetail
+          team={selected}
+          position={data.positions.find((p) => p.team === selected.team)}
+          matches={matchesData}
+          onClose={closeClub}
+        />
+      )}
     </div>
   );
 }
