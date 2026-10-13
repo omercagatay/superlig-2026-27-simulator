@@ -1,67 +1,60 @@
 import type { AccuracyReport } from "../api";
-import { useT } from "../i18n";
+import { useLang, useT } from "../i18n";
+import { num, pct, signed } from "../clubs";
+import { Bar } from "./Print";
 
-/** How the model has actually performed against predictions it committed to
- *  before kick-off. An empty log is the honest state at the start of a
- *  season, not an error — say so rather than showing zeros. */
+/** "Tahmin karnesi": how the model did against predictions frozen before
+ *  kick-off. An empty log is the honest state early in a season. */
 export function AccuracyPanel({ report }: { report: AccuracyReport }) {
-  const tr = useT();
-  if (report.scored === 0) {
-    return (
-      <section className="panel" aria-label="Forecast accuracy">
-        <header className="panel-head">
-          <h3>{tr("forecastAccuracy")}</h3>
-        </header>
-        <p className="panel-note">{tr("accuracyEmpty")}</p>
-      </section>
-    );
-  }
+  const t = useT();
+  const { lang } = useLang();
+  const band = (from: number, to: number) =>
+    lang === "tr" ? `%${from}–${to}` : `${from}–${to}%`;
 
-  const edge = report.baseline_log_loss - report.log_loss;
   return (
-    <section className="panel" aria-label="Forecast accuracy">
-      <header className="panel-head">
-        <h3>{tr("forecastAccuracy")}</h3>
-        <span className="eyebrow">
-          {report.scored} {tr("scored")}
-        </span>
-      </header>
-      <div className="snapshot-rows">
-        <div className="snapshot-row">
-          <span>{tr("calledCorrectly")}</span>
-          <strong>{report.hit_rate_pct.toFixed(0)}%</strong>
-        </div>
-        <div className="snapshot-row">
-          <span>{tr("logLoss")}</span>
-          <strong>{report.log_loss.toFixed(3)}</strong>
-        </div>
-        <div className="snapshot-row">
-          <span>{tr("vsBaseRates")}</span>
-          <strong className={edge >= 0 ? "edge-up" : "edge-down"}>
-            {edge >= 0 ? "−" : "+"}
-            {Math.abs(edge).toFixed(3)}
-          </strong>
-        </div>
-      </div>
-      {report.calibration.length > 0 && (
-        <div className="calib">
-          <span className="score-chips-label">{tr("calibration")}</span>
-          {report.calibration.map((b) => (
-            <div key={b.band_from_pct} className="calib-row">
-              <span className="calib-band">
-                {b.band_from_pct}–{b.band_to_pct}%
-              </span>
-              <span className="calib-bar" aria-hidden="true">
-                <span className="calib-pred" style={{ width: `${b.mean_predicted_pct}%` }} />
-                <span className="calib-act" style={{ width: `${b.actual_pct}%` }} />
-              </span>
-              <span className="calib-val">
-                {tr("said")} {b.mean_predicted_pct.toFixed(0)}% · {tr("happened")}{" "}
-                {b.actual_pct.toFixed(0)}%
-              </span>
+    <section className="boxed" aria-label={t("reportCard")}>
+      <h3 className="section-title">{t("reportCard")}</h3>
+      {report.scored === 0 ? (
+        <p className="note">{t("accuracyEmpty")}</p>
+      ) : (
+        <>
+          <dl className="facts">
+            <div>
+              <dt>{t("scoredMatches")}</dt>
+              <dd>{num(report.scored, lang)}</dd>
             </div>
-          ))}
-        </div>
+            <div>
+              <dt>{t("calledCorrectly")}</dt>
+              <dd>{pct(report.hit_rate_pct, lang, 0, false)}</dd>
+            </div>
+            <div>
+              <dt>{t("logLoss")}</dt>
+              <dd>{num(report.log_loss, lang, 3)}</dd>
+            </div>
+            <div>
+              <dt>{t("vsBaseRates")}</dt>
+              <dd>{signed(report.log_loss - report.baseline_log_loss, lang, 3)}</dd>
+            </div>
+          </dl>
+          <p className="small-print">{t("logLossNote")}</p>
+          {report.calibration.length > 0 && (
+            <ul className="calib" aria-label={t("calibration")}>
+              {report.calibration.map((b) => (
+                <li key={b.band_from_pct}>
+                  <span>{band(b.band_from_pct, b.band_to_pct)}</span>
+                  <span className="calib-bars">
+                    <Bar value={b.mean_predicted_pct} />
+                    <Bar value={b.actual_pct} tone="red" />
+                  </span>
+                  <span className="calib-val">
+                    {t("said")} {pct(b.mean_predicted_pct, lang, 0, false)} · {t("happened")}{" "}
+                    {pct(b.actual_pct, lang, 0, false)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </section>
   );

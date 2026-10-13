@@ -446,3 +446,157 @@ table.print {
 .key-red {
   border-top: 2px dashed var(--red);
 }
+
+/* ---- Kapak (cover) ---- */
+
+.cover-headline {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(30px, 5.6vw, 54px);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.standfirst {
+  margin: 0 0 24px;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-2);
+}
+
+.race-list {
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.race-item,
+.race-row {
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 10em) minmax(0, 1fr) 4.6em;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule-soft);
+  background: none;
+  font-family: var(--narrow);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+}
+
+button.race-item {
+  cursor: pointer;
+}
+
+button.race-item:hover .club-name {
+  text-decoration: underline;
+  text-decoration-color: var(--red);
+  text-underline-offset: 3px;
+}
+
+.race-item .rank {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.drop-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 4px;
+  font-family: var(--narrow);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--red-ink);
+}
+
+.drop-line::before,
+.drop-line::after {
+  content: "";
+  flex: 1;
+  border-top: 2px dashed var(--red);
+}
+
+.teasers {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.teaser {
+  display: grid;
+  gap: 2px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--narrow);
+}
+
+.teaser-when {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.teaser-teams {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.vs {
+  color: var(--ink-3);
+}
+
+.teaser-chances {
+  font-size: 14px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.boxed {
+  margin-top: 24px;
+  padding: 14px 16px 16px;
+  border: 1.5px solid var(--rule);
+}
+
+.calib {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calib li {
+  display: grid;
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--narrow);
+  font-size: 13px;
+}
+
+.calib-bars {
+  display: grid;
+  gap: 3px;
+}
+
+.calib-val {
+  grid-column: 2;
+  color: var(--ink-2);
+}
