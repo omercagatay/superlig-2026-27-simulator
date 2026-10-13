@@ -1024,3 +1024,108 @@ button.race-item:hover .club-name {
   background: var(--red);
   color: var(--paper);
 }
+
+/* ---- Yarışlar (races) ---- */
+
+.races-block {
+  margin-top: 30px;
+}
+
+.race-cards {
+  display: grid;
+  gap: 22px;
+}
+
+@media (min-width: 640px) {
+  .race-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.race-card .small-print {
+  margin: -4px 0 6px;
+}
+
+.race-row {
+  grid-template-columns: minmax(0, 10em) minmax(0, 1fr) 4.6em;
+}
+
+.rivals {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rival {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule-soft);
+  font-family: var(--narrow);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rival-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+
+.rival-op {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.posgrid {
+  border-collapse: collapse;
+  font-family: var(--narrow);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.posgrid th,
+.posgrid td {
+  width: 30px;
+  min-width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--rule-soft);
+  text-align: center;
+}
+
+.posgrid thead th {
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.posgrid thead th.top4 {
+  box-shadow: inset 0 -3px 0 var(--ink);
+}
+
+.posgrid thead th.rel {
+  box-shadow: inset 0 -3px 0 var(--red);
+}
+
+.posgrid tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: auto;
+  padding: 0 10px 0 0;
+  background: var(--paper);
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.posgrid td {
+  background: color-mix(in srgb, var(--ink) calc(var(--i) * 46%), transparent);
+}

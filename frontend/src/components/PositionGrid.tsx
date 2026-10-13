@@ -1,50 +1,39 @@
 import type { CSSProperties } from "react";
 import type { PositionRow } from "../api";
-import { useT } from "../i18n";
+import { useLang, useT } from "../i18n";
+import { pct } from "../clubs";
+import { ClubName } from "./Print";
 
-function intensity(pct: number): number {
-  // Square-root ramp so small but real probabilities stay visible.
-  return Math.min(1, Math.sqrt(pct / 100));
-}
+/** Square-root ramp so small but real chances stay visible. */
+const intensity = (p: number) => Math.min(1, Math.sqrt(p / 100));
 
-function cellTitle(team: string, position: number, pct: number): string {
-  return `${team} finishes ${position}${ordinal(position)}: ${pct.toFixed(1)}%`;
-}
-
-function ordinal(n: number): string {
-  if (n % 10 === 1 && n % 100 !== 11) return "st";
-  if (n % 10 === 2 && n % 100 !== 12) return "nd";
-  if (n % 10 === 3 && n % 100 !== 13) return "rd";
-  return "th";
-}
-
+/** The 18×18 finishing-position grid as a screen tint. The tint tops out
+ *  at 46% ink, so the figures in every cell stay readable in both
+ *  editions. */
 export function PositionGrid({ positions }: { positions: PositionRow[] }) {
-  const tr = useT();
+  const t = useT();
+  const { lang } = useLang();
   const total = positions.length;
-  const columns = Array.from({ length: total }, (_, i) => i + 1);
+  const places = Array.from({ length: total }, (_, i) => i + 1);
 
   return (
-    <section className="panel" aria-label="Finishing position probabilities">
-      <header className="panel-head">
-        <h2>{tr("finishingPositions")}</h2>
-      </header>
-      <p className="panel-note">
-        {tr("finishingNote")}
-      </p>
-      <div className="grid-scroll">
-        <table className="position-grid">
+    <section>
+      <h3 className="section-title">{t("finishingPositions")}</h3>
+      <p className="note">{t("finishingNote")}</p>
+      <div className="table-frame">
+        <table className="posgrid">
           <thead>
             <tr>
-              <th scope="col">{tr("club")}</th>
-              {columns.map((c) => (
+              <th scope="col">
+                <span className="sr-only">{t("club")}</span>
+              </th>
+              {places.map((p) => (
                 <th
                   scope="col"
-                  key={c}
-                  className={
-                    c <= 4 ? "col-europe" : c > total - 3 ? "col-rel" : undefined
-                  }
+                  key={p}
+                  className={p <= 4 ? "top4" : p > total - 3 ? "rel" : undefined}
                 >
-                  {c}
+                  {p}
                 </th>
               ))}
             </tr>
@@ -52,15 +41,16 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
           <tbody>
             {positions.map((row) => (
               <tr key={row.team}>
-                <th scope="row">{row.team}</th>
-                {row.position_pct.map((pct, i) => (
+                <th scope="row">
+                  <ClubName team={row.team} />
+                </th>
+                {row.position_pct.map((p, i) => (
                   <td
                     key={i}
-                    className="grid-cell"
-                    style={{ "--i": intensity(pct) } as CSSProperties}
-                    title={cellTitle(row.team, i + 1, pct)}
+                    style={{ "--i": intensity(p) } as CSSProperties}
+                    title={`${row.team} · ${i + 1}. · ${pct(p, lang)}`}
                   >
-                    {pct >= 1 ? Math.round(pct) : ""}
+                    {p >= 1 ? Math.round(p) : ""}
                   </td>
                 ))}
               </tr>
@@ -70,10 +60,10 @@ export function PositionGrid({ positions }: { positions: PositionRow[] }) {
       </div>
       <ul className="legend">
         <li>
-          <span className="swatch col-europe" /> {tr("topFourPlaces")}
+          <span className="key key-bold" /> {t("topFourPlaces")}
         </li>
         <li>
-          <span className="swatch col-rel" /> {tr("relegationZone")}
+          <span className="key key-red" /> {t("relegationZone")}
         </li>
       </ul>
     </section>
