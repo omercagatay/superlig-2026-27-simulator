@@ -981,10 +981,6 @@ input {
   pointer-events: none;
 }
 
-.hist-tip-flip {
-  transform: translateX(-100%);
-}
-
 .hist-tip-title {
   color: var(--muted);
 }
@@ -1029,6 +1025,12 @@ input {
   }
 }
 
+/* Wider than the overview's 44px columns: the boxed, bold figure needs the
+   room: a bold "%100" in Inter is 44px before its 8px of padding. */
+.hist-row .week-pcts {
+  grid-template-columns: repeat(3, 54px);
+}
+
 .hist-row .week-pcts > span {
   justify-self: end;
   padding: 0 4px;
@@ -1039,10 +1041,13 @@ input {
   color: var(--muted);
 }
 
+/* An outline rather than a box-shadow: forced-colours mode drops shadows
+   but keeps outlines, so the box survives high-contrast themes. */
 .hist-happened {
   color: var(--text);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px var(--muted);
+  outline: 1px solid var(--muted);
+  outline-offset: -1px;
 }
 
 .hist-mark {

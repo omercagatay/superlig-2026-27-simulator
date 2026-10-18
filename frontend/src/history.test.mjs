@@ -5,6 +5,7 @@ import {
   byMatchday,
   fill,
   matchOrder,
+  readoutLeft,
   roundTicks,
   runningSeries,
   tickDigits,
@@ -125,6 +126,21 @@ test("value ticks are round and cover every value", () => {
     const ticks = valueTicks(values);
     assert.ok(ticks[0] <= Math.min(...values) && ticks.at(-1) >= Math.max(...values), `${values}`);
     assert.ok(ticks.length >= 2 && ticks.length <= 6, `${values}: ${ticks}`);
+  }
+});
+
+test("the readout sits beside the crosshair and inside the plot", () => {
+  // Room on the right: 12px right of the crosshair.
+  assert.equal(readoutLeft(50, 150, 400), 62);
+  // No room on the right: 12px left of it.
+  assert.equal(readoutLeft(300, 150, 400), 138);
+  // A 320px phone, crosshair near the middle, readout wider than either
+  // side: pinned to whichever edge it would cross, never past it.
+  assert.equal(readoutLeft(152, 163, 288), 0);
+  assert.equal(readoutLeft(140, 163, 288), 0);
+  for (let at = 0; at <= 288; at += 4) {
+    const left = readoutLeft(at, 163, 288);
+    assert.ok(left >= 0 && left + 163 <= 288, `at ${at}: ${left}`);
   }
 });
 

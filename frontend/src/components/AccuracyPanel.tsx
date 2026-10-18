@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
 import type { AccuracyReport, ScoredMatch } from "../api";
 import { useLang, useT } from "../i18n";
 import { dateSpan, matchdayLabel, num, pct, shortDate, signed } from "../clubs";
 import {
   byMatchday,
   fill,
+  readoutLeft,
   roundTicks,
   runningSeries,
   tickDigits,
@@ -194,6 +202,16 @@ function RunningChart({ points }: { points: RunningPoint[] }) {
   const { lang } = useLang();
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = useState<number | null>(null);
+  // The readout's own width, measured before paint, so it can be kept
+  // inside the plot: a Turkish readout on a 320px phone is wider than the
+  // room on either side of a crosshair near the middle. It is nowrap, so
+  // where it sits never changes its width, and an unchanged value stops
+  // the re-render.
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [tipWidth, setTipWidth] = useState(0);
+  useLayoutEffect(() => {
+    setTipWidth(tipRef.current?.offsetWidth ?? 0);
+  });
 
   const height = M.top + PLOT_H + M.bottom;
   const plotW = Math.max(0, width - M.left - M.right);
@@ -323,8 +341,9 @@ function RunningChart({ points }: { points: RunningPoint[] }) {
         )}
         {focus && plotW > 0 && (
           <div
-            className={x(focus.round) > width * 0.6 ? "hist-tip hist-tip-flip" : "hist-tip"}
-            style={{ left: x(focus.round) + (x(focus.round) > width * 0.6 ? -12 : 12) }}
+            ref={tipRef}
+            className="hist-tip"
+            style={{ left: readoutLeft(x(focus.round), tipWidth, width) }}
             aria-hidden="true"
           >
             <div className="hist-tip-title">{matchdayLabel(focus.round, lang)}</div>
