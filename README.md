@@ -186,31 +186,32 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 ## Use the dashboard
 
 1. The page opens on the server's default forecast (50,000 seasons, seed 12345). To change it, choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the five tabs: **Forecast**, **Positions**, **Races**, **Table**, and **Live**.
-3. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view. Results you assumed for matches that have since been played are dropped, with a notice.
-4. Natural-language scenarios are not part of the dashboard. They are an optional API endpoint (`/api/scenario`, below) that is off unless the server sets `SCENARIO_ENABLED=1` and `KIMI_API_KEY`.
+2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Once matches have been scored, open **Forecast history** under **Forecast accuracy** on **Overview** to see every scored match's frozen forecast next to its result, matchday by matchday, with a chart of the log-loss so far against the base rates.
+3. On **Fixtures**, pick results to assume (at most 20, the API's limit) and select **Recalculate**.
+4. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view. Results you assumed for matches that have since been played are dropped, with a notice.
+5. Natural-language scenarios are not part of the dashboard. They are an optional API endpoint (`/api/scenario`, below) that is off unless the server sets `SCENARIO_ENABLED=1` and `KIMI_API_KEY`.
 
-When the server is busy, the page retries a few times and then shows a "try again in a moment" message; the last forecast stays on screen. The fixture list and results stay available even when a simulation fails.
+When the simulation queue is full (503), the page waits as long as the server asks, never more than 10 s at a time, and retries up to three times before showing a "try again in a moment" message. When the per-IP rate limit is hit (429), the page waits and retries if the limit frees up within 10 s; otherwise it says at once "Too many requests — try again in N s". Other failures show a short localized message, with the server's own text in parentheses when it sent one. The last forecast stays on screen. The fixture list and results stay available even when a simulation fails.
 
 ## API
 
 | Endpoint | Method | Limit per IP | Description |
 |---|---|---:|---|
 | `/api/health` | `GET` | — | Service version, model configuration, last live refresh, `world_version`, and whether the default forecast is cached (`forecast_cached`). |
-| `/api/forecast` | `GET` | 30/min | The default forecast (50,000 seasons, seed 12345, no overrides): the same JSON as `POST /api/simulate {}`, computed once per state of the league. |
+| `/api/forecast` | `GET` | 60/min | The default forecast (50,000 seasons, seed 12345, no overrides): the same JSON as `POST /api/simulate {}`, computed once per state of the league. |
 | `/api/simulate` | `POST` | 30/min | Run a simulation with optional Elo overrides and pinned outcomes. Repeated identical requests are answered from a cache until the results or ratings change. |
 | `/api/scenario` | `POST` | 10/min | Analyze a prompt with Kimi and rerun with its Elo overrides. Returns 404 unless `SCENARIO_ENABLED=1`. |
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
-| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands. |
+| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands, plus every scored match with its frozen forecast and its own log-loss. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
 
-`/api/forecast`, `/api/accuracy`, `/api/upcoming`, and `/api/matches` share one 30/min allowance per IP. A rate-limited request gets HTTP 429 with a `Retry-After` header.
+`/api/accuracy`, `/api/upcoming`, and `/api/matches` share one 30/min allowance per IP; `/api/forecast` has its own 60/min allowance. A rate-limited request gets HTTP 429 with a `Retry-After` header.
 
-Simulations run one at a time by default (`MAX_CONCURRENT_SIMULATIONS`). Up to `MAX_SIMULATION_QUEUE` further runs wait up to `SIM_QUEUE_TIMEOUT_SECS` for a turn. Past that, `/api/simulate`, `/api/forecast`, and `/api/scenario` answer HTTP 503 with `Retry-After: 10`. Cache hits, and requests identical to a run already in progress, never wait in the queue.
+Simulations run one at a time by default (`MAX_CONCURRENT_SIMULATIONS`). Up to `MAX_SIMULATION_QUEUE` further runs wait up to `SIM_QUEUE_TIMEOUT_SECS` for a turn. Past that, `/api/simulate`, `/api/forecast`, and `/api/scenario` answer HTTP 503 with `Retry-After: 10`. Cache hits, and requests identical to a run already in progress, never wait in the queue. A queued run whose clients have all disconnected leaves the queue without running.
 
-The next matchday, used by `/api/upcoming` and as the calendar's `current_round`, is the round of the earliest unplayed fixture dated today or later (Istanbul time). One postponed match therefore does not hold it back. When only overdue fixtures remain, it is the earliest round that still has one; once the season is complete, the last round.
+The next matchday, used by `/api/upcoming` and as the calendar's `current_round`, is the round of the earliest unplayed fixture dated today or later (Istanbul time). One postponed match therefore does not hold it back. If a rescheduled match falls on the same day as a matchday, the round with more fixtures that day, played or not, is next, and a tie goes to the later round, normally the matchday. On that day the matchday stays next as long as it has a game still to come; once it is over, the rescheduled match is next. When only overdue fixtures remain, it is the earliest round that still has one; once the season is complete, the last round.
 
 The API sends no CORS headers: the dashboard is served from the same origin, and the Vite development server proxies `/api`.
 
@@ -283,6 +284,9 @@ The GitHub Actions workflow runs the same core checks:
 cargo fmt -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
+# The examples' own tests, which --all-targets builds without.
+cargo clippy --examples --profile test -- -D warnings
+cargo test --examples
 cargo build --release
 cargo audit
 
@@ -306,7 +310,9 @@ The repository already includes the fixture calendar, historical results, and fi
 # Official 2026-27 calendar and results so far, from tff.org.
 # Asserts the full double round-robin structure: 306 fixtures, 34 rounds,
 # 9 per round, 153 pairs each played exactly twice. A postponed match that
-# TFF lists without a date keeps its committed date and kick-off. A committed
+# TFF lists without a date ("Ertelendi" or blank) keeps its committed date and
+# kick-off, at most 9 per run; a week page that does not yield all 9 of its
+# matches, or a date cell in an unknown format, stops the run. A committed
 # result that disappears or changes stops the run before the file is written;
 # set ALLOW_RESULT_CHANGES=1 for a genuine TFF correction or award.
 python3 scripts/fetch_fixtures.py
