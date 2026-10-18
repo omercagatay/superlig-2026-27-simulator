@@ -51,7 +51,7 @@ CI (`.github/workflows/ci.yml`) runs stable backend checks (also `cargo clippy -
 
 ### Docker
 
-`Dockerfile` is a 3-stage build: Rust backend builder (with a dependency-caching dummy-`main.rs` layer) → Node frontend builder → slim Debian runtime that copies the backend binary and `frontend/dist`. Deploys to Railway by auto-detecting the Dockerfile; health check path is `/api/health`.
+`Dockerfile` is a 3-stage build: Rust backend builder (with a dependency-caching dummy-`main.rs` layer) → Node frontend builder → slim Debian runtime that copies the backend binary and `frontend/dist`. Deploys to Railway by auto-detecting the Dockerfile; health check path is `/api/health`. `.github/workflows/deploy.yml` deploys every push to `main` once CI passes on it (`workflow_run`, checking out the commit CI tested): `railway up --ci` with the `RAILWAY_TOKEN` project-token secret and service `vars.RAILWAY_SERVICE` (default `superlig-sim`), then it polls `railway deployment list` until the newest deployment is `SUCCESS`, because the build finishing is not the new deployment taking traffic. Without the secret the job fails and says so. The refresh workflow deploys its own data commits, since a push made with `GITHUB_TOKEN` starts no CI run; both pin `@railway/cli` 5.70.0.
 
 The dummy-layer `rm -rf` globs and the binary copy path both key on the **package name**. Renaming the package without updating the Dockerfile breaks the deploy and nothing else — `cargo build` still passes.
 

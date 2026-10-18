@@ -238,7 +238,17 @@ Senaryo analizi gerekmiyorsa `SCENARIO_ENABLED` ve `KIMI_API_KEY` verilmeyebilir
 5. İsteğe bağlı olarak `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, `MAX_CONCURRENT_SIMULATIONS`, `MAX_SIMULATION_QUEUE`, `SIM_QUEUE_TIMEOUT_SECS` ve `RUST_LOG` değerlerini özelleştirin.
 6. Sağlık kontrolü yolunu `/api/health` olarak ayarlayın.
 
-Uygulama, Railway'in enjekte ettiği `PORT` değerini kendiliğinden okur. Zamanlanmış veri yenileme iş akışı (bkz. [Verileri yenileme](#verileri-yenileme)) yeni veriyi işledikten sonra yeniden dağıtım da yapar, ancak yalnızca depoda bir `RAILWAY_TOKEN` sırrı varsa.
+Uygulama, Railway'in enjekte ettiği `PORT` değerini kendiliğinden okur.
+
+### Otomatik dağıtım
+
+`main` dalına yapılan ve CI'dan geçen her gönderim `.github/workflows/deploy.yml` ile dağıtılır: CI'ın test ettiği commit Railway CLI ile dağıtılır, ardından Railway yeni dağıtımı yayında gösterene kadar beklenir (önce `/api/health` kontrolünden geçmesi gerekir). **Settings → Secrets and variables → Actions** altında şunlar gerekir:
+
+- `RAILWAY_TOKEN` sırrı: üretim ortamı için bir Railway **proje jetonu** (Railway projesi → **Settings → Tokens**);
+- isteğe bağlı `RAILWAY_SERVICE` değişkeni (varsayılan `superlig-sim`), Railway servisinin adı farklıysa;
+- isteğe bağlı `RAILWAY_PUBLIC_URL` değişkeni (`https://<alan-adı>`), ardından genel `/api/health` adresini de yoklamak için.
+
+Sır yoksa dağıtım işi bunu belirten bir iletiyle başarısız olur. **Actions → deploy → Run workflow** güncel `main` dalını elle yeniden dağıtır. Bu iş akışını ya da Railway'in kendi GitHub otomatik dağıtımını kullanın, ikisini birden değil; yoksa her birleştirme iki kez dağıtılır. Zamanlanmış veri yenileme iş akışı (bkz. [Verileri yenileme](#verileri-yenileme)) kendi veri commit'lerini aynı jetonla dağıtır, çünkü gönderdiği commit bir CI çalıştırması başlatmaz.
 
 ## Doğrulama
 

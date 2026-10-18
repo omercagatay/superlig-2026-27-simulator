@@ -274,7 +274,17 @@ Omit `SCENARIO_ENABLED` and `KIMI_API_KEY` if scenario analysis is not needed. T
 5. Optionally customize `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, `MAX_CONCURRENT_SIMULATIONS`, `MAX_SIMULATION_QUEUE`, `SIM_QUEUE_TIMEOUT_SECS`, and `RUST_LOG`.
 6. Set the health-check path to `/api/health`.
 
-The application reads Railway's injected `PORT` automatically. The scheduled data-refresh workflow (see [Refresh the data](#refresh-the-data)) also redeploys after committing new data, but only when the repository has a `RAILWAY_TOKEN` secret.
+The application reads Railway's injected `PORT` automatically.
+
+### Automatic deploys
+
+Every push to `main` that passes CI is deployed by `.github/workflows/deploy.yml`, which deploys the exact commit CI tested with the Railway CLI and then waits until Railway reports the new deployment live (it must pass the `/api/health` check first). It needs, under **Settings → Secrets and variables → Actions**:
+
+- the secret `RAILWAY_TOKEN`: a Railway **project token** for the production environment (Railway project → **Settings → Tokens**);
+- optionally the variable `RAILWAY_SERVICE` (default `superlig-sim`), if the Railway service has another name;
+- optionally the variable `RAILWAY_PUBLIC_URL` (`https://<domain>`), to also probe the public `/api/health` afterwards.
+
+Without the secret the deploy job fails with a message saying so. **Actions → deploy → Run workflow** redeploys the current `main` by hand. Use either this workflow or Railway's own GitHub auto-deploy, not both, or every merge deploys twice. The scheduled data-refresh workflow (see [Refresh the data](#refresh-the-data)) deploys its own data commits with the same token, since a commit it pushes starts no CI run.
 
 ## Validation
 

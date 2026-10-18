@@ -91,15 +91,18 @@ jobs:
           fi
 
       # Deploy only if the repo has a Railway token; the project deploys by
-      # CLI, so without one this step is skipped rather than failing.
+      # CLI, so without one this step is skipped rather than failing. A push
+      # made with GITHUB_TOKEN starts no CI run, so deploy.yml never sees this
+      # commit; the CLI version and service match it.
       - name: Deploy to Railway
         id: deploy
         if: steps.commit.outputs.changed == 'true' && env.HAS_RAILWAY_TOKEN == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE || 'superlig-sim' }}
         run: |
-          npm i -g @railway/cli
-          railway up --service superlig-sim --detach
+          npm install --global @railway/cli@5.70.0
+          railway up --service "$RAILWAY_SERVICE" --ci
 
       # One open issue at most: a repeat failure comments on it. --repo
       # because a failed checkout leaves no git remote to infer it from.

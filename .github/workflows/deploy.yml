@@ -1,0 +1,99 @@
+# Deploy every green push to main to Railway.
+#
+# Runs after the CI workflow finishes on a push to main and deploys the exact
+# commit CI tested, only if CI passed. The project deploys by Railway CLI, not
+# Railway's GitHub integration, so without this a merge reaches the site only
+# when someone runs `railway up` by hand.
+#
+# Needs a RAILWAY_TOKEN repository secret: a Railway *project* token for the
+# production environment (Project Settings -> Tokens). Optional repository
+# variables: RAILWAY_SERVICE (default superlig-sim) and RAILWAY_PUBLIC_URL
+# (e.g. https://<domain>, for a health check after the deploy).
+#
+# The scheduled data refresh pushes with GITHUB_TOKEN, which starts no CI run,
+# so it keeps its own deploy step; the two never deploy the same commit.
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: # redeploy the current main by hand
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Whether the secret exists, without exposing it to every step.
+      HAS_RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN != '' }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE || 'superlig-sim' }}
+      RAILWAY_PUBLIC_URL: ${{ vars.RAILWAY_PUBLIC_URL }}
+    steps:
+      - name: Require the Railway token
+        if: env.HAS_RAILWAY_TOKEN != 'true'
+        run: |
+          echo "::error::No RAILWAY_TOKEN secret: add a Railway project token for the production environment under Settings -> Secrets and variables -> Actions."
+          exit 1
+
+      - uses: actions/checkout@v7
+        with:
+          # The commit CI passed, not whatever main points at by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Install the Railway CLI
+        run: npm install --global @railway/cli@5.70.0
+
+      # --ci streams the build log and fails the step if the build fails.
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service "$RAILWAY_SERVICE" --ci
+
+      # The build finishing is not the deploy finishing: Railway marks the new
+      # deployment SUCCESS only once it passes its health check and takes
+      # traffic. Until then the old one keeps serving, so a plain health probe
+      # would pass either way.
+      - name: Wait for Railway to mark the deployment live
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          for attempt in $(seq 1 40); do
+            status=$(railway deployment list --service "$RAILWAY_SERVICE" --limit 1 --json \
+              | jq -r '[.. | objects | select(has("status")) | .status][0] // "UNKNOWN"')
+            echo "latest deployment: $status"
+            case "$status" in
+              SUCCESS) exit 0 ;;
+              FAILED|CRASHED|REMOVED|SKIPPED)
+                echo "::error::Railway reports the deployment as $status."
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::The deployment was not live after 10 minutes (last status: $status)."
+          exit 1
+
+      - name: Check the public site
+        if: env.RAILWAY_PUBLIC_URL != ''
+        run: |
+          for attempt in $(seq 1 30); do
+            if body=$(curl -fsS --max-time 10 "${RAILWAY_PUBLIC_URL%/}/api/health"); then
+              echo "$body"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::${RAILWAY_PUBLIC_URL%/}/api/health did not answer within 5 minutes of the deploy."
+          exit 1
