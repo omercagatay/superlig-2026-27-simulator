@@ -11,8 +11,8 @@
 //! 34 that no one would have relied on. A refresh that would change nothing
 //! but `logged_at` is skipped, and a run with nothing new or refreshed leaves
 //! the file untouched, so a rerun with no new results commits nothing.
-//! Percentages are stored to a precision that reads back exactly
-//! (`logged_pct`), so entries kept through a rewrite keep their digits.
+//! serde_json parses floats exactly (its `float_roundtrip` feature), so an
+//! entry kept through a rewrite, frozen or unchanged, keeps every digit.
 //!
 //! Run weekly, before each matchday: `cargo run --release --example log_forecast`
 
@@ -96,11 +96,9 @@ fn main() {
     );
 }
 
-/// A percentage as the log stores it: to 12 decimal places. That is far past
-/// any meaningful precision, yet few enough digits for serde_json (without
-/// its `float_roundtrip` feature) to read back exactly. A full-precision value
-/// can come back a last bit off, so an entry kept as read (frozen or
-/// unchanged) would be rewritten one digit different whenever the file is.
+/// A percentage as the log stores it: to 12 decimal places, far past any
+/// meaningful precision. Comparing at this precision is what lets a
+/// recomputed forecast match the entry already logged for it.
 fn logged_pct(pct: f64) -> f64 {
     (pct * 1e12).round() / 1e12
 }
@@ -149,6 +147,16 @@ mod tests {
             let back: f64 = serde_json::from_str(&serde_json::to_string(&pct).unwrap()).unwrap();
             assert_eq!(back, pct);
         }
+    }
+
+    #[test]
+    fn the_shipped_log_rewrites_byte_for_byte() {
+        // Frozen entries are the audit trail: reading the log and writing it
+        // back must not move a digit, full-precision entries from before
+        // `logged_pct` included.
+        let text = include_str!("../data/forecast_log.json");
+        let entries: Vec<LoggedForecast> = serde_json::from_str(text).unwrap();
+        assert_eq!(serde_json::to_string_pretty(&entries).unwrap(), text);
     }
 
     #[test]
