@@ -126,6 +126,16 @@ test("any other failure is not retried and keeps the backend's message", async (
     message: "HTTP 500",
     retryAfter: null,
   });
+
+  // A proxy's error page is not the backend's message.
+  const page = server(
+    () =>
+      new Response("<!doctype html><title>Application failed to respond</title>", {
+        status: 502,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      }),
+  );
+  await assert.rejects(sendWithRetry(page.send, { wait: page.wait }), { status: 502, message: "HTTP 502" });
 });
 
 test("aborting cuts a wait short", async () => {

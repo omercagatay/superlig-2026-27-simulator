@@ -145,7 +145,9 @@ export default function App() {
     if (kept.length < pins.length) {
       whatIfRef.current = kept;
       setWhatIf(kept);
-      setPrunedPicks(pins.length - kept.length);
+      // Added up: a refresh can prune, then its simulation's 400 recovery
+      // prune again. Run and refresh reset the count when they start.
+      setPrunedPicks((n) => n + pins.length - kept.length);
     }
     return kept;
   }, []);

@@ -92,8 +92,11 @@ export async function sendWithRetry(
       isBusy(resp.status) && attempt < retries ? retryDelay(resp.status, attempt, retryAfterMs) : null;
     if (delay == null) {
       const body = (await resp.text()).trim();
+      // The backend's reasons are plain text. An HTML page comes from a
+      // proxy in front of it and is no message to show.
+      const html = resp.headers.get("Content-Type")?.includes("text/html") ?? false;
       const retryAfter = retryAfterMs == null ? null : Math.ceil(retryAfterMs / 1000);
-      throw new ApiError(resp.status, body || `HTTP ${resp.status}`, retryAfter);
+      throw new ApiError(resp.status, (!html && body) || `HTTP ${resp.status}`, retryAfter);
     }
     // Drain the busy answer so the connection can be reused.
     await resp.text().catch(() => "");
