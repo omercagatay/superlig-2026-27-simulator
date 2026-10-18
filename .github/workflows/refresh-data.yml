@@ -106,11 +106,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           STEPS: ${{ toJSON(steps) }}
         run: |
-          step=$(jq -r '[to_entries[] | select(.value.outcome == "failure") | .key][0] // empty' <<< "$STEPS")
+          # The step that failed, or the one a timeout or cancel interrupted.
+          step=$(jq -r 'to_entries | map(select(.value.outcome == "failure" or .value.outcome == "cancelled"))
+            | first // empty | "\(.key) (\(.value.outcome))"' <<< "$STEPS")
           body="The data refresh ($GITHUB_EVENT_NAME) did not finish.
 
           - Run: $RUN_URL
-          - Failing step: \`${step:-none (cancelled or timed out)}\`
+          - Failing step: \`${step:-none (cancelled before any step ran)}\`
           - Commit: $GITHUB_SHA
 
           A later failure comments here; the next successful run closes this issue."
