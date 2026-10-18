@@ -86,10 +86,12 @@ fn client_key(req: &Request<Body>, trust_proxy: bool) -> Option<String> {
 }
 
 /// Whole seconds until the oldest request in the window expires and frees
-/// a place — at least 1, so a client never retries immediately.
+/// a place — at least 1, so a client never retries immediately. Entries are
+/// stamped before the lock is taken, so they need not be in order.
 fn retry_after_secs(entries: &[Instant], now: Instant, window: Duration) -> u64 {
     let wait = entries
-        .first()
+        .iter()
+        .min()
         .map(|&oldest| window.saturating_sub(now.duration_since(oldest)))
         .unwrap_or(window);
     (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
@@ -229,7 +231,7 @@ mod tests {
         let start = Instant::now();
         let now = start + Duration::from_secs(60);
         let window = Duration::from_secs(60);
-        let entries = [start + Duration::from_millis(10_500), now];
+        let entries = [now, start + Duration::from_millis(10_500)];
         assert_eq!(retry_after_secs(&entries, now, window), 11);
         assert_eq!(retry_after_secs(&[start], now, window), 1);
     }

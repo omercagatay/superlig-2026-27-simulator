@@ -156,13 +156,24 @@ impl<K: Clone + Eq + Hash, V: Clone, E: Clone> ResponseCache<K, V, E> {
             return entry.cell.clone();
         }
         if state.entries.len() >= self.capacity {
-            let oldest = state
+            // A failed run is worth nothing, so it goes first; then finished
+            // answers, least recently used first. A run still in flight goes
+            // last: dropping it would let an identical request start a second
+            // computation, and a burst of 503s must not push good answers out.
+            let victim = state
                 .entries
                 .iter()
                 .filter(|(k, _)| self.pinned.as_ref() != Some(*k))
-                .min_by_key(|(_, entry)| entry.last_used)
+                .min_by_key(|(_, entry)| {
+                    let rank = match entry.cell.get() {
+                        Some(Err(_)) => 0,
+                        Some(Ok(_)) => 1,
+                        None => 2,
+                    };
+                    (rank, entry.last_used)
+                })
                 .map(|(k, _)| k.clone());
-            if let Some(k) = oldest {
+            if let Some(k) = victim {
                 state.entries.remove(&k);
             }
         }
@@ -381,5 +392,46 @@ mod tests {
         assert_eq!(cache.get(1, &"pinned"), Some(1));
         assert_eq!(cache.get(1, &"a"), None, "least recently used goes first");
         assert_eq!(cache.get(1, &"b"), Some(1));
+    }
+
+    #[tokio::test]
+    async fn eviction_drops_failed_runs_first_and_runs_in_flight_last() {
+        let cache = Arc::new(TestCache::new(2, None));
+        let release = Arc::new(tokio::sync::Notify::new());
+        let slow = {
+            let (cache, release) = (cache.clone(), release.clone());
+            tokio::spawn(async move {
+                cache
+                    .get_or_compute(1, "slow", move || async move {
+                        release.notified().await;
+                        Ok::<_, TestError>(7u32)
+                    })
+                    .await
+            })
+        };
+        let contains = |key: &str| cache.state.lock().unwrap().entries.contains_key(key);
+        while !contains("slow") {
+            tokio::task::yield_now().await;
+        }
+
+        // The oldest entry is in flight, so the finished one makes room.
+        assert_eq!(ready(&cache, 1, 1).await, 1);
+        let failed = cache
+            .get_or_compute(1, "failed", || async { Err(TestError::Failed) })
+            .await;
+        assert_eq!(failed, Err(TestError::Failed));
+        assert!(!contains("k") && contains("slow"));
+
+        // A failure goes before anything else, however recent.
+        cache
+            .get_or_compute(1, "new", || async { Ok::<_, TestError>(2u32) })
+            .await
+            .unwrap();
+        assert!(!contains("failed") && contains("slow"));
+
+        release.notify_one();
+        assert_eq!(slow.await.unwrap(), Ok(7));
+        assert_eq!(cache.get(1, &"slow"), Some(7), "single flight survived");
+        assert_eq!(cache.get(1, &"new"), Some(2));
     }
 }

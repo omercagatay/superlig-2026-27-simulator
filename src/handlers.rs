@@ -574,6 +574,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn forecast_and_an_empty_simulate_request_share_one_cache_entry() {
+        let state = test_state(1, 0, Duration::from_secs(5));
+        let stub = Bytes::from_static(br#"{"stub":true}"#);
+        let cached = stub.clone();
+        state
+            .sim_cache
+            .get_or_compute(
+                0,
+                SimKey::default_forecast(),
+                move || async move { Ok(cached) },
+            )
+            .await
+            .unwrap();
+
+        // Every slot is held, so anything but a hit on that entry is a 503.
+        let _held = hold_every_slot(&state);
+        let from_forecast = forecast(State(state.clone())).await.into_response();
+        let from_simulate = run_sim(State(state.clone()), sim_request(json!({})))
+            .await
+            .into_response();
+        for resp in [from_forecast, from_simulate] {
+            assert_eq!(resp.status(), StatusCode::OK);
+            assert_eq!(resp.headers()[header::CONTENT_TYPE], "application/json");
+            assert_eq!(body_bytes(resp).await, stub);
+        }
+    }
+
+    #[tokio::test]
     async fn a_full_queue_answers_503_with_retry_after() {
         let state = test_state(1, 0, Duration::from_secs(5));
         let _held = hold_every_slot(&state);

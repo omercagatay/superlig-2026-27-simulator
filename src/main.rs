@@ -56,7 +56,9 @@ async fn main() -> anyhow::Result<()> {
     let scenario_enabled = env_flag("SCENARIO_ENABLED");
     let kimi_api_key = std::env::var("KIMI_API_KEY").ok();
     if !scenario_enabled {
-        tracing::info!("Scenario analysis disabled (SCENARIO_ENABLED unset); /api/scenario is 404");
+        tracing::info!(
+            "Scenario analysis disabled (SCENARIO_ENABLED is not 1/true); /api/scenario is 404"
+        );
     } else if kimi_api_key.is_some() {
         tracing::info!("Kimi scenario analysis enabled");
     } else {
