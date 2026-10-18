@@ -687,8 +687,9 @@ impl World {
     /// matchday. Every round with a fixture that day, played or not, and a
     /// game still to come from `today` on is in the running; the one with
     /// more fixtures that day is the one being played, the later round on a
-    /// tie, since a rescheduled match always belongs to an earlier round
-    /// than the matchday it lands on. Looking only at unplayed games would
+    /// tie, since a match moved onto a matchday is nearly always a postponed
+    /// one from an earlier round (one brought forward from a later round
+    /// would take the tie). Looking only at unplayed games would
     /// hand the day to the rescheduled match as soon as the matchday's games
     /// that day were in, though the matchday carries on tomorrow. A
     /// rescheduled match alone on its date is simply the next fixture.
@@ -1516,6 +1517,37 @@ mod tests {
         record(&mut w, opener);
         assert_eq!(w.next_round_on(&opening_day), 8);
         assert_eq!(w.upcoming_matches_on(&opening_day).len(), 8);
+    }
+
+    #[test]
+    fn a_rescheduled_match_is_next_once_the_matchday_sharing_its_day_is_over() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // It lands on matchday 8's last day, after that day's matchday games.
+        let last_day = day(8, 2);
+        w.dates[i].date = last_day.clone();
+        let earlier_days: Vec<usize> = [day(8, 0), day(8, 1)]
+            .iter()
+            .flat_map(|d| fixtures_on(&w, 8, d))
+            .collect();
+        for j in earlier_days {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 8);
+
+        // Matchday 8 over, the rescheduled match still to come that evening:
+        // a finished matchday must not hold the day with nothing to list.
+        for j in fixtures_on(&w, 8, &last_day) {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 5, "a finished matchday won");
+        let up = w.upcoming_matches_on(&last_day);
+        assert_eq!(up.len(), 1);
+        assert_eq!(
+            (up[0].home, up[0].away),
+            (w.fixtures[i].home, w.fixtures[i].away)
+        );
+        record(&mut w, i);
+        assert_eq!(w.next_round_on(&last_day), 9);
     }
 
     #[test]
