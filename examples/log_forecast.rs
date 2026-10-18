@@ -8,7 +8,10 @@
 //! unplayed. Once a match is played (or its date has arrived), its prediction
 //! is frozen forever. That gives the honest thing to score: the model's most
 //! recent view *before* kick-off, rather than a preseason guess about matchday
-//! 34 that no one would have relied on.
+//! 34 that no one would have relied on. A refresh that would change nothing
+//! but `logged_at` is skipped, and percentages are stored to a precision that
+//! reads back exactly (`logged_pct`), so a rerun with no new results writes
+//! the same file byte for byte and commits nothing.
 //!
 //! Run weekly, before each matchday: `cargo run --release --example log_forecast`
 
@@ -36,7 +39,7 @@ fn main() {
     let before = by_key.len();
 
     let today = chrono::Utc::now().date_naive().to_string();
-    let mut refreshed = 0usize;
+    let (mut refreshed, mut unchanged) = (0usize, 0usize);
     for (i, f) in world.fixtures.iter().enumerate() {
         if world.played.contains_key(&(f.home, f.away)) {
             continue;
@@ -46,24 +49,27 @@ fn main() {
         if world.dates[i].date.as_str() <= today.as_str() {
             continue;
         }
-        let key = (world.teams[f.home].clone(), world.teams[f.away].clone());
-        if by_key.contains_key(&key) {
-            refreshed += 1;
-        }
         let p = world.fixture_probs(f.home, f.away);
-        by_key.insert(
-            key.clone(),
-            LoggedForecast {
-                round: f.round,
-                date: world.dates[i].date.clone(),
-                home: key.0,
-                away: key.1,
-                home_pct: p.home_win_pct,
-                draw_pct: p.draw_pct,
-                away_pct: p.away_win_pct,
-                logged_at: today.clone(),
-            },
-        );
+        let fresh = LoggedForecast {
+            round: f.round,
+            date: world.dates[i].date.clone(),
+            home: world.teams[f.home].clone(),
+            away: world.teams[f.away].clone(),
+            home_pct: logged_pct(p.home_win_pct),
+            draw_pct: logged_pct(p.draw_pct),
+            away_pct: logged_pct(p.away_win_pct),
+            logged_at: today.clone(),
+        };
+        let key = (fresh.home.clone(), fresh.away.clone());
+        match by_key.get(&key) {
+            Some(old) if same_forecast(old, &fresh) => {
+                unchanged += 1;
+                continue;
+            }
+            Some(_) => refreshed += 1,
+            None => {}
+        }
+        by_key.insert(key, fresh);
     }
 
     let mut out: Vec<LoggedForecast> = by_key.into_values().collect();
@@ -71,10 +77,91 @@ fn main() {
     let json = serde_json::to_string_pretty(&out).expect("serialize forecasts");
     std::fs::write(FORECAST_LOG_PATH, json).expect("write forecast log");
     println!(
-        "forecast log: {} entries ({} new, {} refreshed), written to {}",
+        "forecast log: {} entries ({} new, {} refreshed, {} unchanged), written to {}",
         out.len(),
         out.len() - before,
         refreshed,
+        unchanged,
         FORECAST_LOG_PATH
     );
+}
+
+/// A percentage as the log stores it: to 12 decimal places. That is far past
+/// any meaningful precision, yet few enough digits for serde_json (without
+/// its `float_roundtrip` feature) to read back exactly. A full-precision value
+/// can come back a last bit off, so an entry kept as read would still be
+/// rewritten one digit different, and the run would commit anyway.
+fn logged_pct(pct: f64) -> f64 {
+    (pct * 1e12).round() / 1e12
+}
+
+/// Whether the logged `old` already says what `fresh` does: same round, date
+/// and probabilities to the precision the log stores. Such an entry is kept,
+/// `logged_at` included; rewriting only that date would make every run
+/// commit (and redeploy) with nothing new to say.
+fn same_forecast(old: &LoggedForecast, fresh: &LoggedForecast) -> bool {
+    let pcts = |f: &LoggedForecast| [f.home_pct, f.draw_pct, f.away_pct].map(logged_pct);
+    old.round == fresh.round && old.date == fresh.date && pcts(old) == pcts(fresh)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const PCTS: [f64; 3] = [42.64993508207272, 26.14833699248445, 31.20172792544283];
+
+    fn entry(pcts: [f64; 3], date: &str, logged_at: &str) -> LoggedForecast {
+        LoggedForecast {
+            round: 9,
+            date: date.to_string(),
+            home: "Galatasaray".to_string(),
+            away: "Fenerbahçe".to_string(),
+            home_pct: pcts[0],
+            draw_pct: pcts[1],
+            away_pct: pcts[2],
+            logged_at: logged_at.to_string(),
+        }
+    }
+
+    /// `entries` as the next run reads them back from the file.
+    fn through_log(entries: &[LoggedForecast]) -> Vec<LoggedForecast> {
+        serde_json::from_str(&serde_json::to_string_pretty(entries).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn logged_percentages_read_back_exactly() {
+        // A spread of percentages in [0, 100). Unrounded, about one in ten
+        // would read back a last bit off and fail this.
+        let mut x = 0.123_456_789_f64;
+        for _ in 0..30_000 {
+            x = (x * 7.3 + 0.618).fract();
+            let pct = logged_pct(100.0 * x);
+            let back: f64 = serde_json::from_str(&serde_json::to_string(&pct).unwrap()).unwrap();
+            assert_eq!(back, pct);
+        }
+    }
+
+    #[test]
+    fn a_forecast_that_has_not_moved_keeps_its_entry() {
+        let fresh = entry(PCTS.map(logged_pct), "2026-10-24", "2026-10-16");
+        // As an earlier run logged it, and as one did before the rounding.
+        for pcts in [PCTS.map(logged_pct), PCTS] {
+            let old = &through_log(&[entry(pcts, "2026-10-24", "2026-10-15")])[0];
+            assert!(same_forecast(old, &fresh), "{pcts:?}");
+        }
+    }
+
+    #[test]
+    fn a_moved_probability_or_date_is_a_refresh() {
+        let old = &through_log(&[entry(PCTS.map(logged_pct), "2026-10-24", "2026-10-15")])[0];
+        let [h, d, a] = PCTS;
+        let moved = entry(
+            [h + 1e-9, d, a - 1e-9].map(logged_pct),
+            "2026-10-24",
+            "2026-10-16",
+        );
+        let redated = entry(PCTS.map(logged_pct), "2026-10-25", "2026-10-16");
+        assert!(!same_forecast(old, &moved));
+        assert!(!same_forecast(old, &redated));
+    }
 }

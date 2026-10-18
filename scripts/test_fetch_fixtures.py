@@ -74,11 +74,19 @@ class Helpers(unittest.TestCase):
         self.assertEqual([(p["kickoff"], f["kickoff"]) for p, f in kickoffs],
                          [(None, "21:30"), ("19:00", "20:00")])
 
-    def test_week_page_skips_rows_without_a_date(self):
+    def test_week_page_keeps_rows_without_a_date_apart(self):
         rows = [fx("Galatasaray", "Fenerbahçe"), fx("Beşiktaş", "Trabzonspor", kickoff=None)]
         page = week_page(rows, 9, undated={("Galatasaray", "Fenerbahçe")})
         self.assertEqual(ff.parse_week_dates(page),
-                         [("Beşiktaş", "Trabzonspor", "2026-10-17", None)])
+                         ([("Beşiktaş", "Trabzonspor", "2026-10-17", None)],
+                          [("Galatasaray", "Fenerbahçe", "Ertelendi")]))
+
+    def test_no_date_markers(self):
+        for text in ("", "  ", "-", "–", "Ertelendi", "ERTELENDİ", " ertelendi ",
+                     "Belirlenmedi"):
+            self.assertTrue(ff.no_date(text), text)
+        for text in ("17 Ekim 2026", "2026-10-17", "17.10.26", "İptal"):
+            self.assertFalse(ff.no_date(text), text)
 
 
 def season_page(fixtures):
@@ -96,16 +104,17 @@ def season_page(fixtures):
     return "".join(parts)
 
 
-def week_page(fixtures, rnd, undated=()):
-    """One `&hafta=N` widget; `undated` rows show "Ertelendi" for a date."""
+def week_page(fixtures, rnd, undated=(), marker="Ertelendi", widget="haftaninMaclariTarih"):
+    """One `&hafta=N` widget; `undated` rows show `marker` for a date, and
+    `widget` renames the date cell's class to mimic a TFF markup change."""
     rows = []
     for f in fixtures:
         if f["round"] != rnd:
             continue
         y, m, d = f["date"].split("-")
-        date = "Ertelendi" if (f["home"], f["away"]) in undated else f"{d}.{m}.{y}"
+        date = marker if (f["home"], f["away"]) in undated else f"{d}.{m}.{y}"
         rows.append(
-            f'<div class="haftaninMaclariTarih"><span id="w_lblTarih">{date}</span>'
+            f'<div class="{widget}"><span id="w_lblTarih">{date}</span>'
             f'<span id="w_lblSaat">{f["kickoff"] or ""}</span></div>'
             f'<div class="haftaninMaclariEv"><a href="x?kulupID=1"><span>{TFF[f["home"]]}</span></a></div>'
             f'<div class="haftaninMaclariSkor"><span>-</span></div>'
@@ -149,8 +158,9 @@ class EndToEnd(unittest.TestCase):
         with open(self.out, encoding="utf-8") as f:
             return json.load(f)
 
-    def run_main(self, previous, scraped, undated=(), allow=""):
-        """main() with `previous` committed; returns what it wrote."""
+    def run_main(self, previous, scraped, undated=(), allow="", week=None):
+        """main() with `previous` committed; returns what it wrote. `week`,
+        if given, renders the `&hafta=N` page for round N instead."""
         if previous is not None:
             with open(self.out, "w", encoding="utf-8") as f:
                 json.dump(previous, f, ensure_ascii=False)
@@ -162,7 +172,8 @@ class EndToEnd(unittest.TestCase):
             if url == ff.URL:
                 return Response(season_page(scraped).encode("windows-1254"))
             rnd = int(url.rsplit("&hafta=", 1)[1])
-            return Response(week_page(scraped, rnd, undated).encode("windows-1254"))
+            page = week(rnd) if week else week_page(scraped, rnd, undated)
+            return Response(page.encode("windows-1254"))
 
         with mock.patch.object(ff, "OUT", self.out), \
                 mock.patch("urllib.request.urlopen", urlopen), \
@@ -182,6 +193,42 @@ class EndToEnd(unittest.TestCase):
         undated = {(f["home"], f["away"]) for f in (self.base[0], self.base[-1])}
         got = self.run_main(self.base, self.base, undated=undated)
         self.assertEqual(got, self.expected(self.base))
+
+    def test_single_postponed_row_keeps_its_committed_date(self):
+        f = self.base[100]
+        got = self.run_main(self.base, self.base, undated={(f["home"], f["away"])})
+        self.assertEqual(got, self.expected(self.base))
+
+    def test_postponements_up_to_the_cap_keep_their_committed_dates(self):
+        undated = {(f["home"], f["away"]) for f in self.base[:ff.MAX_UNDATED]}
+        got = self.run_main(self.base, self.base, undated=undated)
+        self.assertEqual(got, self.expected(self.base))
+
+    def assertFailsAndKeepsFile(self, **kwargs):
+        with self.assertRaises(SystemExit):
+            self.run_main(self.base, self.base, **kwargs)
+        self.assertEqual(self.written(), self.base, "committed file left alone")
+
+    def test_more_postponements_than_the_cap_fail(self):
+        undated = {(f["home"], f["away"]) for f in self.base[:ff.MAX_UNDATED + 1]}
+        self.assertFailsAndKeepsFile(undated=undated)
+
+    def test_unparsed_date_cell_fails(self):
+        f = self.base[100]
+        self.assertFailsAndKeepsFile(week=lambda rnd: week_page(
+            self.base, rnd, undated={(f["home"], f["away"])}, marker="17 Ekim 2026"))
+
+    def test_renamed_week_widget_fails(self):
+        # One page or all of them: none of their rows match WEEK_ROW.
+        for renamed in ({9}, set(range(1, 35))):
+            self.assertFailsAndKeepsFile(week=lambda rnd: week_page(
+                self.base, rnd, widget="macTarih" if rnd in renamed else
+                "haftaninMaclariTarih"))
+
+    def test_week_page_short_of_a_match_fails(self):
+        dropped = next(f for f in self.base if f["round"] == 9)
+        rest = [f for f in self.base if f is not dropped]
+        self.assertFailsAndKeepsFile(week=lambda rnd: week_page(rest, rnd))
 
     def test_postponed_row_with_no_committed_date_fails(self):
         undated = {(self.base[-1]["home"], self.base[-1]["away"])}

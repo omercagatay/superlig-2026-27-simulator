@@ -2,12 +2,14 @@
 #
 # The assertions inside fetch_fixtures.py are the point: if TFF changes its
 # markup, the structural checks (306 fixtures, 34 rounds, every pair twice,
-# every fixture dated) fail here and the run goes red, instead of the app
-# quietly serving a stale calendar. A committed result that vanishes or
-# changes fails it too; for a genuine TFF correction, dispatch the workflow by
-# hand with allow_result_changes. A red run opens (or comments on) a "Weekly
-# data refresh failed" issue, so it is not only visible on the Actions tab;
-# the next green run closes it.
+# nine matches on every week page, every fixture dated) fail here and the run
+# goes red, instead of the app quietly serving a stale calendar. Up to nine
+# postponed matches ("Ertelendi" or blank) may keep their committed date; a
+# week widget that stops yielding dates fails the run. A committed result
+# that vanishes or changes fails it too; for a genuine TFF correction,
+# dispatch the workflow by hand with allow_result_changes. A red run opens
+# (or comments on) a "Weekly data refresh failed" issue, so it is not only
+# visible on the Actions tab; the next green run closes it.
 #
 # Runs before each weekend's matches so freshly logged forecasts precede
 # kick-off. log_forecast never touches a fixture dated today (UTC) or
@@ -16,7 +18,8 @@
 # started 5-7 hours late), so Thursday's slot is 18:17 Istanbul time, off
 # the busy top of the hour, leaving most of the evening as margin before
 # the UTC date turns. Extra runs are harmless: frozen entries are never
-# overwritten.
+# overwritten, and a forecast that has not moved keeps its entry, so a run
+# with no new results or fixture changes commits (and deploys) nothing.
 name: refresh data
 
 on:

@@ -19,12 +19,15 @@ download cannot be substituted. Certificate verification stays ON.
 
 The committed file is the reference for two guards. A postponed match has no
 date on its week page ("Ertelendi" or blank), so it keeps its last committed
-date and kick-off instead of failing the run. And a result, once committed,
-must not vanish or change: if it does the run fails, unless
-ALLOW_RESULT_CHANGES=1 says it is a genuine TFF correction or award. The
-comparison logic is pure and tested offline by scripts/test_fetch_fixtures.py.
+date and kick-off instead of failing the run. That fallback must not mask a
+broken widget, so every week page has to yield all nine of its matches, an
+undated one only with a blank or "Ertelendi"-style cell, and at most
+MAX_UNDATED of them in one run. And a result, once committed, must not vanish
+or change: if it does the run fails, unless ALLOW_RESULT_CHANGES=1 says it is
+a genuine TFF correction or award. The comparison logic is pure and tested
+offline by scripts/test_fetch_fixtures.py.
 """
-import hashlib, html, json, os, re, ssl, sys, time, urllib.request
+import hashlib, html, json, os, re, ssl, sys, time, unicodedata, urllib.request
 
 URL = "https://www.tff.org/default.aspx?pageID=198"
 OUT = "data/fixtures_2026_27.json"
@@ -74,17 +77,78 @@ WEEK_ROW = re.compile(
     re.S)
 
 
+# Matches on every week page: one round of 18 clubs.
+ROUND_SIZE = 9
+
+# Date cells that mean "no date yet" rather than a format we fail to parse,
+# compared case- and accent-insensitively (see no_date).
+NO_DATE_MARKERS = {"", "-", "–", "—", "ertelendi", "belirlenmedi"}
+
+# At most this many fixtures may keep their committed date in one run: one
+# round's worth, as when a whole matchday is postponed. More reads as a week
+# widget that has stopped yielding dates, and fails the run.
+MAX_UNDATED = 9
+
+
 def parse_week_dates(page):
-    """[(home, away, iso_date, time_or_none)] for one `&hafta=N` page."""
-    out = []
+    """(dated, undated) rows of one `&hafta=N` page: dated is
+    [(home, away, iso_date, time_or_none)] for a DD.MM.YYYY date cell,
+    undated is [(home, away, raw_date_text)] for any other."""
+    dated, undated = [], []
     for raw_date, raw_time, raw_home, raw_away in WEEK_ROW.findall(page):
+        home, away = canonical(raw_home), canonical(raw_away)
         d = html.unescape(raw_date).strip()
         m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", d)
         if not m:
+            undated.append((home, away, d))
             continue
         iso = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
         t = html.unescape(raw_time).strip() or None
-        out.append((canonical(raw_home), canonical(raw_away), iso, t))
+        dated.append((home, away, iso, t))
+    return dated, undated
+
+
+def no_date(text):
+    """Whether a date cell is blank or a marker like "Ertelendi"/"ERTELENDİ"."""
+    folded = unicodedata.normalize("NFKD", text.strip().casefold().replace("ı", "i"))
+    return "".join(c for c in folded if not unicodedata.combining(c)) in NO_DATE_MARKERS
+
+
+def apply_week_dates(fixtures, weeks):
+    """A new list with each fixture's date and kick-off from `weeks`, which is
+    {round: (dated, undated)} from parse_week_dates; None for a postponement.
+
+    Fails unless every page matched exactly ROUND_SIZE rows, every fixture is
+    one of them, every undated row's cell is a no-date marker and at most
+    MAX_UNDATED are undated. Otherwise a renamed widget would leave every
+    fixture undated and the committed-date fallback would quietly cover it.
+    """
+    problems = [f"  week {w}: matched {len(d) + len(u)} of {ROUND_SIZE} matches"
+                for w, (d, u) in sorted(weeks.items()) if len(d) + len(u) != ROUND_SIZE]
+    dated = {(h, a): (iso, t) for d, _ in weeks.values() for h, a, iso, t in d}
+    undated = {(h, a): raw for _, u in weeks.values() for h, a, raw in u}
+    out, postponed = [], []
+    for f in fixtures:
+        key = (f["home"], f["away"])
+        if key in undated and key not in dated:
+            postponed.append(f)
+            if not no_date(undated[key]):
+                problems.append(f"  {label(f)}: date cell {undated[key]!r} is not a date")
+        elif key not in dated:
+            problems.append(f"  {label(f)}: on no week page")
+        iso, kickoff = dated.get(key, (None, None))
+        out.append({**f, "date": iso, "kickoff": kickoff})
+    if len(postponed) > MAX_UNDATED:
+        problems.append(f"  {len(postponed)} fixtures undated, more than "
+                        f"MAX_UNDATED={MAX_UNDATED}")
+    if problems:
+        shown = problems[:12]
+        if len(problems) > len(shown):
+            shown.append(f"  ... and {len(problems) - len(shown)} more")
+        raise SystemExit(
+            "The week pages do not date the calendar (has TFF changed the "
+            "widget markup? see WEEK_ROW):\n" + "\n".join(shown)
+            + "\nNot writing the file.")
     return out
 
 
@@ -224,15 +288,11 @@ def main():
         })
 
     # Kick-off dates come from the per-week widget, one request per matchday.
-    dates = {}
+    weeks = {}
     for week in range(1, 35):
-        for home, away, iso, kickoff in parse_week_dates(fetch(f"{URL}&hafta={week}")):
-            dates[(home, away)] = (iso, kickoff)
+        weeks[week] = parse_week_dates(fetch(f"{URL}&hafta={week}"))
         time.sleep(0.6)
-    for f in out:
-        iso, kickoff = dates.get((f["home"], f["away"]), (None, None))
-        f["date"] = iso
-        f["kickoff"] = kickoff
+    out = apply_week_dates(out, weeks)
     out, filled, missing = fill_missing_dates(out, previous)
     if filled:
         print(f"warning: {len(filled)} fixture(s) undated on TFF (postponed?), "
