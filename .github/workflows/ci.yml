@@ -86,3 +86,11 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch-script tests (offline)
+        run: python3 -m unittest discover -s scripts -p "test_*.py" -v
