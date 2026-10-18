@@ -89,13 +89,7 @@ impl SimulationQueue {
         if let Ok(permit) = self.slots.clone().try_acquire_owned() {
             return Ok(permit);
         }
-        let joined = self
-            .waiting
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |w| {
-                (w < self.max_waiting).then_some(w + 1)
-            })
-            .is_ok();
-        if !joined {
+        if !self.take_seat() {
             return Err(ApiError::busy("Simulation queue is full; retry shortly"));
         }
         let _seat = QueueSeat(&self.waiting);
@@ -110,6 +104,25 @@ impl SimulationQueue {
                 "Timed out waiting for simulation capacity; retry shortly",
             )),
         }
+    }
+
+    /// Claim a waiting seat if one is free. An explicit compare-exchange
+    /// loop: `fetch_update` is deprecated on current stable and its
+    /// replacement `try_update` is newer than the MSRV.
+    fn take_seat(&self) -> bool {
+        let mut current = self.waiting.load(Ordering::Acquire);
+        while current < self.max_waiting {
+            match self.waiting.compare_exchange_weak(
+                current,
+                current + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
+                Ok(_) => return true,
+                Err(actual) => current = actual,
+            }
+        }
+        false
     }
 }
 
