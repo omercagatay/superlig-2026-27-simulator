@@ -23,6 +23,49 @@ fn env_flag(name: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// The API, each rate-limited group with its own per-IP allowance, and the
+/// built SPA for everything else.
+fn router(state: Arc<AppState>, trust_proxy: bool) -> Router {
+    // No CORS layer: the SPA is served from this origin, and the Vite dev
+    // server proxies /api, so no cross-origin caller needs access.
+    Router::new()
+        .route("/api/health", get(handlers::health))
+        .route("/api/live", get(handlers::get_live_data))
+        .merge(
+            Router::new()
+                .route("/api/simulate", post(handlers::run_sim))
+                .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
+        )
+        // Every page load asks for the default forecast, a cached byte copy
+        // (or one shared run while it is computed), so it has its own, larger
+        // allowance instead of eating into the calendar's.
+        .merge(
+            Router::new()
+                .route("/api/forecast", get(handlers::forecast))
+                .route_layer(RateLimitLayer::new(60, 60, trust_proxy)),
+        )
+        .merge(
+            Router::new()
+                .route("/api/upcoming", get(handlers::upcoming))
+                .route("/api/matches", get(handlers::matches))
+                .route("/api/accuracy", get(handlers::accuracy))
+                .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
+        )
+        .merge(
+            Router::new()
+                .route("/api/scenario", post(handlers::scenario))
+                .route_layer(RateLimitLayer::new(10, 60, trust_proxy)),
+        )
+        .merge(
+            Router::new()
+                .route("/api/refresh", post(handlers::refresh_live_data))
+                .route_layer(RateLimitLayer::new(5, 60, trust_proxy)),
+        )
+        .layer(RequestBodyLimitLayer::new(1024 * 1024))
+        .with_state(state)
+        .fallback_service(ServeDir::new("frontend/dist"))
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
@@ -133,44 +176,7 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("TRUST_PROXY off: rate limiting keys on socket peer address");
     }
 
-    // No CORS layer: the SPA is served from this origin, and the Vite dev
-    // server proxies /api, so no cross-origin caller needs access.
-    let app = Router::new()
-        .route("/api/health", get(handlers::health))
-        .route("/api/live", get(handlers::get_live_data))
-        .merge(
-            Router::new()
-                .route("/api/simulate", post(handlers::run_sim))
-                .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
-        )
-        // Every page load asks for the default forecast, a cached byte copy
-        // (or one shared run while it is computed), so it has its own, larger
-        // allowance instead of eating into the calendar's.
-        .merge(
-            Router::new()
-                .route("/api/forecast", get(handlers::forecast))
-                .route_layer(RateLimitLayer::new(60, 60, trust_proxy)),
-        )
-        .merge(
-            Router::new()
-                .route("/api/upcoming", get(handlers::upcoming))
-                .route("/api/matches", get(handlers::matches))
-                .route("/api/accuracy", get(handlers::accuracy))
-                .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
-        )
-        .merge(
-            Router::new()
-                .route("/api/scenario", post(handlers::scenario))
-                .route_layer(RateLimitLayer::new(10, 60, trust_proxy)),
-        )
-        .merge(
-            Router::new()
-                .route("/api/refresh", post(handlers::refresh_live_data))
-                .route_layer(RateLimitLayer::new(5, 60, trust_proxy)),
-        )
-        .layer(RequestBodyLimitLayer::new(1024 * 1024))
-        .with_state(state)
-        .fallback_service(ServeDir::new("frontend/dist"));
+    let app = router(state, trust_proxy);
 
     let port: u16 = std::env::var("PORT")
         .ok()
@@ -185,4 +191,76 @@ async fn main() -> anyhow::Result<()> {
     )
     .await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::{Body, Bytes},
+        extract::ConnectInfo,
+        http::{Request, StatusCode},
+    };
+    use superlig_sim::forecast_cache::SimKey;
+    use tower::Service;
+
+    /// One visitor's page loads must not use up the calendar's allowance.
+    #[tokio::test]
+    async fn the_forecast_has_its_own_allowance() {
+        let state = Arc::new(AppState::new(
+            World::new(),
+            None,
+            false,
+            SimulationQueue::new(1, 0, Duration::from_secs(1)),
+        ));
+        // A cached default forecast, so no request here runs a simulation.
+        state
+            .sim_cache
+            .get_or_compute(
+                0,
+                SimKey::default_forecast(),
+                || async { Ok(()) },
+                |()| async { Ok(Bytes::from_static(b"{}")) },
+            )
+            .await
+            .unwrap();
+        let mut app = router(state, false);
+        let peer: SocketAddr = "192.0.2.1:5000".parse().unwrap();
+        let mut send = |method: &str, path: &str| {
+            let body = if method == "POST" { "{}" } else { "" };
+            let mut req = Request::builder()
+                .method(method)
+                .uri(path)
+                .header("content-type", "application/json")
+                .body(Body::from(body))
+                .unwrap();
+            req.extensions_mut().insert(ConnectInfo(peer));
+            let resp = app.call(req);
+            async move { resp.await.unwrap().status() }
+        };
+
+        for _ in 0..34 {
+            assert_eq!(send("GET", "/api/forecast").await, StatusCode::OK);
+        }
+        // The calendar's allowance is untouched, and its three routes share it.
+        let calendar = ["/api/upcoming", "/api/matches", "/api/accuracy"];
+        for path in calendar.iter().cycle().take(30) {
+            assert_eq!(send("GET", path).await, StatusCode::OK, "{path}");
+        }
+        for path in calendar {
+            assert_eq!(send("GET", path).await, StatusCode::TOO_MANY_REQUESTS);
+        }
+        for _ in 34..60 {
+            assert_eq!(send("GET", "/api/forecast").await, StatusCode::OK);
+        }
+        assert_eq!(
+            send("GET", "/api/forecast").await,
+            StatusCode::TOO_MANY_REQUESTS
+        );
+        assert_eq!(
+            send("POST", "/api/simulate").await,
+            StatusCode::OK,
+            "simulate has an allowance of its own"
+        );
+    }
 }
