@@ -21,7 +21,10 @@ test("waits follow Retry-After, else back off 1, 2, 4 s, and never pass the cap"
   assert.deepEqual([0, 1, 2].map((a) => retryDelay(a, null)), [1000, 2000, 4000]);
   assert.equal(retryDelay(0, 3000), 3000);
   assert.equal(retryDelay(2, 0), 0);
-  assert.equal(retryDelay(0, 60_000), MAX_WAIT_MS);
+  // The backend's 503 asks for exactly the cap.
+  assert.equal(retryDelay(0, MAX_WAIT_MS), MAX_WAIT_MS);
+  // Asked to wait longer than the cap: no retry at all, not an early one.
+  assert.equal(retryDelay(0, MAX_WAIT_MS + 1000), null);
   assert.equal(retryDelay(6, null), MAX_WAIT_MS);
   assert.ok(isBusy(503) && isBusy(429));
   assert.ok(!isBusy(500) && !isBusy(404) && !isBusy(400));
@@ -66,6 +69,15 @@ test("a server that stays busy fails with its status after three retries", async
   });
   assert.equal(s.sent.length, 4);
   assert.deepEqual(s.waits, [1000, 1000, 1000]);
+});
+
+test("a rate limit that frees up later than the cap fails at once", async () => {
+  // The limiter's Retry-After is exact: asking after 10 s of a 45 s wait
+  // would only be refused again.
+  const s = server(busy(429, "45"), ok);
+  await assert.rejects(sendWithRetry(s.send, { wait: s.wait }), { name: "ApiError", status: 429 });
+  assert.equal(s.sent.length, 1);
+  assert.deepEqual(s.waits, []);
 });
 
 test("any other failure is not retried and keeps the backend's message", async () => {

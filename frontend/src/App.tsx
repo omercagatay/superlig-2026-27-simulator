@@ -96,11 +96,16 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  // The picks as they are now, for a refresh that finishes renders later.
+  // The picks and settings as they are now, for a refresh that finishes
+  // renders later.
   const whatIfRef = useRef(whatIf);
   useEffect(() => {
     whatIfRef.current = whatIf;
   }, [whatIf]);
+  const settingsRef = useRef({ nSims, seed });
+  useEffect(() => {
+    settingsRef.current = { nSims, seed };
+  }, [nSims, seed]);
 
   const go = useCallback((p: Page) => {
     if (window.location.hash !== `#${p}`) window.location.hash = p;
@@ -155,11 +160,23 @@ export default function App() {
   const handleSimulate = useCallback(async () => {
     setError(null);
     setPrunedPicks(0);
-    const failure = await showForecast((signal) =>
-      runSimulation({ n_sims: nSims, seed, what_if: whatIf }, signal),
-    );
+    const simulate = (pins: WhatIf[]) =>
+      showForecast((signal) => runSimulation({ n_sims: nSims, seed, what_if: pins }, signal));
+    let failure = await simulate(whatIf);
+    // The server's own timed refresh can record a picked match after this
+    // page loaded its calendar, and the backend then refuses the pick (400).
+    // Reload the calendar; if that drops picks, ask once more without them.
+    if (failure instanceof ApiError && failure.status === 400 && whatIf.length > 0) {
+      const id = latestRun.current.id;
+      const matches = await getMatches().catch(() => null);
+      const before = whatIfRef.current.length;
+      const kept = matches ? applyMatches(matches) : whatIfRef.current;
+      // A request started meanwhile owns the page now, error line included.
+      if (id !== latestRun.current.id) return;
+      if (kept.length < before) failure = await simulate(kept);
+    }
     if (failure != null) setError(failure);
-  }, [showForecast, nSims, seed, whatIf]);
+  }, [applyMatches, showForecast, nSims, seed, whatIf]);
 
   // First load: hydrate cached live data (the backend refreshes it in the
   // background) and show the server's cached forecast without any clicks.
@@ -211,16 +228,19 @@ export default function App() {
     else setMatchesFailed(true);
     // The refresh moves the backend's played results and ratings on, and a
     // dropped pick changes the question; recompute so no view is stale.
+    // The settings are read now, not at the click, so a Run pressed during
+    // the refresh is not replaced by a forecast for the old ones.
     if (refreshed || pins.length < before.length) {
-      const unchanged = nSims === DEFAULT_SIMS && seed === DEFAULT_SEED && pins.length === 0;
+      const { nSims: n, seed: s } = settingsRef.current;
+      const unchanged = n === DEFAULT_SIMS && s === DEFAULT_SEED && pins.length === 0;
       const simFailure = await showForecast((signal) =>
-        unchanged ? defaultForecast(signal) : runSimulation({ n_sims: nSims, seed, what_if: pins }, signal),
+        unchanged ? defaultForecast(signal) : runSimulation({ n_sims: n, seed: s, what_if: pins }, signal),
       );
       if (failure == null) failure = simFailure;
     }
     setError(failure);
     setRefreshing(false);
-  }, [applyMatches, showForecast, nSims, seed]);
+  }, [applyMatches, showForecast]);
 
   const selected = data?.teams.find((x) => x.team === club) ?? null;
   const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
