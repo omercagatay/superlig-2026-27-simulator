@@ -19,18 +19,27 @@ const DICT = {
     "This forecast assumes the results you picked",
     "Bu tahmin seçtiğiniz sonuçları varsayıyor",
   ],
+  picksRemoved: [
+    "Assumed results were removed for matches that have now been played",
+    "Oynanmış maçlar için varsaydığınız sonuçlar kaldırıldı",
+  ],
   simulating: ["Simulating the season…", "Sezon simüle ediliyor…"],
   errorLabel: ["Error", "Hata"],
+  serverBusy: [
+    "The server is busy. Please try again in a moment.",
+    "Sunucu şu anda yoğun. Lütfen biraz sonra yeniden deneyin.",
+  ],
+  crashed: [
+    "Something went wrong. Reload the page to try again.",
+    "Bir sorun oluştu. Yeniden denemek için sayfayı yenileyin.",
+  ],
+  reload: ["Reload", "Sayfayı yenile"],
   noForecast: ["No forecast yet.", "Henüz tahmin yok."],
   runSimulation: ["Run simulation", "Simülasyonu çalıştır"],
   calendarLoading: ["Loading fixtures…", "Fikstür yükleniyor…"],
   calendarUnavailable: [
     "Fixtures could not be loaded. Try Update live data at the bottom of the page.",
     "Fikstür yüklenemedi. Sayfanın altındaki Canlı veriyi güncelle düğmesiyle yeniden deneyin.",
-  ],
-  noLiveData: [
-    "No results yet. Use Update live data at the bottom of the page.",
-    "Henüz sonuç yok. Sayfanın altındaki Canlı veriyi güncelle düğmesini kullanın.",
   ],
 
   // Overview
@@ -185,8 +194,12 @@ const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
 });
 
 function initialLang(): Lang {
-  const saved = localStorage.getItem("lang");
-  if (saved === "tr" || saved === "en") return saved;
+  try {
+    const saved = localStorage.getItem("lang");
+    if (saved === "tr" || saved === "en") return saved;
+  } catch {
+    /* site data blocked: the choice just isn't remembered */
+  }
   // A Turkish browser gets a Turkish page by default; anyone can switch.
   return navigator.language?.toLowerCase().startsWith("tr") ? "tr" : "en";
 }
@@ -194,7 +207,11 @@ function initialLang(): Lang {
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(initialLang);
   useEffect(() => {
-    localStorage.setItem("lang", lang);
+    try {
+      localStorage.setItem("lang", lang);
+    } catch {
+      /* site data blocked */
+    }
     document.documentElement.lang = lang;
   }, [lang]);
   return <LangContext.Provider value={{ lang, setLang }}>{children}</LangContext.Provider>;

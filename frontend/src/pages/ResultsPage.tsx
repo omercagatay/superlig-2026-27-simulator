@@ -1,4 +1,4 @@
-import type { LiveData } from "../api";
+import type { PlayedMatch } from "../api";
 import { useLang, useT } from "../i18n";
 import { matchdayLabel, num } from "../clubs";
 import { ResultLine } from "../components/Common";
@@ -6,10 +6,9 @@ import { ResultLine } from "../components/Common";
 const TOTAL_FIXTURES = 306;
 
 /** Every played result, latest matchday first. */
-export function ResultsPage({ liveData }: { liveData: LiveData }) {
+export function ResultsPage({ played }: { played: PlayedMatch[] }) {
   const t = useT();
   const { lang } = useLang();
-  const played = liveData.played_matches;
   const goals = played.reduce((sum, m) => sum + m.home_score + m.away_score, 0);
   const rounds = [...new Set(played.map((m) => m.round))].sort((a, b) => b - a);
 
