@@ -683,8 +683,10 @@ impl World {
     /// has an unplayed fixture; with the season complete, the last round.
     ///
     /// Two rounds unplayed on that date means a rescheduled match landed on
-    /// a matchday: the round with more fixtures that day is the one being
-    /// played, the earlier round on a tie.
+    /// a matchday: the round with more fixtures that day, played or not, is
+    /// the one being played, the earlier round on a tie. Counting only the
+    /// unplayed ones would hand the day to the rescheduled match as soon as
+    /// the matchday's early kick-offs were in.
     pub fn next_round_on(&self, today: &str) -> u8 {
         let unplayed: Vec<usize> = (0..self.fixtures.len())
             .filter(|&i| {
@@ -699,10 +701,18 @@ impl World {
             .min();
         match next_date {
             Some(date) => {
-                let mut per_round: BTreeMap<u8, usize> = BTreeMap::new();
-                for &i in &unplayed {
+                // Rounds with a game still to play that day, then every
+                // fixture each of them has on it.
+                let mut per_round: BTreeMap<u8, usize> = unplayed
+                    .iter()
+                    .filter(|&&i| self.dates[i].date == date)
+                    .map(|&i| (self.fixtures[i].round, 0))
+                    .collect();
+                for (i, f) in self.fixtures.iter().enumerate() {
                     if self.dates[i].date == date {
-                        *per_round.entry(self.fixtures[i].round).or_default() += 1;
+                        if let Some(count) = per_round.get_mut(&f.round) {
+                            *count += 1;
+                        }
                     }
                 }
                 per_round
@@ -1393,6 +1403,15 @@ mod tests {
     }
 
     #[test]
+    fn before_the_season_the_opening_round_is_next() {
+        let mut w = World::with_played(0);
+        weekly_calendar(&mut w);
+        let summer = "2029-07-01";
+        assert_eq!(w.next_round_on(summer), 1);
+        assert_eq!(w.upcoming_matches_on(summer).len(), 9);
+    }
+
+    #[test]
     fn next_matchday_follows_the_calendar_not_a_postponed_match() {
         let mut w = season_through(7);
         let today = day(7, 4);
@@ -1417,13 +1436,28 @@ mod tests {
             "re-dated postponement pinned it"
         );
 
-        // ...nor when it lands on a day matchday 8 is also playing.
-        w.dates[i].date = day(8, 0);
+        // ...nor when it lands on a day matchday 8 is also playing, even
+        // once that day's earlier matchday-8 games are in.
+        let matchday = day(8, 0);
+        w.dates[i].date = matchday.clone();
         assert_eq!(
             w.next_round_on(&today),
             8,
             "the busier round is the matchday"
         );
+        let earlier_games = fixtures_on(&w, 8, &matchday);
+        for &j in &earlier_games[..2] {
+            record(&mut w, j);
+        }
+        assert_eq!(
+            w.next_round_on(&matchday),
+            8,
+            "the day's played games still count"
+        );
+        for &j in &earlier_games[..2] {
+            let g = w.fixtures[j];
+            w.played.remove(&(g.home, g.away));
+        }
 
         // Re-dated to midweek, before the matchday, it is the next fixture.
         w.dates[i].date = day(7, 5);
