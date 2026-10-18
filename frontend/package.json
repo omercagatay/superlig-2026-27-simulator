@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test src/clubs.test.mjs src/calendar.test.mjs src/retry.test.mjs src/errors.test.mjs"
+    "test": "node --experimental-strip-types --test src/clubs.test.mjs src/calendar.test.mjs src/retry.test.mjs src/errors.test.mjs src/history.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

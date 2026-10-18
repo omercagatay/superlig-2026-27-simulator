@@ -235,8 +235,21 @@ export interface ScoredMatch {
   away_score: number;
   /** Probability the model gave the outcome that actually happened. */
   outcome_pct: number;
-  outcome: string;
+  /** "1" home win, "X" draw, "2" away win. */
+  outcome: "1" | "X" | "2";
+  /** Whether the model's likeliest outcome was the one that happened. */
   hit: boolean;
+  /** The frozen forecast, exactly as logged. */
+  home_pct: number;
+  draw_pct: number;
+  away_pct: number;
+  /** The day the forecast was written down. */
+  logged_at: string;
+  /** This match's -ln p of the true outcome; the report's log_loss is
+   *  the mean of these. */
+  log_loss: number;
+  /** The base-rate forecast's -ln p for the same outcome. */
+  baseline_log_loss: number;
 }
 
 export interface CalibrationBucket {

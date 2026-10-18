@@ -160,6 +160,26 @@ const DICT = {
   predicted: ["predicted", "tahmin"],
   happened: ["happened", "gerçekleşen"],
 
+  // Forecast history ({name} placeholders are filled by history.ts `fill`)
+  forecastHistory: ["Forecast history", "Tahmin geçmişi"],
+  runningLogLoss: [
+    "Log-loss so far, after each matchday · lower is better",
+    "Haftalara göre birikimli log kaybı · düşük olan daha iyi",
+  ],
+  runningLogLossTable: ["Log-loss so far, after each matchday", "Haftalara göre birikimli log kaybı"],
+  model: ["Model", "Model"],
+  baseRates: ["Base rates", "Genel oranlar"],
+  chartSummary: [
+    "Log-loss after matchday {round}: model {model}, base rates {base}. Lower is better.",
+    "{round}. haftadan sonra log kaybı: model {model}, genel oranlar {base}. Düşük olan daha iyi.",
+  ],
+  matchdayCalled: ["Called {hits} of {n}", "{n} maçta {hits} doğru"],
+  matchdayLogLoss: ["log-loss {model} vs {base} for base rates", "log kaybı {model}, genel oranlar {base}"],
+  forecastMade: ["forecast made {date}", "tahmin tarihi {date}"],
+  calledIt: ["called correctly", "doğru bilindi"],
+  missedIt: ["missed", "bilinemedi"],
+  matchesCol: ["Matches", "Maç"],
+
   // Club page
   close: ["Close", "Kapat"],
   expectedPoints: ["Expected points", "Beklenen puan"],
