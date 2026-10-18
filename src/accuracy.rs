@@ -204,7 +204,9 @@ mod tests {
     /// than a confident wrong one, and better than the base-rate baseline.
     #[test]
     fn scoring_rewards_being_right_and_punishes_being_wrong() {
-        let mut w = World::new();
+        // Nothing recorded but the two results below, whatever the shipped
+        // calendar has reached.
+        let mut w = World::with_played(0);
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
         let (fb, kon) = (w.idx["Fenerbahçe"], w.idx["Konyaspor"]);
         w.played.insert((gs, gaz), (3, 0)); // home win
@@ -266,7 +268,7 @@ mod tests {
     /// Calibration bands must report what was said against what happened.
     #[test]
     fn calibration_buckets_pair_claims_with_outcomes() {
-        let mut w = World::new();
+        let mut w = World::with_played(0);
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
         w.played.insert((gs, gaz), (3, 0));
         let r = report_with(

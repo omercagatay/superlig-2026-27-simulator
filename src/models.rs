@@ -157,11 +157,17 @@ pub struct RoundMatches {
 #[derive(Serialize, Clone)]
 pub struct MatchesResponse {
     pub rounds: Vec<RoundMatches>,
-    /// The earliest round with an unplayed fixture — the UI's landing round.
+    /// The next matchday (`World::next_round_on`, the same rule as
+    /// `/api/upcoming`) — the UI's landing round.
     pub current_round: u8,
 }
 
 pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
+    build_matches_response_on(world, &crate::sim::today_istanbul())
+}
+
+/// As `build_matches_response`, as of a given ISO date.
+pub fn build_matches_response_on(world: &crate::sim::World, today: &str) -> MatchesResponse {
     let odds = crate::odds::decimal_odds_from_pct;
     let mut rounds: Vec<RoundMatches> = Vec::new();
     for (i, f) in world.fixtures.iter().enumerate() {
@@ -217,14 +223,9 @@ pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
                 forecast,
             });
     }
-    let current_round = rounds
-        .iter()
-        .find(|r| r.matches.iter().any(|m| !m.played))
-        .map(|r| r.round)
-        .unwrap_or(crate::data::N_ROUNDS as u8);
     MatchesResponse {
         rounds,
-        current_round,
+        current_round: world.next_round_on(today),
     }
 }
 
@@ -255,6 +256,39 @@ pub struct SimResponse {
     pub what_if: Vec<WhatIf>,
     pub elo_overrides: HashMap<String, f64>,
     pub scenario_applied: Option<String>,
+}
+
+/// Integer `(points, won, drawn, lost)` for one projected-table row from a
+/// club's expected points and draws over `games` matches.
+///
+/// Points first: round(xPts) is monotone in xPts, so the Pts column can never
+/// read out of order down the table. Then fit integer W/D to those points:
+/// 3W + D = points needs drawn ≡ points (mod 3), and W + D <= games caps
+/// drawn at (3 * games - points) / 2, a cap a near-unbeaten leader hits when
+/// xPts and xD are rounded independently (88.6 and 6.6 asked for 35 results
+/// from 34 games). So take the valid draw count nearest the rounded mean.
+/// The one total no record reaches, 3 * games - 1, is shaded down a point.
+fn projected_record(mean_points: f64, mean_drawn: f64, games: u16) -> (i64, u16, u16, u16) {
+    let games = games as i64;
+    let points = (mean_points.round() as i64).clamp(0, 3 * games);
+    let points = if points == 3 * games - 1 {
+        points - 1
+    } else {
+        points
+    };
+    let max_drawn = points.min((3 * games - points) / 2);
+    let mean_drawn = mean_drawn.round() as i64;
+    let drawn = (0..=games)
+        .flat_map(|d| [mean_drawn - d, mean_drawn + d])
+        .find(|&d| (0..=max_drawn).contains(&d) && (points - d) % 3 == 0)
+        .expect("every total but 3 * games - 1 has a record");
+    let won = (points - drawn) / 3;
+    (
+        points,
+        won as u16,
+        drawn as u16,
+        (games - won - drawn) as u16,
+    )
 }
 
 pub fn build_response(
@@ -346,20 +380,11 @@ pub fn build_response(
             .into_iter()
             .enumerate()
             .map(|(pos, club)| {
-                // Points first: round(xPts) is monotone in xPts, so the Pts
-                // column can never read out of order down the table. Then fit
-                // integer W/D to those points — drawn must match points mod 3
-                // for 3W + D = points to have an integer solution, so nudge
-                // the rounded mean draw count to the nearest valid value.
-                let points = (results.points_sum[club] / n).round() as i64;
-                let mean_drawn = (results.drawn_sum[club] / n).round() as i64;
-                let drawn = (0..=2)
-                    .flat_map(|d| [mean_drawn - d, mean_drawn + d])
-                    .find(|&d| (0..=points).contains(&d) && (points - d) % 3 == 0)
-                    .unwrap_or(points % 3);
-                let won = ((points - drawn) / 3) as u16;
-                let drawn = drawn as u16;
-                let lost = crate::data::N_ROUNDS as u16 - won - drawn;
+                let (points, won, drawn, lost) = projected_record(
+                    results.points_sum[club] / n,
+                    results.drawn_sum[club] / n,
+                    crate::data::N_ROUNDS as u16,
+                );
                 let gf = (results.gf_sum[club] / n).round() as u16;
                 let ga = (results.ga_sum[club] / n).round() as u16;
                 TableRow {
@@ -474,7 +499,7 @@ mod tests {
 
     #[test]
     fn response_percentages_are_consistent_with_each_other() {
-        let w = World::new();
+        let w = World::with_played(crate::sim::MID_SEASON);
         let cfg = SimConfig {
             n_sims: 300,
             seed: 21,
@@ -515,7 +540,9 @@ mod tests {
         assert_eq!(positions, (1..=crate::data::N_TEAMS).collect::<Vec<_>>());
         for row in &resp.table {
             assert_eq!(row.played, 34);
-            assert_eq!(row.won + row.drawn + row.lost, 34);
+            // Widened: in a release build a u16 sum would wrap a negative
+            // loss count straight back to 34.
+            assert_eq!(row.won as u32 + row.drawn as u32 + row.lost as u32, 34);
             assert_eq!(row.points, 3 * row.won as i64 + row.drawn as i64);
             assert_eq!(row.gd, row.gf as i64 - row.ga as i64);
         }
@@ -566,8 +593,9 @@ mod tests {
 
     #[test]
     fn matches_response_covers_the_whole_calendar() {
-        let w = World::new();
-        let resp = build_matches_response(&w);
+        let w = World::with_played(crate::sim::MID_SEASON);
+        let today = "2026-10-18";
+        let resp = build_matches_response_on(&w, today);
 
         assert_eq!(resp.rounds.len(), crate::data::N_ROUNDS);
         let total: usize = resp.rounds.iter().map(|r| r.matches.len()).sum();
@@ -577,7 +605,12 @@ mod tests {
             assert_eq!(r.matches.len(), 9);
         }
 
-        // The landing round is the earliest one still holding unplayed games.
+        // The landing round is the next matchday — the round `/api/upcoming`
+        // lists — and it still holds unplayed games.
+        assert_eq!(resp.current_round, w.next_round_on(today));
+        let upcoming = w.upcoming_matches_on(today);
+        assert!(!upcoming.is_empty());
+        assert!(upcoming.iter().all(|f| f.round == resp.current_round));
         assert!(resp
             .rounds
             .iter()
@@ -611,6 +644,78 @@ mod tests {
                     assert!(f.likely_scores[0].pct >= f.likely_scores[1].pct);
                     assert!(f.likely_scores[1].pct >= f.likely_scores[2].pct);
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn a_complete_season_lands_on_the_last_round() {
+        let mut w = World::with_played(0);
+        for f in w.fixtures.clone() {
+            w.played.insert((f.home, f.away), (1, 1));
+        }
+        let resp = build_matches_response_on(&w, "2026-10-18");
+        assert_eq!(resp.current_round as usize, crate::data::N_ROUNDS);
+        assert!(resp
+            .rounds
+            .iter()
+            .all(|r| r.matches.iter().all(|m| m.played)));
+    }
+
+    /// A match postponed from an early round, still unplayed and dated in
+    /// the past, must not drag the landing round back to it.
+    #[test]
+    fn a_postponed_match_does_not_pin_the_landing_round() {
+        let mut w = World::with_played(crate::sim::MID_SEASON);
+        let mut by_date: Vec<usize> = (0..w.fixtures.len()).collect();
+        by_date.sort_by(|&a, &b| w.dates[a].date.cmp(&w.dates[b].date));
+        // Today is the day of the first unrecorded fixture; postpone the
+        // season opener, which is now overdue.
+        let next = by_date
+            .iter()
+            .copied()
+            .find(|&i| {
+                !w.played
+                    .contains_key(&(w.fixtures[i].home, w.fixtures[i].away))
+            })
+            .expect("a part-played season has unplayed fixtures");
+        let today = w.dates[next].date.clone();
+        let landing = w.next_round_on(&today);
+        let opener = w.fixtures[by_date[0]];
+        assert!(w.dates[by_date[0]].date < today && opener.round < landing);
+        w.played.remove(&(opener.home, opener.away));
+
+        let resp = build_matches_response_on(&w, &today);
+        assert_eq!(resp.current_round, landing);
+        assert!(w
+            .upcoming_matches_on(&today)
+            .iter()
+            .all(|f| f.round == landing));
+    }
+
+    /// An unbeaten-leader-like expected record: rounding xPts and xD apart
+    /// asked for 27 wins and 8 draws, 35 results from 34 games, and the loss
+    /// column wrapped (or panicked in a debug build).
+    #[test]
+    fn projected_record_fits_the_games_in_a_season() {
+        assert_eq!(projected_record(88.6, 6.6, 34), (89, 28, 5, 1));
+
+        let mut last_points = 0;
+        for tenths in 0..=1020 {
+            let mean_points = tenths as f64 / 10.0;
+            for halves in 0..=68 {
+                let mean_drawn = halves as f64 / 2.0;
+                if mean_drawn > mean_points {
+                    break; // every draw is a point
+                }
+                let (points, won, drawn, lost) = projected_record(mean_points, mean_drawn, 34);
+                let at = format!("xPts {mean_points}, xD {mean_drawn}");
+                assert_eq!(won as u32 + drawn as u32 + lost as u32, 34, "{at}");
+                assert_eq!(points, 3 * won as i64 + drawn as i64, "{at}");
+                // Rounded, except 101, which no 34-game record reaches.
+                assert!((points as f64 - mean_points).abs() <= 1.5, "{at}");
+                assert!(points >= last_points, "{at}: Pts must stay monotone");
+                last_points = points;
             }
         }
     }
