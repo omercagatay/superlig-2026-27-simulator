@@ -38,6 +38,17 @@ pub struct ScoredMatch {
     pub outcome: String,
     /// Whether the model's single most likely outcome was the right one.
     pub hit: bool,
+    /// The frozen forecast, exactly as logged.
+    pub home_pct: f64,
+    pub draw_pct: f64,
+    pub away_pct: f64,
+    /// The day the forecast was written down.
+    pub logged_at: String,
+    /// This match's share of the aggregate: -ln p of the true outcome, under
+    /// the same clamp. `AccuracyReport::log_loss` is the mean of these.
+    pub log_loss: f64,
+    /// The base-rate forecast's -ln p for the same outcome.
+    pub baseline_log_loss: f64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -104,8 +115,10 @@ pub fn report_with(world: &crate::sim::World, log: Vec<LoggedForecast>) -> Accur
         };
         let probs = [f.home_pct, f.draw_pct, f.away_pct];
         let p = (probs[idx] / 100.0).clamp(1e-6, 1.0);
-        log_loss += -p.ln();
-        baseline += -BASE_RATES[idx].ln();
+        let match_loss = -p.ln();
+        let match_baseline = -BASE_RATES[idx].ln();
+        log_loss += match_loss;
+        baseline += match_baseline;
 
         let best = probs
             .iter()
@@ -130,6 +143,12 @@ pub fn report_with(world: &crate::sim::World, log: Vec<LoggedForecast>) -> Accur
             outcome_pct: probs[idx],
             outcome: ["1", "X", "2"][idx].to_string(),
             hit: best == idx,
+            home_pct: f.home_pct,
+            draw_pct: f.draw_pct,
+            away_pct: f.away_pct,
+            logged_at: f.logged_at,
+            log_loss: match_loss,
+            baseline_log_loss: match_baseline,
         });
     }
 
@@ -204,7 +223,9 @@ mod tests {
     /// than a confident wrong one, and better than the base-rate baseline.
     #[test]
     fn scoring_rewards_being_right_and_punishes_being_wrong() {
-        let mut w = World::new();
+        // Nothing recorded but the two results below, whatever the shipped
+        // calendar has reached.
+        let mut w = World::with_played(0);
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
         let (fb, kon) = (w.idx["Fenerbahçe"], w.idx["Konyaspor"]);
         w.played.insert((gs, gaz), (3, 0)); // home win
@@ -263,10 +284,104 @@ mod tests {
         assert_eq!(partial.scored, 1);
     }
 
+    /// The forecast history shows each match's own score next to its frozen
+    /// forecast. The headline log-loss must be exactly the mean of those rows,
+    /// and every row must carry the forecast as it was logged.
+    #[test]
+    fn per_match_scores_are_the_aggregate_broken_down() {
+        let w = World::with_played(crate::sim::MID_SEASON);
+        let mut log: Vec<LoggedForecast> = w
+            .fixtures
+            .iter()
+            .enumerate()
+            .map(|(k, f)| {
+                let home_pct = 20.0 + (k * 7 % 50) as f64;
+                let draw_pct = 15.0 + (k * 3 % 20) as f64;
+                LoggedForecast {
+                    round: f.round,
+                    date: w.dates[k].date.clone(),
+                    home: w.teams[f.home].clone(),
+                    away: w.teams[f.away].clone(),
+                    home_pct,
+                    draw_pct,
+                    away_pct: 100.0 - home_pct - draw_pct,
+                    logged_at: format!("2026-08-{:02}", 1 + k % 28),
+                }
+            })
+            .collect();
+        let outcome_of = |f: &LoggedForecast| {
+            let (hs, as_) = w.played[&(w.idx[&f.home], w.idx[&f.away])];
+            match hs.cmp(&as_) {
+                std::cmp::Ordering::Greater => 0,
+                std::cmp::Ordering::Equal => 1,
+                std::cmp::Ordering::Less => 2,
+            }
+        };
+        // One played match called as impossible, so the clamp is exercised.
+        let k = (0..log.len())
+            .find(|&k| {
+                w.played
+                    .contains_key(&(w.fixtures[k].home, w.fixtures[k].away))
+            })
+            .expect("a played fixture");
+        let mut probs = [50.0; 3];
+        probs[outcome_of(&log[k])] = 0.0;
+        log[k].home_pct = probs[0];
+        log[k].draw_pct = probs[1];
+        log[k].away_pct = probs[2];
+        let impossible = (log[k].home.clone(), log[k].away.clone());
+
+        let r = report_with(&w, log.clone());
+        assert_eq!(r.scored, crate::sim::MID_SEASON);
+        assert_eq!(r.matches.len(), r.scored);
+
+        let n = r.matches.len() as f64;
+        let mean = r.matches.iter().map(|m| m.log_loss).sum::<f64>() / n;
+        let mean_baseline = r.matches.iter().map(|m| m.baseline_log_loss).sum::<f64>() / n;
+        assert!((r.log_loss - mean).abs() < 1e-9, "{} vs {mean}", r.log_loss);
+        assert!(
+            (r.baseline_log_loss - mean_baseline).abs() < 1e-9,
+            "{} vs {mean_baseline}",
+            r.baseline_log_loss
+        );
+
+        for m in &r.matches {
+            let f = log
+                .iter()
+                .find(|f| f.home == m.home && f.away == m.away)
+                .expect("every scored match comes from the log");
+            assert_eq!(
+                (m.home_pct, m.draw_pct, m.away_pct),
+                (f.home_pct, f.draw_pct, f.away_pct)
+            );
+            assert_eq!(m.logged_at, f.logged_at);
+            assert_eq!(m.round, f.round);
+            assert_eq!(m.date, f.date);
+            let idx = outcome_of(f);
+            assert_eq!(m.outcome, ["1", "X", "2"][idx]);
+            assert_eq!(m.outcome_pct, [m.home_pct, m.draw_pct, m.away_pct][idx]);
+            let expected = -(m.outcome_pct / 100.0).clamp(1e-6, 1.0).ln();
+            assert_eq!(m.log_loss, expected);
+            assert_eq!(m.baseline_log_loss, -BASE_RATES[idx].ln());
+            assert!(m.log_loss.is_finite() && m.log_loss >= 0.0);
+        }
+        let clamped = r
+            .matches
+            .iter()
+            .find(|m| (m.home.clone(), m.away.clone()) == impossible)
+            .expect("the impossible call was scored");
+        assert_eq!(clamped.outcome_pct, 0.0);
+        assert_eq!(clamped.log_loss, -(1e-6f64).ln());
+
+        // Newest matchday first, as the history lists them.
+        assert!(r.matches.windows(2).all(|p| p[0].round >= p[1].round));
+        assert!(r.matches.first().unwrap().round > r.matches.last().unwrap().round);
+    }
+
     /// Calibration bands must report what was said against what happened.
     #[test]
     fn calibration_buckets_pair_claims_with_outcomes() {
-        let mut w = World::new();
+        let mut w = World::with_played(0);
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
         w.played.insert((gs, gaz), (3, 0));
         let r = report_with(

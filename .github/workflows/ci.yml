@@ -32,6 +32,13 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      # --all-targets builds examples without their #[cfg(test)] modules;
+      # log_forecast's freeze rules are tested there.
+      - name: Lint and run example tests
+        run: |
+          cargo clippy --examples --profile test -- -D warnings
+          cargo test --examples
+
       - name: Build release
         run: cargo build --release
 
@@ -86,3 +93,11 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Fetch-script tests (offline)
+        run: python3 -m unittest discover -s scripts -p "test_*.py" -v

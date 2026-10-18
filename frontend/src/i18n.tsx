@@ -19,18 +19,42 @@ const DICT = {
     "This forecast assumes the results you picked",
     "Bu tahmin seçtiğiniz sonuçları varsayıyor",
   ],
+  picksRemoved: [
+    "Assumed results were removed for matches that have now been played",
+    "Oynanmış maçlar için varsaydığınız sonuçlar kaldırıldı",
+  ],
   simulating: ["Simulating the season…", "Sezon simüle ediliyor…"],
   errorLabel: ["Error", "Hata"],
+  serverBusy: [
+    "The server is busy. Please try again in a moment.",
+    "Sunucu şu anda yoğun. Lütfen biraz sonra yeniden deneyin.",
+  ],
+  tooManyRequests: [
+    "Too many requests — try again in {n} s.",
+    "Çok fazla istek — {n} sn sonra tekrar deneyin.",
+  ],
+  tooManyRequestsSoon: [
+    "Too many requests — try again in a moment.",
+    "Çok fazla istek — biraz sonra tekrar deneyin.",
+  ],
+  settingsRejected: ["These settings were not accepted.", "Bu ayarlar kabul edilmedi."],
+  tffUnreachable: ["Could not reach TFF for live data.", "Canlı veri için TFF'ye ulaşılamadı."],
+  connectionFailed: [
+    "Connection failed. Please try again.",
+    "Bağlantı kurulamadı. Lütfen yeniden deneyin.",
+  ],
+  requestFailed: ["The request failed.", "İstek başarısız oldu."],
+  crashed: [
+    "Something went wrong. Reload the page to try again.",
+    "Bir sorun oluştu. Yeniden denemek için sayfayı yenileyin.",
+  ],
+  reload: ["Reload", "Sayfayı yenile"],
   noForecast: ["No forecast yet.", "Henüz tahmin yok."],
   runSimulation: ["Run simulation", "Simülasyonu çalıştır"],
   calendarLoading: ["Loading fixtures…", "Fikstür yükleniyor…"],
   calendarUnavailable: [
     "Fixtures could not be loaded. Try Update live data at the bottom of the page.",
     "Fikstür yüklenemedi. Sayfanın altındaki Canlı veriyi güncelle düğmesiyle yeniden deneyin.",
-  ],
-  noLiveData: [
-    "No results yet. Use Update live data at the bottom of the page.",
-    "Henüz sonuç yok. Sayfanın altındaki Canlı veriyi güncelle düğmesini kullanın.",
   ],
 
   // Overview
@@ -63,6 +87,10 @@ const DICT = {
   recalculate: ["Recalculate", "Yeniden hesapla"],
   recalculating: ["Calculating…", "Hesaplanıyor…"],
   clearPicks: ["Clear", "Temizle"],
+  pickLimit: [
+    "You can assume at most {n} results. Remove one to pick another.",
+    "En fazla {n} sonuç varsayabilirsiniz. Başka bir maç seçmek için birini kaldırın.",
+  ],
   pickLabel: ["Assume", "Varsay"],
   pickHome: ["Home", "Ev"],
   pickDraw: ["Draw", "Beraberlik"],
@@ -132,6 +160,26 @@ const DICT = {
   predicted: ["predicted", "tahmin"],
   happened: ["happened", "gerçekleşen"],
 
+  // Forecast history ({name} placeholders are filled by history.ts `fill`)
+  forecastHistory: ["Forecast history", "Tahmin geçmişi"],
+  runningLogLoss: [
+    "Log-loss so far, after each matchday · lower is better",
+    "Haftalara göre birikimli log kaybı · düşük olan daha iyi",
+  ],
+  runningLogLossTable: ["Log-loss so far, after each matchday", "Haftalara göre birikimli log kaybı"],
+  model: ["Model", "Model"],
+  baseRates: ["Base rates", "Genel oranlar"],
+  chartSummary: [
+    "Log-loss after matchday {round}: model {model}, base rates {base}. Lower is better.",
+    "{round}. haftadan sonra log kaybı: model {model}, genel oranlar {base}. Düşük olan daha iyi.",
+  ],
+  matchdayCalled: ["Called {hits} of {n}", "{n} maçta {hits} doğru"],
+  matchdayLogLoss: ["log-loss {model} vs {base} for base rates", "log kaybı {model}, genel oranlar {base}"],
+  forecastMade: ["forecast made {date}", "tahmin tarihi {date}"],
+  calledIt: ["called correctly", "doğru bilindi"],
+  missedIt: ["missed", "bilinemedi"],
+  matchesCol: ["Matches", "Maç"],
+
   // Club page
   close: ["Close", "Kapat"],
   expectedPoints: ["Expected points", "Beklenen puan"],
@@ -185,8 +233,12 @@ const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({
 });
 
 function initialLang(): Lang {
-  const saved = localStorage.getItem("lang");
-  if (saved === "tr" || saved === "en") return saved;
+  try {
+    const saved = localStorage.getItem("lang");
+    if (saved === "tr" || saved === "en") return saved;
+  } catch {
+    /* site data blocked: the choice just isn't remembered */
+  }
   // A Turkish browser gets a Turkish page by default; anyone can switch.
   return navigator.language?.toLowerCase().startsWith("tr") ? "tr" : "en";
 }
@@ -194,7 +246,11 @@ function initialLang(): Lang {
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(initialLang);
   useEffect(() => {
-    localStorage.setItem("lang", lang);
+    try {
+      localStorage.setItem("lang", lang);
+    } catch {
+      /* site data blocked */
+    }
     document.documentElement.lang = lang;
   }, [lang]);
   return <LangContext.Provider value={{ lang, setLang }}>{children}</LangContext.Provider>;

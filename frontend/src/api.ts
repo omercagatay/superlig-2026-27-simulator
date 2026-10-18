@@ -1,3 +1,5 @@
+import { sendWithRetry } from "./retry";
+
 export interface TeamRow {
   team: string;
   title_pct: number;
@@ -84,48 +86,62 @@ export interface ScenarioRequest {
 
 const API_BASE = "";
 
-export async function runSimulation(req: SimRequest): Promise<SimResponse> {
-  const resp = await fetch(`${API_BASE}/api/simulate`, {
+export { ApiError } from "./retry";
+
+/** Every call goes through here: a busy server (503, 429) is asked again
+ *  after the wait retry.ts derives from its Retry-After, and any other
+ *  failure throws ApiError with the backend's message. */
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const resp = await sendWithRetry(() => fetch(`${API_BASE}${path}`, init), {
+    signal: init.signal ?? undefined,
+  });
+  return resp.json();
+}
+
+function postJson(body: unknown, signal?: AbortSignal): RequestInit {
+  return {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+    body: JSON.stringify(body),
+    signal,
+  };
+}
+
+/** The default forecast (50,000 seasons, seed 12345, nothing assumed). The
+ *  server computes it once per state of the league, so a first visit never
+ *  waits on a simulation of its own. Same JSON as runSimulation({}). */
+export async function getForecast(signal?: AbortSignal): Promise<SimResponse> {
+  return request("/api/forecast", { signal });
+}
+
+export async function runSimulation(req: SimRequest, signal?: AbortSignal): Promise<SimResponse> {
+  return request("/api/simulate", postJson(req, signal));
 }
 
 export async function runScenario(req: ScenarioRequest): Promise<SimResponse> {
-  const resp = await fetch(`${API_BASE}/api/scenario`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  });
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/scenario", postJson(req));
+}
+
+export interface PlayedMatch {
+  round: number;
+  home: string;
+  home_score: number;
+  away: string;
+  away_score: number;
 }
 
 export interface LiveData {
-  played_matches: {
-    round: number;
-    home: string;
-    home_score: number;
-    away: string;
-    away_score: number;
-  }[];
+  played_matches: PlayedMatch[];
   fetched_at: string;
 }
 
 export async function refreshLiveData(): Promise<LiveData> {
-  const resp = await fetch(`${API_BASE}/api/refresh`, { method: "POST" });
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/refresh", { method: "POST" });
 }
 
 /** Cached live data (kept fresh by the backend's background refresh). */
 export async function getLiveData(): Promise<LiveData | null> {
-  const resp = await fetch(`${API_BASE}/api/live`);
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/live");
 }
 
 export interface UpcomingMatch {
@@ -190,22 +206,24 @@ export interface RoundMatches {
 
 export interface MatchesResponse {
   rounds: RoundMatches[];
-  /** The earliest round with an unplayed fixture — the UI's landing round. */
+  /** The next matchday, the UI's landing round, and the round
+   *  /api/upcoming lists (World::next_round_on): the round of the earliest
+   *  unplayed fixture dated today or later (Istanbul time), so one
+   *  postponed match does not hold it back. If two rounds have unplayed
+   *  fixtures on that date, the one with more fixtures that day wins.
+   *  With only overdue fixtures left, it is the earliest round still
+   *  holding one; once every fixture is played, the last round. */
   current_round: number;
 }
 
 /** The full 306-fixture calendar with model prices for every unplayed game. */
 export async function getMatches(): Promise<MatchesResponse> {
-  const resp = await fetch(`${API_BASE}/api/matches`);
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/matches");
 }
 
 /** Win/draw/loss forecasts for the next matchday's unplayed fixtures. */
 export async function getUpcoming(): Promise<UpcomingResponse> {
-  const resp = await fetch(`${API_BASE}/api/upcoming`);
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/upcoming");
 }
 
 export interface ScoredMatch {
@@ -217,8 +235,21 @@ export interface ScoredMatch {
   away_score: number;
   /** Probability the model gave the outcome that actually happened. */
   outcome_pct: number;
-  outcome: string;
+  /** "1" home win, "X" draw, "2" away win. */
+  outcome: "1" | "X" | "2";
+  /** Whether the model's likeliest outcome was the one that happened. */
   hit: boolean;
+  /** The frozen forecast, exactly as logged. */
+  home_pct: number;
+  draw_pct: number;
+  away_pct: number;
+  /** The day the forecast was written down. */
+  logged_at: string;
+  /** This match's -ln p of the true outcome; the report's log_loss is
+   *  the mean of these. */
+  log_loss: number;
+  /** The base-rate forecast's -ln p for the same outcome. */
+  baseline_log_loss: number;
 }
 
 export interface CalibrationBucket {
@@ -240,7 +271,5 @@ export interface AccuracyReport {
 
 /** How the model has done against predictions frozen before kick-off. */
 export async function getAccuracy(): Promise<AccuracyReport> {
-  const resp = await fetch(`${API_BASE}/api/accuracy`);
-  if (!resp.ok) throw new Error(await resp.text());
-  return resp.json();
+  return request("/api/accuracy");
 }

@@ -16,10 +16,21 @@ GlobalSign intermediate. Browsers paper over this by chasing the certificate's
 AIA URL; urllib and curl do not, and fail with "unable to get local issuer
 certificate". We do the same AIA fetch, pinned by SHA-256 so the plain-HTTP
 download cannot be substituted. Certificate verification stays ON.
+
+The committed file is the reference for two guards. A postponed match has no
+date on its week page ("Ertelendi" or blank), so it keeps its last committed
+date and kick-off instead of failing the run. That fallback must not mask a
+broken widget, so every week page has to yield all nine of its matches, an
+undated one only with a blank or "Ertelendi"-style cell, and at most
+MAX_UNDATED of them in one run. And a result, once committed, must not vanish
+or change: if it does the run fails, unless ALLOW_RESULT_CHANGES=1 says it is
+a genuine TFF correction or award. The comparison logic is pure and tested
+offline by scripts/test_fetch_fixtures.py.
 """
-import hashlib, html, json, re, ssl, sys, time, urllib.request
+import hashlib, html, json, os, re, ssl, sys, time, unicodedata, urllib.request
 
 URL = "https://www.tff.org/default.aspx?pageID=198"
+OUT = "data/fixtures_2026_27.json"
 UA = "Mozilla/5.0 (X11; Linux x86_64)"
 
 # From the leaf's Authority Information Access extension.
@@ -66,17 +77,80 @@ WEEK_ROW = re.compile(
     re.S)
 
 
+# Matches on every week page: one round of 18 clubs.
+ROUND_SIZE = 9
+
+# Date cells that mean "no date yet" rather than a format we fail to parse,
+# compared case- and accent-insensitively (see no_date).
+NO_DATE_MARKERS = {"", "-", "–", "—", "ertelendi", "belirlenmedi"}
+
+# At most this many fixtures may keep their committed date in one run: two
+# rounds' worth, so a whole postponed matchday plus postponements still
+# awaiting a new date fit. More reads as a week widget that has stopped
+# yielding dates, and fails the run.
+MAX_UNDATED = 18
+
+
 def parse_week_dates(page):
-    """[(home, away, iso_date, time_or_none)] for one `&hafta=N` page."""
-    out = []
+    """(dated, undated) rows of one `&hafta=N` page: dated is
+    [(home, away, iso_date, time_or_none)] for a DD.MM.YYYY date cell,
+    undated is [(home, away, raw_date_text)] for any other."""
+    dated, undated = [], []
     for raw_date, raw_time, raw_home, raw_away in WEEK_ROW.findall(page):
+        home, away = canonical(raw_home), canonical(raw_away)
         d = html.unescape(raw_date).strip()
         m = re.match(r"^(\d{2})\.(\d{2})\.(\d{4})$", d)
         if not m:
+            undated.append((home, away, d))
             continue
         iso = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
         t = html.unescape(raw_time).strip() or None
-        out.append((canonical(raw_home), canonical(raw_away), iso, t))
+        dated.append((home, away, iso, t))
+    return dated, undated
+
+
+def no_date(text):
+    """Whether a date cell is blank or a marker like "Ertelendi"/"ERTELENDİ"."""
+    folded = unicodedata.normalize("NFKD", text.strip().casefold().replace("ı", "i"))
+    return "".join(c for c in folded if not unicodedata.combining(c)) in NO_DATE_MARKERS
+
+
+def apply_week_dates(fixtures, weeks):
+    """A new list with each fixture's date and kick-off from `weeks`, which is
+    {round: (dated, undated)} from parse_week_dates; None for a postponement.
+
+    Fails unless every page matched exactly ROUND_SIZE rows, every fixture is
+    one of them, every undated row's cell is a no-date marker and at most
+    MAX_UNDATED are undated. Otherwise a renamed widget would leave every
+    fixture undated and the committed-date fallback would quietly cover it.
+    """
+    problems = [f"  week {w}: matched {len(d) + len(u)} of {ROUND_SIZE} matches"
+                for w, (d, u) in sorted(weeks.items()) if len(d) + len(u) != ROUND_SIZE]
+    dated = {(h, a): (iso, t) for d, _ in weeks.values() for h, a, iso, t in d}
+    undated = {(h, a): raw for _, u in weeks.values() for h, a, raw in u}
+    out, postponed = [], []
+    for f in fixtures:
+        key = (f["home"], f["away"])
+        if key in undated and key not in dated:
+            postponed.append(f)
+            if not no_date(undated[key]):
+                problems.append(f"  {label(f)}: date cell {undated[key]!r} is not a date")
+        elif key not in dated:
+            problems.append(f"  {label(f)}: on no week page")
+        iso, kickoff = dated.get(key, (None, None))
+        out.append({**f, "date": iso, "kickoff": kickoff})
+    if len(postponed) > MAX_UNDATED:
+        problems.append(f"  {len(postponed)} fixtures undated, more than "
+                        f"MAX_UNDATED={MAX_UNDATED} (raise it only for a genuine "
+                        "mass postponement)")
+    if problems:
+        shown = problems[:12]
+        if len(problems) > len(shown):
+            shown.append(f"  ... and {len(problems) - len(shown)} more")
+        raise SystemExit(
+            "The week pages do not date the calendar (has TFF changed the "
+            "widget markup? see WEEK_ROW):\n" + "\n".join(shown)
+            + "\nNot writing the file.")
     return out
 
 
@@ -85,6 +159,90 @@ def canonical(raw):
     if name not in TFF_NAMES:
         raise SystemExit(f"Unmapped TFF club name: {name!r} — add it to TFF_NAMES")
     return TFF_NAMES[name]
+
+
+def load_previous(path):
+    """{(home, away): fixture} from the committed file; {} on a first run."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return {(x["home"], x["away"]): x for x in json.load(f)}
+    except FileNotFoundError:
+        return {}
+
+
+def label(f):
+    return f"R{f['round']}  {f['home']} v {f['away']}"
+
+
+def scoreline(f):
+    if f is None:
+        return "missing"
+    if f.get("home_score") is None:
+        return "no result"
+    return f"{f['home_score']}-{f['away_score']}"
+
+
+def fill_missing_dates(fixtures, previous):
+    """Give each undated fixture its committed date and kick-off.
+
+    Returns (fixtures, filled, missing): a new list, the fixtures that took a
+    committed date, and those with no date anywhere.
+    """
+    out, filled, missing = [], [], []
+    for f in fixtures:
+        if not f["date"]:
+            prev = previous.get((f["home"], f["away"]))
+            if prev and prev.get("date"):
+                f = {**f, "date": prev["date"], "kickoff": prev.get("kickoff")}
+                filled.append(f)
+            else:
+                missing.append(f)
+        out.append(f)
+    return out, filled, missing
+
+
+def result_changes(previous, fixtures):
+    """[(committed, scraped)] for every committed result the scrape lost or
+    changed; scraped is None if the fixture itself is gone."""
+    new = {(f["home"], f["away"]): f for f in fixtures}
+    changes = []
+    for key, p in previous.items():
+        if p.get("home_score") is None:
+            continue
+        n = new.get(key)
+        if scoreline(n) != scoreline(p):
+            changes.append((p, n))
+    return changes
+
+
+def check_results(previous, fixtures, allow):
+    """Fail on vanished or changed results unless `allow`; returns the lines
+    to warn about when allowed."""
+    lines = [f"  {label(p)}  {scoreline(p)} -> {scoreline(n)}"
+             for p, n in result_changes(previous, fixtures)]
+    if lines and not allow:
+        raise SystemExit(
+            f"{len(lines)} committed result(s) vanished or changed on TFF:\n"
+            + "\n".join(lines)
+            + "\nNot writing the file. If TFF genuinely corrected these (or "
+            "awarded a match), re-run with ALLOW_RESULT_CHANGES=1.")
+    return lines
+
+
+def changes_since(previous, fixtures):
+    """(newly played, [(committed, re-dated)], [(committed, new kick-off)])."""
+    played, redated, kickoffs = [], [], []
+    for f in fixtures:
+        p = previous.get((f["home"], f["away"]))
+        if p is None:
+            continue
+        if f["home_score"] is not None and p.get("home_score") is None:
+            played.append(f)
+        if p.get("date") and f["date"] != p["date"]:
+            redated.append((p, f))
+        if f["kickoff"] and f["kickoff"] != p.get("kickoff"):
+            kickoffs.append((p, f))
+    return played, redated, kickoffs
 
 
 def tls_context():
@@ -104,6 +262,8 @@ def tls_context():
 
 
 def main():
+    # Read before anything is overwritten: both guards compare against it.
+    previous = load_previous(OUT)
     ctx = tls_context()
 
     def fetch(url):
@@ -130,16 +290,18 @@ def main():
         })
 
     # Kick-off dates come from the per-week widget, one request per matchday.
-    dates = {}
+    weeks = {}
     for week in range(1, 35):
-        for home, away, iso, kickoff in parse_week_dates(fetch(f"{URL}&hafta={week}")):
-            dates[(home, away)] = (iso, kickoff)
+        weeks[week] = parse_week_dates(fetch(f"{URL}&hafta={week}"))
         time.sleep(0.6)
-    for f in out:
-        iso, kickoff = dates.get((f["home"], f["away"]), (None, None))
-        f["date"] = iso
-        f["kickoff"] = kickoff
-    missing = [f for f in out if not f["date"]]
+    out = apply_week_dates(out, weeks)
+    out, filled, missing = fill_missing_dates(out, previous)
+    if filled:
+        print(f"warning: {len(filled)} fixture(s) undated on TFF (postponed?), "
+              "keeping the committed date:", file=sys.stderr)
+        for f in filled:
+            print(f"  {label(f)}  {f['date']} {f['kickoff'] or ''}".rstrip(),
+                  file=sys.stderr)
     assert not missing, f"{len(missing)} fixtures without a date, e.g. {missing[:3]}"
 
     # Structural validation: a complete double round-robin.
@@ -165,8 +327,15 @@ def main():
     assert len(unordered) == 153, f"expected 153 pairs, got {len(unordered)}"
     assert set(unordered.values()) == {2}, "every pair meets exactly twice"
 
+    allow = os.environ.get("ALLOW_RESULT_CHANGES") == "1"
+    corrected = check_results(previous, out, allow)
+    if corrected:
+        print(f"warning: {len(corrected)} committed result(s) changed "
+              "(ALLOW_RESULT_CHANGES=1):", file=sys.stderr)
+        print("\n".join(corrected), file=sys.stderr)
+
     out.sort(key=lambda f: (f["round"], f["home"]))
-    with open("data/fixtures_2026_27.json", "w", encoding="utf-8") as f:
+    with open(OUT, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
 
     played = [f for f in out if f["home_score"] is not None]
@@ -176,6 +345,18 @@ def main():
     for f in played:
         print(f"  R{f['round']}  {f['home']} {f['home_score']}-"
               f"{f['away_score']} {f['away']}", file=sys.stderr)
+
+    new_results, redated, kickoffs = changes_since(previous, out)
+    print(f"since the committed file: {len(new_results)} newly played, "
+          f"{len(redated)} re-dated, {len(kickoffs)} kick-off times added or moved",
+          file=sys.stderr)
+    for f in new_results:
+        print(f"  played    {label(f)}  {scoreline(f)}", file=sys.stderr)
+    for p, f in redated:
+        print(f"  re-dated  {label(f)}  {p['date']} -> {f['date']}", file=sys.stderr)
+    for p, f in kickoffs:
+        print(f"  kick-off  {label(f)}  {p.get('kickoff') or '--:--'} -> {f['kickoff']}",
+              file=sys.stderr)
 
 
 if __name__ == "__main__":

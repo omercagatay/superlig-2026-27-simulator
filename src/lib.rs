@@ -1,6 +1,7 @@
 pub mod accuracy;
 pub mod data;
 pub mod dixoncoles;
+pub mod forecast_cache;
 pub mod handlers;
 pub mod history;
 pub mod league;

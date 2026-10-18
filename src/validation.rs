@@ -126,8 +126,9 @@ mod tests {
 
     #[test]
     fn scenario_changes_apply_to_current_ratings_and_are_bounded() {
-        let world = World::new();
+        let world = World::with_played(crate::sim::MID_SEASON);
         let gs = world.idx["Galatasaray"];
+        assert_ne!(world.elo[gs], world.elo_baseline[gs], "results moved it");
         let shifts = HashMap::from([("Galatasaray".to_string(), -40.0)]);
         let o = scenario_overrides(&world, &shifts).unwrap();
         assert!((o["Galatasaray"] - (world.elo[gs] - 40.0)).abs() < 1e-9);

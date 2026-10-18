@@ -170,36 +170,32 @@ mod tests {
         assert!(per_round.values().all(|&c| c == 9), "9 fixtures per round");
     }
 
+    /// Only what holds for any calendar TFF can publish. Rounds are not
+    /// checked to start in round order: a round-wide postponement re-dates a
+    /// whole matchday past later ones, and the weekly refresh must not turn
+    /// red over a real calendar.
     #[test]
-    fn every_fixture_has_a_calendar_date_in_season_order() {
-        let f = fixtures();
-        for fx in &f {
-            assert_eq!(fx.date.len(), 10, "ISO date for {} v {}", fx.home, fx.away);
-            assert!(fx.date.starts_with("2026-") || fx.date.starts_with("2027-"));
-        }
-        // Rounds run in calendar order: each round's earliest date is no
-        // earlier than the previous round's earliest.
-        let mut first: Vec<(u8, &str)> = Vec::new();
-        for fx in &f {
-            match first.iter_mut().find(|(r, _)| *r == fx.round) {
-                Some(slot) => {
-                    if fx.date.as_str() < slot.1 {
-                        slot.1 = &fx.date;
-                    }
-                }
-                None => first.push((fx.round, &fx.date)),
-            }
-        }
-        first.sort_by_key(|(r, _)| *r);
-        for pair in first.windows(2) {
+    fn every_fixture_has_a_valid_date_in_the_season() {
+        for fx in fixtures() {
+            let at = format!("round {} {} v {}", fx.round, fx.home, fx.away);
+            assert_eq!(fx.date.len(), 10, "ISO date {:?} for {at}", fx.date);
             assert!(
-                pair[0].1 <= pair[1].1,
-                "round {} starts {} but round {} starts {}",
-                pair[0].0,
-                pair[0].1,
-                pair[1].0,
-                pair[1].1
+                chrono::NaiveDate::parse_from_str(&fx.date, "%Y-%m-%d").is_ok(),
+                "invalid date {:?} for {at}",
+                fx.date
             );
+            assert!(
+                ("2026-07-01"..="2027-07-31").contains(&fx.date.as_str()),
+                "{} is outside the 2026-27 season for {at}",
+                fx.date
+            );
+            if let Some(kickoff) = &fx.kickoff {
+                assert!(
+                    kickoff.len() == 5
+                        && chrono::NaiveTime::parse_from_str(kickoff, "%H:%M").is_ok(),
+                    "kick-off {kickoff:?} is not HH:MM for {at}"
+                );
+            }
         }
     }
 

@@ -11,7 +11,7 @@ use std::{
 use axum::{
     body::Body,
     extract::ConnectInfo,
-    http::{Request, Response, StatusCode},
+    http::{header, Request, Response, StatusCode},
 };
 use tokio::sync::Mutex;
 use tower::{Layer, Service};
@@ -85,6 +85,18 @@ fn client_key(req: &Request<Body>, trust_proxy: bool) -> Option<String> {
         .map(|ConnectInfo(addr)| addr.ip().to_string())
 }
 
+/// Whole seconds until the oldest request in the window expires and frees
+/// a place — at least 1, so a client never retries immediately. Entries are
+/// stamped before the lock is taken, so they need not be in order.
+fn retry_after_secs(entries: &[Instant], now: Instant, window: Duration) -> u64 {
+    let wait = entries
+        .iter()
+        .min()
+        .map(|&oldest| window.saturating_sub(now.duration_since(oldest)))
+        .unwrap_or(window);
+    (wait.as_secs() + u64::from(wait.subsec_nanos() > 0)).max(1)
+}
+
 impl<S> Service<Request<Body>> for RateLimit<S>
 where
     S: Service<Request<Body>, Response = Response<Body>> + Clone + Send + 'static,
@@ -121,6 +133,7 @@ where
                 if entries.len() >= max_requests {
                     let resp = Response::builder()
                         .status(StatusCode::TOO_MANY_REQUESTS)
+                        .header(header::RETRY_AFTER, retry_after_secs(entries, now, window))
                         .body(Body::from("Rate limit exceeded"))
                         .expect("valid response");
                     return Ok(resp);
@@ -171,5 +184,55 @@ mod tests {
         let req = req_with_xff(None);
         assert_eq!(client_key(&req, true), None);
         assert_eq!(client_key(&req, false), None);
+    }
+
+    /// Answers 200 to everything.
+    #[derive(Clone)]
+    struct Ok200;
+
+    impl Service<Request<Body>> for Ok200 {
+        type Response = Response<Body>;
+        type Error = std::convert::Infallible;
+        type Future = std::future::Ready<Result<Self::Response, Self::Error>>;
+
+        fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn call(&mut self, _: Request<Body>) -> Self::Future {
+            std::future::ready(Ok(Response::new(Body::empty())))
+        }
+    }
+
+    fn req_from(addr: &str) -> Request<Body> {
+        let mut req = req_with_xff(None);
+        let addr: SocketAddr = addr.parse().unwrap();
+        req.extensions_mut().insert(ConnectInfo(addr));
+        req
+    }
+
+    #[tokio::test]
+    async fn rejection_carries_retry_after_until_the_oldest_request_expires() {
+        let mut svc = RateLimitLayer::new(2, 60, false).layer(Ok200);
+        for _ in 0..2 {
+            let resp = svc.call(req_from("192.0.2.1:5000")).await.unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+        }
+        let resp = svc.call(req_from("192.0.2.1:5000")).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::TOO_MANY_REQUESTS);
+        assert_eq!(resp.headers()[header::RETRY_AFTER], "60");
+
+        let other = svc.call(req_from("192.0.2.2:5000")).await.unwrap();
+        assert_eq!(other.status(), StatusCode::OK, "buckets are per client");
+    }
+
+    #[test]
+    fn retry_after_rounds_up_and_is_never_zero() {
+        let start = Instant::now();
+        let now = start + Duration::from_secs(60);
+        let window = Duration::from_secs(60);
+        let entries = [now, start + Duration::from_millis(10_500)];
+        assert_eq!(retry_after_secs(&entries, now, window), 11);
+        assert_eq!(retry_after_secs(&[start], now, window), 1);
     }
 }

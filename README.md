@@ -16,7 +16,8 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Locks confirmed results from the official TFF calendar and simulates only the remaining fixtures.
 - Applies the Süper Lig's own classification rules, in which **head-to-head decides before goal difference**.
 - Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
-- Converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season.
+- Optionally converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season (an API endpoint, off unless `SCENARIO_ENABLED=1`).
+- Computes the default forecast once per state of the league and serves it from a cache; a bounded queue absorbs bursts of fresh simulations.
 - Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
 
 ## Stack
@@ -126,7 +127,7 @@ The arena also builds a leak-free walk-forward multinomial logistic stack whose 
 - Rust 1.87 or later
 - Node.js 20.19 or later with npm
 
-The baseline simulator does not require an API key. `KIMI_API_KEY` is needed only for natural-language scenarios.
+The baseline simulator does not require an API key. `KIMI_API_KEY` is needed only for natural-language scenarios, which are also off unless `SCENARIO_ENABLED=1`.
 
 ### Development mode
 
@@ -149,7 +150,7 @@ npm ci
 npm run dev
 ```
 
-Open <http://localhost:5173>. The first forecast starts automatically.
+Open <http://localhost:5173>. The page loads the server's default forecast, which the backend computes once after startup. The first load can take a few seconds while that run finishes.
 
 ### Production-like local build
 
@@ -171,37 +172,58 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 
 | Variable | Default | Purpose |
 |---|---:|---|
-| `KIMI_API_KEY` | unset | Enables `/api/scenario`; obtain a key from the Moonshot platform. |
+| `KIMI_API_KEY` | unset | Key for `/api/scenario`; obtain one from the Moonshot platform. The endpoint also needs `SCENARIO_ENABLED`. |
+| `SCENARIO_ENABLED` | `0` | `1` or `true` turns on `/api/scenario`, which spends money on every call; otherwise it answers 404. The dashboard does not use it. |
 | `PORT` | `3000` | Backend HTTP port. Use `3001` with the Vite development server. |
 | `RUST_LOG` | `superlig_sim=info` | Rust tracing filter. |
-| `LIVE_REFRESH_MINUTES` | `30` | TFF refresh interval; `0` disables background refresh. |
-| `MAX_CONCURRENT_SIMULATIONS` | `1` | Global cap on overlapping Rayon simulations; excess requests receive HTTP 429. |
+| `LIVE_REFRESH_MINUTES` | `30` | TFF refresh interval; `0` disables background refresh. Each refresh attempt ends by warming the default forecast; with `0` it is warmed once at startup. |
+| `MAX_CONCURRENT_SIMULATIONS` | `1` | Simulations that may run at once (Rayon already uses every core inside one run). |
+| `MAX_SIMULATION_QUEUE` | `8` | Further distinct simulations allowed to wait for a free slot; beyond that the server answers 503 with `Retry-After`. |
+| `SIM_QUEUE_TIMEOUT_SECS` | `20` | How long a queued simulation waits for a slot before the server answers 503. |
 | `ENSEMBLE_WEIGHTS` | `0.5,0.3,0.2` | Comma-separated Elo, Dixon–Coles, and pi-rating weights. |
 | `TRUST_PROXY` | `0` | Trust `X-Forwarded-For` for rate limiting only behind a sanitizing reverse proxy. |
 
 ## Use the dashboard
 
-1. Choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the five tabs: **Forecast**, **Positions**, **Races**, **Table**, and **Live**.
-3. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view.
-4. Enter a scenario such as `Galatasaray's first-choice keeper is suspended for five matches`. Kimi explains the effect, supplies validated club ratings, and starts a new simulation.
+1. The page opens on the server's default forecast (50,000 seasons, seed 12345). To change it, choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
+2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Once matches have been scored, open **Forecast history** under **Forecast accuracy** on **Overview** to see every scored match's frozen forecast next to its result, matchday by matchday, with a chart of the log-loss so far against the base rates.
+3. On **Fixtures**, pick results to assume (at most 20, the API's limit) and select **Recalculate**.
+4. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view. Results you assumed for matches that have since been played are dropped, with a notice.
+5. Natural-language scenarios are not part of the dashboard. They are an optional API endpoint (`/api/scenario`, below) that is off unless the server sets `SCENARIO_ENABLED=1` and `KIMI_API_KEY`.
+
+When the simulation queue is full (503), the page waits as long as the server asks, never more than 10 s at a time, and retries up to three times before showing a "try again in a moment" message. When the per-IP rate limit is hit (429), the page waits and retries if the limit frees up within 10 s; otherwise it says at once "Too many requests — try again in N s". Other failures show a short localized message, with the server's own text in parentheses when it sent one. The last forecast stays on screen. The fixture list and results stay available even when a simulation fails.
 
 ## API
 
 | Endpoint | Method | Limit per IP | Description |
 |---|---|---:|---|
-| `/api/health` | `GET` | — | Service version, model configuration, and last live refresh. |
-| `/api/simulate` | `POST` | 30/min | Run a baseline simulation with optional Elo overrides. |
-| `/api/scenario` | `POST` | 10/min | Analyze a prompt with Kimi and rerun with its Elo overrides. |
+| `/api/health` | `GET` | — | Service version, model configuration, last live refresh, `world_version`, and whether the default forecast is cached (`forecast_cached`). |
+| `/api/forecast` | `GET` | 60/min | The default forecast (50,000 seasons, seed 12345, no overrides): the same JSON as `POST /api/simulate {}`, computed once per state of the league. |
+| `/api/simulate` | `POST` | 30/min | Run a simulation with optional Elo overrides and pinned outcomes. Repeated identical requests are answered from a cache until the results or ratings change. |
+| `/api/scenario` | `POST` | 10/min | Analyze a prompt with Kimi and rerun with its Elo overrides. Returns 404 unless `SCENARIO_ENABLED=1`. |
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
-| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands. |
+| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands, plus every scored match with its frozen forecast and its own log-loss. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
 
+`/api/accuracy`, `/api/upcoming`, and `/api/matches` share one 30/min allowance per IP; `/api/forecast` has its own 60/min allowance. A rate-limited request gets HTTP 429 with a `Retry-After` header.
+
+Simulations run one at a time by default (`MAX_CONCURRENT_SIMULATIONS`). Up to `MAX_SIMULATION_QUEUE` further runs wait up to `SIM_QUEUE_TIMEOUT_SECS` for a turn. Past that, `/api/simulate`, `/api/forecast`, and `/api/scenario` answer HTTP 503 with `Retry-After: 10`. Cache hits, and requests identical to a run already in progress, never wait in the queue. A queued run whose clients have all disconnected leaves the queue without running.
+
+The next matchday, used by `/api/upcoming` and as the calendar's `current_round`, is the round of the earliest unplayed fixture dated today or later (Istanbul time). One postponed match therefore does not hold it back. If a rescheduled match falls on the same day as a matchday, the round with more fixtures that day, played or not, is next, and a tie goes to the later round, normally the matchday. On that day the matchday stays next as long as it has a game still to come; once it is over, the rescheduled match is next. When only overdue fixtures remain, it is the earliest round that still has one; once the season is complete, the last round.
+
+The API sends no CORS headers: the dashboard is served from the same origin, and the Vite development server proxies `/api`.
+
 `/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline — the model keeps drawing until the result matches, so goal difference stays honest. Pinning an already-played or non-existent fixture is an error rather than a silent no-op.
 
-Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000; LLM scenarios return rating changes of at most ±150 points, and request bodies are limited to 1 MiB.
+Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000; LLM scenarios return rating changes of at most ±150 points, and request bodies are limited to 1 MiB. The scenario's analysis text is capped at 600 characters. When the LLM call fails, the client gets a generic HTTP 502; the details go to the server log only.
+
+### Default forecast
+
+```bash
+curl http://localhost:3000/api/forecast
+```
 
 ### Baseline simulation
 
@@ -223,6 +245,8 @@ curl -X POST http://localhost:3000/api/simulate \
 
 ### Natural-language scenario
 
+Requires `SCENARIO_ENABLED=1` and `KIMI_API_KEY` on the server.
+
 ```bash
 curl -X POST http://localhost:3000/api/scenario \
   -H 'Content-Type: application/json' \
@@ -234,22 +258,23 @@ curl -X POST http://localhost:3000/api/scenario \
 ```bash
 docker build -t superlig-sim .
 docker run --rm -p 3000:3000 \
+  -e SCENARIO_ENABLED=1 \
   -e KIMI_API_KEY=your_key \
   superlig-sim
 ```
 
-Omit `KIMI_API_KEY` if scenario analysis is not needed.
+Omit `SCENARIO_ENABLED` and `KIMI_API_KEY` if scenario analysis is not needed. The build context leaves out host build outputs, `node_modules`, `.env` files, Git metadata, and documentation (see `.dockerignore`).
 
 ## Deploy to Railway
 
 1. Create a Railway service from this GitHub repository, or run `railway init && railway up` from a clone.
 2. Railway detects the root `Dockerfile` and builds the Rust backend and React frontend.
-3. Add `KIMI_API_KEY` if scenario analysis should be enabled.
+3. To keep scenario analysis available, set both `SCENARIO_ENABLED=1` and `KIMI_API_KEY`; without `SCENARIO_ENABLED`, `/api/scenario` answers 404.
 4. Set `TRUST_PROXY=1` so rate limiting uses the client address supplied by Railway's sanitizing edge proxy.
-5. Optionally customize `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, and `RUST_LOG`.
+5. Optionally customize `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, `MAX_CONCURRENT_SIMULATIONS`, `MAX_SIMULATION_QUEUE`, `SIM_QUEUE_TIMEOUT_SECS`, and `RUST_LOG`.
 6. Set the health-check path to `/api/health`.
 
-The application reads Railway's injected `PORT` automatically.
+The application reads Railway's injected `PORT` automatically. The scheduled data-refresh workflow (see [Refresh the data](#refresh-the-data)) also redeploys after committing new data, but only when the repository has a `RAILWAY_TOKEN` secret.
 
 ## Validation
 
@@ -259,13 +284,22 @@ The GitHub Actions workflow runs the same core checks:
 cargo fmt -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
+# The examples' own tests, which --all-targets builds without.
+cargo clippy --examples --profile test -- -D warnings
+cargo test --examples
 cargo build --release
 cargo audit
 
 cd frontend
 npm ci
 npm audit
+npx tsc --noEmit
 npm run build
+npm test            # needs Node.js 22.6+ (--experimental-strip-types)
+cd ..
+
+# Offline tests for the fixture fetch script (no network).
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 ## Refresh the data
@@ -275,7 +309,12 @@ The repository already includes the fixture calendar, historical results, and fi
 ```bash
 # Official 2026-27 calendar and results so far, from tff.org.
 # Asserts the full double round-robin structure: 306 fixtures, 34 rounds,
-# 9 per round, 153 pairs each played exactly twice.
+# 9 per round, 153 pairs each played exactly twice. A postponed match that
+# TFF lists without a date ("Ertelendi" or blank) keeps its committed date and
+# kick-off, at most 18 per run; a week page that does not yield all 9 of its
+# matches, or a date cell in an unknown format, stops the run. A committed
+# result that disappears or changes stops the run before the file is written;
+# set ALLOW_RESULT_CHANGES=1 for a genuine TFF correction or award.
 python3 scripts/fetch_fixtures.py
 
 # Chronological 2012-13 to 2024-25 results from the MIT-licensed Club Football
@@ -288,6 +327,8 @@ cargo run --release --example fit_dc
 ```
 
 Review the changed files under `data/` before committing a new fit.
+
+The committed calendar is also refreshed automatically. A scheduled GitHub Actions workflow (`.github/workflows/refresh-data.yml`) runs on Thursdays at 15:17 UTC and Fridays at 06:00 UTC, and on demand. It fetches the calendar, freezes forecasts for upcoming fixtures, runs the test suite, and commits any changes. A failed run opens a "Weekly data refresh failed" issue, or comments on the open one, and the next successful run closes it. To accept a genuine TFF result correction, run the workflow by hand with `allow_result_changes`.
 
 Data-source details worth knowing about:
 
@@ -310,7 +351,8 @@ Data-source details worth knowing about:
 │   ├── piratings.rs      # Historical pi-rating model
 │   ├── history.rs        # Historical result loading and club normalization
 │   ├── scraper.rs        # TFF live-result ingestion
-│   ├── handlers.rs       # API handlers
+│   ├── handlers.rs       # API handlers and the simulation queue
+│   ├── forecast_cache.rs # Simulation responses cached per league state
 │   ├── llm.rs            # Kimi scenario analysis
 │   ├── models.rs         # API request and response types
 │   ├── validation.rs     # Request validation
@@ -318,9 +360,9 @@ Data-source details worth knowing about:
 ├── data/                 # Fixture calendar, historical results, fitted params
 ├── frontend/             # React and TypeScript dashboard
 ├── examples/             # Model fitting utility
-├── scripts/              # Data-acquisition scripts
+├── scripts/              # Data-acquisition scripts and their offline tests
 ├── tests/calibration.rs  # Guards the Elo constants against the real league
-├── .github/workflows/    # CI configuration
+├── .github/workflows/    # CI and the scheduled data refresh
 └── Dockerfile            # Production multi-stage image
 ```
 

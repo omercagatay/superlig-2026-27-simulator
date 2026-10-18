@@ -2,34 +2,77 @@
 #
 # The assertions inside fetch_fixtures.py are the point: if TFF changes its
 # markup, the structural checks (306 fixtures, 34 rounds, every pair twice,
-# every fixture dated) fail here and the run goes red, instead of the app
-# quietly serving a stale calendar. Runs on Fridays before the weekend's
-# matches so freshly logged forecasts precede kick-off.
+# nine matches on every week page, every fixture dated) fail here and the run
+# goes red, instead of the app quietly serving a stale calendar. Up to nine
+# postponed matches ("Ertelendi" or blank) may keep their committed date; a
+# week widget that stops yielding dates fails the run. A committed result
+# that vanishes or changes fails it too; for a genuine TFF correction,
+# dispatch the workflow by hand with allow_result_changes. A red run opens
+# (or comments on) a "Weekly data refresh failed" issue, so it is not only
+# visible on the Actions tab; the next green run closes it.
+#
+# Runs before each weekend's matches so freshly logged forecasts precede
+# kick-off. log_forecast never touches a fixture dated today (UTC) or
+# earlier, so the Friday run cannot log Friday's own matches: the Thursday
+# run does. GitHub starts scheduled runs late (the 06:00 Friday run has
+# started 5-7 hours late), so Thursday's slot is 18:17 Istanbul time, off
+# the busy top of the hour, leaving most of the evening as margin before
+# the UTC date turns. Extra runs are harmless: frozen entries are never
+# overwritten, and a forecast that has not moved keeps its entry, so a run
+# with no new results or fixture changes commits (and deploys) nothing.
 name: refresh data
 
 on:
   schedule:
+    - cron: "17 15 * * 4" # 15:17 UTC every Thursday (Friday's fixtures)
     - cron: "0 6 * * 5" # 06:00 UTC every Friday
   workflow_dispatch: # and on demand
+    inputs:
+      allow_result_changes:
+        description: "Accept committed results that TFF changed or removed (genuine corrections or awards)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  issues: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Whether the secret exists, without exposing the token itself to every
+      # step. A step's own env is not in scope for that step's `if`.
+      HAS_RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN != '' }}
+      FAILURE_ISSUE: Weekly data refresh failed
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v7
+      - id: checkout
+        uses: actions/checkout@v7
 
       - name: Fetch the official calendar (canary — assertions must hold)
+        id: fetch-fixtures
+        env:
+          ALLOW_RESULT_CHANGES: ${{ inputs.allow_result_changes && '1' || '' }}
         run: python3 scripts/fetch_fixtures.py
 
-      - uses: dtolnay/rust-toolchain@stable
+      - id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - id: rust-cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Freeze forecasts for upcoming fixtures
+        id: log-forecast
         run: cargo run --release --example log_forecast
 
       - name: Verify the refreshed data still passes the suite
+        id: test
         run: cargo test
 
       - name: Commit if anything moved
@@ -50,9 +93,47 @@ jobs:
       # Deploy only if the repo has a Railway token; the project deploys by
       # CLI, so without one this step is skipped rather than failing.
       - name: Deploy to Railway
-        if: steps.commit.outputs.changed == 'true' && env.RAILWAY_TOKEN != ''
+        id: deploy
+        if: steps.commit.outputs.changed == 'true' && env.HAS_RAILWAY_TOKEN == 'true'
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm i -g @railway/cli
           railway up --service superlig-sim --detach
+
+      # One open issue at most: a repeat failure comments on it. --repo
+      # because a failed checkout leaves no git remote to infer it from.
+      - name: Report the failure
+        if: failure() || cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STEPS: ${{ toJSON(steps) }}
+        run: |
+          # The step that failed, or the one a timeout or cancel interrupted.
+          step=$(jq -r 'to_entries | map(select(.value.outcome == "failure" or .value.outcome == "cancelled"))
+            | first // empty | "\(.key) (\(.value.outcome))"' <<< "$STEPS")
+          body="The data refresh ($GITHUB_EVENT_NAME) did not finish.
+
+          - Run: $RUN_URL
+          - Failing step: \`${step:-none (cancelled before any step ran)}\`
+          - Commit: $GITHUB_SHA
+
+          A later failure comments here; the next successful run closes this issue."
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 500 --json number,title \
+            | jq -r --arg t "$FAILURE_ISSUE" 'map(select(.title == $t)) | first | .number // empty')
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$FAILURE_ISSUE" --body "$body"
+          fi
+
+      - name: Close the failure issue
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 500 --json number,title \
+            | jq -r --arg t "$FAILURE_ISSUE" 'map(select(.title == $t)) | first | .number // empty')
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --repo "$GITHUB_REPOSITORY" --comment "Fixed: $RUN_URL succeeded."
+          fi

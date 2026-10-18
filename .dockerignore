@@ -1,6 +1,24 @@
-target/
-node_modules/
-frontend/dist/
-.env
-.git/
+# The image builds the backend and the frontend from source. Host build
+# outputs must stay out of the context: `COPY frontend/ ./` would otherwise
+# lay the host's node_modules and dist over the stage's own `npm ci` and
+# build. Patterns match from the context root, so nested paths are spelled
+# out (`node_modules/` alone would only match a top-level directory).
+
+# Build outputs (target-* covers per-worktree CARGO_TARGET_DIRs)
+target*
+**/node_modules
+frontend/dist
+
+# VCS, CI, agent worktrees and local state
+.git
+.github
+.claude
+**/.env
+**/.env.*
+**/__pycache__
+**/*.py[cod]
+**/.DS_Store
+
+# Docs (nothing in the build reads them)
 *.md
+docs

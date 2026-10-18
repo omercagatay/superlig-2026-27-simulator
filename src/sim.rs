@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -21,6 +21,17 @@ pub struct LeagueFixture {
 pub struct FixtureDate {
     pub date: String,
     pub kickoff: Option<String>,
+}
+
+/// Today's date in Istanbul, ISO `YYYY-MM-DD`: the calendar's own time zone
+/// (UTC+3 all year since Turkey dropped daylight saving in 2016), so the
+/// next matchday turns over at local midnight rather than UTC's.
+pub fn today_istanbul() -> String {
+    let istanbul = chrono::FixedOffset::east_opt(3 * 3600).expect("UTC+3 is a valid offset");
+    chrono::Utc::now()
+        .with_timezone(&istanbul)
+        .date_naive()
+        .to_string()
 }
 
 #[derive(Clone)]
@@ -664,24 +675,93 @@ impl World {
         probs_from_lambdas(lh, la, self.score_rho().unwrap_or(0.0))
     }
 
-    /// Unplayed fixtures of the earliest round that still has any — the
-    /// league's equivalent of "the next matchday".
-    pub fn upcoming_matches(&self) -> Vec<LeagueFixture> {
-        let next = self
-            .fixtures
+    /// The league's "next matchday" as of `today` (ISO `YYYY-MM-DD`): the
+    /// round being played on the date of the earliest unplayed fixture on or
+    /// after `today`.
+    /// Keyed on dates rather than on the lowest incomplete round, so one
+    /// postponed match from an earlier round does not pin the calendar. With
+    /// nothing unplayed dated today or later, the earliest round that still
+    /// has an unplayed fixture; with the season complete, the last round.
+    ///
+    /// Two rounds on that date means a rescheduled match landed on a
+    /// matchday. Every round with a fixture that day, played or not, and a
+    /// game still to come from `today` on is in the running; the one with
+    /// more fixtures that day is the one being played, the later round on a
+    /// tie, since a match moved onto a matchday is nearly always a postponed
+    /// one from an earlier round (one brought forward from a later round
+    /// would take the tie). Looking only at unplayed games would
+    /// hand the day to the rescheduled match as soon as the matchday's games
+    /// that day were in, though the matchday carries on tomorrow. A round
+    /// stays in the running only with a game still to come that day or
+    /// before the next round starts, so its own game postponed for weeks
+    /// does not hold the day. A rescheduled match alone on its date is
+    /// simply the next fixture.
+    pub fn next_round_on(&self, today: &str) -> u8 {
+        let unplayed: Vec<usize> = (0..self.fixtures.len())
+            .filter(|&i| {
+                let f = self.fixtures[i];
+                !self.played.contains_key(&(f.home, f.away))
+            })
+            .collect();
+        let to_come: Vec<usize> = unplayed
             .iter()
-            .filter(|f| !self.played.contains_key(&(f.home, f.away)))
-            .map(|f| f.round)
-            .min();
-        match next {
-            None => Vec::new(),
-            Some(round) => self
-                .fixtures
+            .copied()
+            .filter(|&i| self.dates[i].date.as_str() >= today)
+            .collect();
+        let next_date = to_come.iter().map(|&i| self.dates[i].date.as_str()).min();
+        match next_date {
+            Some(date) => {
+                let mut per_round: BTreeMap<u8, usize> = BTreeMap::new();
+                for (i, f) in self.fixtures.iter().enumerate() {
+                    if self.dates[i].date == date {
+                        *per_round.entry(f.round).or_default() += 1;
+                    }
+                }
+                // A round's own matchday ends where the next round starts; a
+                // game of it postponed past that does not keep it running.
+                let next_round_start = |round: u8| {
+                    (0..self.fixtures.len())
+                        .filter(|&i| self.fixtures[i].round == round + 1)
+                        .map(|i| self.dates[i].date.as_str())
+                        .min()
+                };
+                let still_running = |round: u8| {
+                    let ends = next_round_start(round);
+                    to_come.iter().any(|&i| {
+                        let d = self.dates[i].date.as_str();
+                        self.fixtures[i].round == round
+                            && (d == date || ends.is_none_or(|end| d < end))
+                    })
+                };
+                per_round
+                    .into_iter()
+                    .filter(|&(round, _)| still_running(round))
+                    .max_by_key(|&(round, count)| (count, round))
+                    .map(|(round, _)| round)
+                    .expect("the date came from a fixture still to come")
+            }
+            None => unplayed
                 .iter()
-                .filter(|f| f.round == round && !self.played.contains_key(&(f.home, f.away)))
-                .copied()
-                .collect(),
+                .map(|&i| self.fixtures[i].round)
+                .min()
+                .unwrap_or(data::N_ROUNDS as u8),
         }
+    }
+
+    /// Unplayed fixtures of the next matchday (`next_round_on`), as of
+    /// today in Istanbul; empty once the season is complete.
+    pub fn upcoming_matches(&self) -> Vec<LeagueFixture> {
+        self.upcoming_matches_on(&today_istanbul())
+    }
+
+    /// As `upcoming_matches`, as of a given ISO date.
+    pub fn upcoming_matches_on(&self, today: &str) -> Vec<LeagueFixture> {
+        let round = self.next_round_on(today);
+        self.fixtures
+            .iter()
+            .filter(|f| f.round == round && !self.played.contains_key(&(f.home, f.away)))
+            .copied()
+            .collect()
     }
 
     pub fn simulate_one(&self, rng: &mut SmallRng) -> SeasonResult {
@@ -805,6 +885,34 @@ impl World {
     }
 }
 
+/// Seven matchdays' worth of fixtures: a part-played season for tests.
+#[cfg(test)]
+pub(crate) const MID_SEASON: usize = 7 * 9;
+
+#[cfg(test)]
+impl World {
+    /// The shipped calendar with its recorded results replaced by the first
+    /// `n` fixtures in kick-off order, each given a fixed made-up scoreline.
+    /// Tests build their season state with this rather than reading whatever
+    /// the weekly refresh last committed, so they behave the same on
+    /// matchday 1, matchday 34 and every week in between.
+    pub(crate) fn with_played(n: usize) -> Self {
+        const SCORES: [(u16, u16); 7] = [(2, 1), (1, 1), (0, 1), (3, 0), (1, 0), (2, 2), (0, 2)];
+        let mut w = World::new();
+        w.played.clear();
+        let mut order: Vec<usize> = (0..w.fixtures.len()).collect();
+        order.sort_by(|&a, &b| {
+            (&w.dates[a].date, w.fixtures[a].round).cmp(&(&w.dates[b].date, w.fixtures[b].round))
+        });
+        for (k, &i) in order.iter().take(n).enumerate() {
+            let f = w.fixtures[i];
+            w.played.insert((f.home, f.away), SCORES[k % SCORES.len()]);
+        }
+        w.refresh_ratings();
+        w
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -824,17 +932,20 @@ mod tests {
     #[test]
     fn recorded_results_are_loaded_from_the_calendar() {
         let w = World::new();
+        let mut recorded = 0;
         for f in data::fixtures() {
             if let (Some(hs), Some(as_)) = (f.home_score, f.away_score) {
                 let key = (w.idx[&f.home], w.idx[&f.away]);
                 assert_eq!(w.played.get(&key), Some(&(hs, as_)));
+                recorded += 1;
             }
         }
+        assert_eq!(w.played.len(), recorded, "nothing unrecorded is played");
     }
 
     #[test]
     fn home_advantage_applies_to_the_fixture_home_side_not_a_team_flag() {
-        let w = World::new();
+        let w = World::with_played(0);
         let (a, b) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
 
         let (la_home, lb_away) = w.lam_pair(a, b);
@@ -856,9 +967,7 @@ mod tests {
 
     #[test]
     fn ratings_move_with_results_and_stay_zero_sum() {
-        let mut w = World::new();
-        w.played.clear();
-        w.refresh_ratings();
+        let mut w = World::with_played(0);
         assert_eq!(w.elo, w.elo_baseline, "no results, no movement");
 
         let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
@@ -886,8 +995,9 @@ mod tests {
 
     #[test]
     fn refreshing_ratings_twice_changes_nothing() {
-        let mut w = World::new();
+        let mut w = World::with_played(MID_SEASON);
         let once = w.elo.clone();
+        assert_ne!(once, w.elo_baseline, "the recorded results moved ratings");
         w.refresh_ratings();
         assert_eq!(w.elo, once, "recompute must not compound");
 
@@ -899,7 +1009,7 @@ mod tests {
             .iter()
             .find(|f| !w.played.contains_key(&(f.home, f.away)))
             .copied()
-            .expect("an unplayed fixture exists");
+            .expect("a part-played season has unplayed fixtures");
         let live = crate::scraper::LiveData {
             played_matches: vec![crate::scraper::ScrapedMatch {
                 round: f.round,
@@ -919,10 +1029,14 @@ mod tests {
 
     #[test]
     fn matchday_one_results_are_already_reflected_in_ratings() {
-        // The shipped calendar carries real played results, so a fresh World
-        // must not still be sitting on preseason ratings.
+        // A fresh World must not still be sitting on preseason ratings: it
+        // replays whatever results the shipped calendar has recorded.
         let w = World::new();
-        assert!(!w.played.is_empty(), "baseline has played fixtures");
+        let mut replayed = w.clone();
+        replayed.refresh_ratings();
+        assert_eq!(w.elo, replayed.elo, "World::new replays recorded results");
+
+        let w = World::with_played(9);
         assert_ne!(w.elo, w.elo_baseline, "ratings must reflect results played");
         for (i, r) in w.elo.iter().enumerate() {
             assert!(
@@ -945,7 +1059,7 @@ mod tests {
 
     #[test]
     fn simulate_one_produces_a_complete_valid_season() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let mut rng = SmallRng::seed_from_u64(42);
         let r = w.simulate_one(&mut rng);
 
@@ -979,7 +1093,7 @@ mod tests {
 
     #[test]
     fn simulate_one_is_deterministic() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let a = w.simulate_one(&mut SmallRng::seed_from_u64(7));
         let b = w.simulate_one(&mut SmallRng::seed_from_u64(7));
         assert_eq!(a.order, b.order);
@@ -1010,7 +1124,7 @@ mod tests {
     /// and must move the aggregate odds in the direction it implies.
     #[test]
     fn pinned_outcomes_bind_and_move_the_forecast() {
-        let w = World::new();
+        let w = World::with_played(0);
         let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
         assert!(
             w.fixtures.iter().any(|f| f.home == gaz && f.away == gs),
@@ -1056,7 +1170,7 @@ mod tests {
     /// produces a spread of winning margins.
     #[test]
     fn pinned_outcomes_leave_the_scoreline_to_the_model() {
-        let w = World::new();
+        let w = World::with_played(0);
         let (gaz, gs) = (w.idx["Gaziantep"], w.idx["Galatasaray"]);
         let mut forced = HashMap::new();
         forced.insert((gaz, gs), ForcedOutcome::Home);
@@ -1074,7 +1188,7 @@ mod tests {
 
     #[test]
     fn simulate_is_deterministic_for_same_seed() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let cfg = SimConfig {
             n_sims: 500,
             seed: 999,
@@ -1091,7 +1205,7 @@ mod tests {
 
     #[test]
     fn every_club_position_distribution_sums_to_n_sims() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let cfg = SimConfig {
             n_sims: 400,
             seed: 3,
@@ -1113,7 +1227,7 @@ mod tests {
 
     #[test]
     fn spot_counts_agree_with_the_position_distribution() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let cfg = SimConfig {
             n_sims: 400,
             seed: 11,
@@ -1158,7 +1272,7 @@ mod tests {
 
     #[test]
     fn pairwise_above_is_complementary() {
-        let w = World::new();
+        let w = World::with_played(MID_SEASON);
         let cfg = SimConfig {
             n_sims: 300,
             seed: 5,
@@ -1187,7 +1301,7 @@ mod tests {
     /// to zero the bounds below simply become a plain over-confidence check.)
     #[test]
     fn rating_uncertainty_widens_the_title_distribution() {
-        let w = World::new();
+        let w = World::with_played(0);
         let cfg = SimConfig {
             n_sims: 4000,
             seed: 77,
@@ -1213,7 +1327,7 @@ mod tests {
 
     #[test]
     fn stronger_clubs_win_the_title_more_often() {
-        let w = World::new();
+        let w = World::with_played(0);
         let cfg = SimConfig {
             n_sims: 2000,
             seed: 1,
@@ -1232,7 +1346,7 @@ mod tests {
 
     #[test]
     fn match_win_probs_sum_to_100_and_favor_the_stronger_side() {
-        let w = World::new();
+        let w = World::with_played(0);
         let (gs, gaz) = (w.idx["Galatasaray"], w.idx["Gaziantep"]);
         let (h, d, a) = w.match_win_probs(gs, gaz);
         assert!((h + d + a - 100.0).abs() < 1e-9, "{h} + {d} + {a}");
@@ -1259,26 +1373,270 @@ mod tests {
         assert!(gs_at_home > gs_away, "same club, better odds at home");
     }
 
-    #[test]
-    fn upcoming_returns_the_earliest_round_with_unplayed_fixtures() {
-        let w = World::new();
-        let up = w.upcoming_matches();
-        assert!(!up.is_empty(), "the 2026-27 season is not finished");
-        let round = up[0].round;
-        assert!(up.iter().all(|f| f.round == round), "one round at a time");
-        for f in &up {
-            assert!(!w.played.contains_key(&(f.home, f.away)));
+    /// Day `offset` of matchday `round` in `weekly_calendar`.
+    fn day(round: u8, offset: u64) -> String {
+        let start = chrono::NaiveDate::from_ymd_opt(2030, 1, 7).expect("valid date");
+        (start + chrono::Days::new(7 * (round as u64 - 1) + offset)).to_string()
+    }
+
+    /// Give every fixture a date the test owns: matchday `r` spread over
+    /// days 0-2 of week `r`, so the next-matchday rule is checked against
+    /// neither TFF's current dates nor today's.
+    fn weekly_calendar(w: &mut World) {
+        let mut seen = [0u64; data::N_ROUNDS + 1];
+        for (i, f) in w.fixtures.iter().enumerate() {
+            let k = &mut seen[f.round as usize];
+            w.dates[i].date = day(f.round, *k % 3);
+            *k += 1;
         }
-        // Nothing earlier may remain unplayed.
-        for f in &w.fixtures {
-            if f.round < round {
-                assert!(
-                    w.played.contains_key(&(f.home, f.away)),
-                    "round {} incomplete",
-                    f.round
-                );
+    }
+
+    fn record(w: &mut World, i: usize) {
+        let f = w.fixtures[i];
+        w.played.insert((f.home, f.away), (1, 0));
+    }
+
+    /// Fixture indices of `round` dated `date`.
+    fn fixtures_on(w: &World, round: u8, date: &str) -> Vec<usize> {
+        (0..w.fixtures.len())
+            .filter(|&i| w.fixtures[i].round == round && w.dates[i].date == date)
+            .collect()
+    }
+
+    fn season_through(round: u8) -> World {
+        let mut w = World::with_played(0);
+        weekly_calendar(&mut w);
+        for i in 0..w.fixtures.len() {
+            if w.fixtures[i].round <= round {
+                record(&mut w, i);
             }
         }
+        w
+    }
+
+    #[test]
+    fn today_in_istanbul_is_an_iso_date() {
+        let today = today_istanbul();
+        assert_eq!(today.len(), 10, "{today}");
+        assert!(chrono::NaiveDate::parse_from_str(&today, "%Y-%m-%d").is_ok());
+    }
+
+    #[test]
+    fn before_the_season_the_opening_round_is_next() {
+        let mut w = World::with_played(0);
+        weekly_calendar(&mut w);
+        let summer = "2029-07-01";
+        assert_eq!(w.next_round_on(summer), 1);
+        assert_eq!(w.upcoming_matches_on(summer).len(), 9);
+    }
+
+    #[test]
+    fn next_matchday_follows_the_calendar_not_a_postponed_match() {
+        let mut w = season_through(7);
+        let today = day(7, 4);
+        assert_eq!(w.next_round_on(&today), 8);
+        let up = w.upcoming_matches_on(&today);
+        assert_eq!(up.len(), 9, "the whole of matchday 8");
+        assert!(up.iter().all(|f| f.round == 8), "one round at a time");
+
+        // A matchday-5 game postponed and still unplayed, dated in the past,
+        // does not drag the next matchday back to round 5...
+        let i = fixtures_on(&w, 5, &day(5, 0))[0];
+        let f = w.fixtures[i];
+        w.played.remove(&(f.home, f.away));
+        assert_eq!(w.next_round_on(&today), 8, "past postponement pinned it");
+        assert!(w.upcoming_matches_on(&today).iter().all(|f| f.round == 8));
+
+        // ...nor once it is re-dated after the coming matchday...
+        w.dates[i].date = day(8, 3);
+        assert_eq!(
+            w.next_round_on(&today),
+            8,
+            "re-dated postponement pinned it"
+        );
+
+        // ...nor when it lands on a day matchday 8 is also playing, even
+        // once that day's earlier matchday-8 games are in.
+        let matchday = day(8, 0);
+        w.dates[i].date = matchday.clone();
+        assert_eq!(
+            w.next_round_on(&today),
+            8,
+            "the busier round is the matchday"
+        );
+        let earlier_games = fixtures_on(&w, 8, &matchday);
+        for &j in &earlier_games[..2] {
+            record(&mut w, j);
+        }
+        assert_eq!(
+            w.next_round_on(&matchday),
+            8,
+            "the day's played games still count"
+        );
+        for &j in &earlier_games[..2] {
+            let g = w.fixtures[j];
+            w.played.remove(&(g.home, g.away));
+        }
+
+        // Re-dated to midweek, before the matchday, it is the next fixture.
+        w.dates[i].date = day(7, 5);
+        assert_eq!(w.next_round_on(&today), 5);
+        let up = w.upcoming_matches_on(&today);
+        assert_eq!(up.len(), 1);
+        assert_eq!((up[0].home, up[0].away), (f.home, f.away));
+    }
+
+    /// Matchday 7 complete, one matchday-5 game postponed and unplayed:
+    /// the world and that game's fixture index.
+    fn season_with_a_postponed_round_5_game() -> (World, usize) {
+        let mut w = season_through(7);
+        let i = fixtures_on(&w, 5, &day(5, 0))[0];
+        let f = w.fixtures[i];
+        w.played.remove(&(f.home, f.away));
+        (w, i)
+    }
+
+    #[test]
+    fn a_rescheduled_match_does_not_take_over_a_matchday_still_running() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // It lands on matchday 8's first day, and every matchday-8 game that
+        // day is in before it kicks off; matchday 8 has two days to go.
+        let matchday = day(8, 0);
+        w.dates[i].date = matchday.clone();
+        for j in fixtures_on(&w, 8, &matchday) {
+            record(&mut w, j);
+        }
+        assert_eq!(
+            w.next_round_on(&matchday),
+            8,
+            "the rescheduled match took over"
+        );
+        let up = w.upcoming_matches_on(&matchday);
+        assert_eq!(up.len(), 6, "matchday 8's last two days");
+        assert!(up.iter().all(|f| f.round == 8));
+    }
+
+    #[test]
+    fn a_matchday_opener_beats_a_rescheduled_match_on_the_same_day() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // Matchday 8 opens with a single game the day before its main days,
+        // and the rescheduled match is played that day too: one game each,
+        // and the regular matchday is the later round.
+        let opening_day = day(7, 6);
+        let opener = fixtures_on(&w, 8, &day(8, 0))[0];
+        w.dates[opener].date = opening_day.clone();
+        w.dates[i].date = opening_day.clone();
+        for today in [day(7, 4), opening_day.clone()] {
+            assert_eq!(w.next_round_on(&today), 8, "as of {today}");
+            assert_eq!(w.upcoming_matches_on(&today).len(), 9);
+        }
+
+        // The opener in, the rescheduled match still to come that evening:
+        // matchday 8 carries on tomorrow, so it is still the matchday.
+        record(&mut w, opener);
+        assert_eq!(w.next_round_on(&opening_day), 8);
+        assert_eq!(w.upcoming_matches_on(&opening_day).len(), 8);
+    }
+
+    #[test]
+    fn a_rescheduled_match_is_next_once_the_matchday_sharing_its_day_is_over() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // It lands on matchday 8's last day, after that day's matchday games.
+        let last_day = day(8, 2);
+        w.dates[i].date = last_day.clone();
+        let earlier_days: Vec<usize> = [day(8, 0), day(8, 1)]
+            .iter()
+            .flat_map(|d| fixtures_on(&w, 8, d))
+            .collect();
+        for j in earlier_days {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 8);
+
+        // Matchday 8 over, the rescheduled match still to come that evening:
+        // a finished matchday must not hold the day with nothing to list.
+        for j in fixtures_on(&w, 8, &last_day) {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 5, "a finished matchday won");
+        let up = w.upcoming_matches_on(&last_day);
+        assert_eq!(up.len(), 1);
+        assert_eq!(
+            (up[0].home, up[0].away),
+            (w.fixtures[i].home, w.fixtures[i].away)
+        );
+        record(&mut w, i);
+        assert_eq!(w.next_round_on(&last_day), 9);
+    }
+
+    #[test]
+    fn a_matchday_game_postponed_for_weeks_does_not_hold_a_shared_day() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        let last_day = day(8, 2);
+        w.dates[i].date = last_day.clone();
+        // One matchday-8 game moves out past matchday 9's start; every
+        // other matchday-8 game, that day included, is in.
+        let far = fixtures_on(&w, 8, &day(8, 0))[0];
+        w.dates[far].date = day(12, 1);
+        let rest: Vec<usize> = (0..w.fixtures.len())
+            .filter(|&j| w.fixtures[j].round == 8 && j != far)
+            .collect();
+        for j in rest {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 5, "a far-off game held the day");
+        let up = w.upcoming_matches_on(&last_day);
+        assert_eq!(up.len(), 1);
+        assert_eq!(up[0].round, 5);
+    }
+
+    #[test]
+    fn a_round_in_progress_stays_the_next_matchday() {
+        let mut w = season_through(7);
+        for i in fixtures_on(&w, 8, &day(8, 0)) {
+            record(&mut w, i);
+        }
+        // Mid-afternoon on day 1: one of today's games played, two still to
+        // come today, three tomorrow.
+        let today = day(8, 1);
+        let todays = fixtures_on(&w, 8, &today);
+        record(&mut w, todays[0]);
+        assert_eq!(w.next_round_on(&today), 8);
+        let up = w.upcoming_matches_on(&today);
+        assert_eq!(up.len(), 5);
+        assert!(up.iter().all(|f| f.round == 8));
+
+        // Today's games all in, the rest tomorrow: still matchday 8.
+        for &i in &todays {
+            record(&mut w, i);
+        }
+        assert_eq!(w.next_round_on(&today), 8);
+
+        // Last day, last game still to come: matchday 8 until it is in.
+        let last_day = day(8, 2);
+        let lasts = fixtures_on(&w, 8, &last_day);
+        for &i in &lasts[1..] {
+            record(&mut w, i);
+        }
+        assert_eq!(w.next_round_on(&last_day), 8);
+        record(&mut w, lasts[0]);
+        assert_eq!(w.next_round_on(&last_day), 9);
+    }
+
+    #[test]
+    fn with_only_overdue_fixtures_left_the_earliest_incomplete_round_is_next() {
+        let mut w = season_through(34);
+        let late = fixtures_on(&w, 30, &day(30, 1))[0];
+        let early = fixtures_on(&w, 20, &day(20, 2))[0];
+        for i in [late, early] {
+            let f = w.fixtures[i];
+            w.played.remove(&(f.home, f.away));
+        }
+        let after_the_season = day(34, 10);
+        assert_eq!(w.next_round_on(&after_the_season), 20);
+        let up = w.upcoming_matches_on(&after_the_season);
+        assert_eq!(up.len(), 1);
+        assert_eq!(up[0].round, 20);
     }
 
     #[test]
@@ -1288,17 +1646,21 @@ mod tests {
             w.played.insert((f.home, f.away), (1, 1));
         }
         assert!(w.upcoming_matches().is_empty());
+        for today in ["2026-07-01", "2026-10-18", "2027-07-01"] {
+            assert!(w.upcoming_matches_on(today).is_empty());
+            assert_eq!(w.next_round_on(today), data::N_ROUNDS as u8, "last round");
+        }
     }
 
     #[test]
     fn update_from_live_records_scraped_results() {
-        let mut w = World::new();
+        let mut w = World::with_played(MID_SEASON);
         let f = w
             .fixtures
             .iter()
             .find(|f| !w.played.contains_key(&(f.home, f.away)))
             .copied()
-            .expect("an unplayed fixture exists");
+            .expect("a part-played season has unplayed fixtures");
         let live = crate::scraper::LiveData {
             played_matches: vec![crate::scraper::ScrapedMatch {
                 round: f.round,
@@ -1333,7 +1695,7 @@ mod tests {
 
     #[test]
     fn update_from_live_with_an_empty_scrape_keeps_the_baseline() {
-        let mut w = World::new();
+        let mut w = World::with_played(MID_SEASON);
         let before = w.played.clone();
         let live = crate::scraper::LiveData {
             played_matches: Vec::new(),
@@ -1345,7 +1707,7 @@ mod tests {
 
     #[test]
     fn ensemble_builds_from_embedded_data_and_blends_lambdas() {
-        let mut world = World::new();
+        let mut world = World::with_played(0);
         let gs = world.idx["Galatasaray"];
         let gaz = world.idx["Gaziantep"];
         let (elo_h, elo_a) = world.lam_pair(gs, gaz);
@@ -1378,7 +1740,9 @@ mod tests {
 
     #[test]
     fn scoreline_sampling_uses_dc_joint_only_when_dc_weight_is_active() {
-        let mut world = World::new();
+        // Preseason ratings fix the λs, so the sampled frequency below is
+        // the same draw whatever the season has reached.
+        let mut world = World::with_played(0);
         assert!(world.score_rho().is_none(), "pure Elo world: Poisson path");
 
         world.ensemble = Some(Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("ensemble"));
@@ -1413,7 +1777,7 @@ mod tests {
 
     #[test]
     fn simulate_with_ensemble_is_deterministic() {
-        let mut world = World::new();
+        let mut world = World::with_played(MID_SEASON);
         world.ensemble = Some(Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("ensemble"));
         let config = SimConfig {
             n_sims: 500,

@@ -17,6 +17,16 @@ fn empirical() -> (f64, f64, f64, f64) {
     (hg, ag, home_wins * 100.0, draws * 100.0)
 }
 
+/// The model on its own: preseason ratings and nothing played. Results the
+/// shipped calendar has recorded would fix part of the season and make these
+/// checks depend on how far it has got rather than on the model.
+fn preseason_world() -> World {
+    let mut w = World::new();
+    w.played.clear();
+    w.refresh_ratings();
+    w
+}
+
 #[test]
 fn simulated_scoring_matches_the_real_league() {
     let (emp_hg, emp_ag, emp_home, emp_draw) = empirical();
@@ -27,7 +37,7 @@ fn simulated_scoring_matches_the_real_league() {
 
     // A clean World has no ensemble (pure Elo), which is exactly the
     // component being calibrated here.
-    let w = World::new();
+    let w = preseason_world();
     let cfg = SimConfig {
         n_sims: 2000,
         seed: 4242,
@@ -52,7 +62,7 @@ fn simulated_scoring_matches_the_real_league() {
 #[test]
 fn simulated_match_outcomes_match_the_real_league() {
     let (_, _, emp_home, emp_draw) = empirical();
-    let w = World::new();
+    let w = preseason_world();
 
     // Average the exact outcome split over every fixture in the calendar, so
     // the comparison covers the real distribution of mismatches.

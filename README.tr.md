@@ -16,7 +16,8 @@
 - TFF'nin resmî fikstüründeki oynanmış maçları sabitler ve yalnızca kalan maçları simüle eder.
 - Süper Lig'in kendi sıralama kurallarını uygular: **averaj değil, önce ikili averaj (head-to-head)** belirleyicidir.
 - Şampiyonluk, ilk iki, tam üçüncülük/dördüncülük, ilk dört ve küme düşme olasılıkları; 18×18 sıralama ızgarası; tahminî final tablosu; gelecek hafta tahminleri ve "kim kimin üstünde bitirir" olasılıkları üretir.
-- Doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder.
+- İsteğe bağlı olarak doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder (`SCENARIO_ENABLED=1` olmadıkça kapalı olan bir API uç noktası).
+- Varsayılan tahmini ligin her durumu için bir kez hesaplar ve önbellekten sunar; sınırlı bir kuyruk, yeni simülasyon isteklerindeki ani yoğunluğu karşılar.
 - IP başına hız sınırı, istek doğrulama, deterministik tohum (seed), açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
 
 ## Teknoloji yığını
@@ -92,7 +93,7 @@ Bu değerler birbirinden uzaklaşırsa `tests/calibration.rs` derlemeyi düşür
 - Rust 1.87 veya üzeri
 - Node.js 20.19 veya üzeri ve npm
 
-Temel simülatör için API anahtarı gerekmez. `KIMI_API_KEY` yalnızca doğal dil senaryoları için gereklidir.
+Temel simülatör için API anahtarı gerekmez. `KIMI_API_KEY` yalnızca doğal dil senaryoları için gereklidir; bu senaryolar ayrıca `SCENARIO_ENABLED=1` olmadıkça kapalıdır.
 
 ### Geliştirme modu
 
@@ -115,7 +116,7 @@ npm ci
 npm run dev
 ```
 
-<http://localhost:5173> adresini açın. İlk tahmin kendiliğinden başlar.
+<http://localhost:5173> adresini açın. Sayfa, arka ucun açılıştan sonra bir kez hesapladığı varsayılan tahmini yükler; bu hesaplama bitene kadar ilk yükleme birkaç saniye sürebilir.
 
 ### Üretime yakın yerel derleme
 
@@ -137,34 +138,56 @@ cargo run --release
 
 | Değişken | Varsayılan | Amaç |
 |---|---:|---|
-| `KIMI_API_KEY` | tanımsız | `/api/scenario` uç noktasını etkinleştirir; anahtarı Moonshot platformundan alın. |
+| `KIMI_API_KEY` | tanımsız | `/api/scenario` için anahtar; Moonshot platformundan alın. Uç nokta ayrıca `SCENARIO_ENABLED` gerektirir. |
+| `SCENARIO_ENABLED` | `0` | `1` ya da `true`, her çağrıda para harcayan `/api/scenario` uç noktasını açar; aksi hâlde uç nokta 404 döner. Panel bu uç noktayı kullanmaz. |
 | `PORT` | `3000` | Arka uç HTTP portu. Vite geliştirme sunucusuyla `3001` kullanın. |
 | `RUST_LOG` | `superlig_sim=info` | Rust tracing filtresi. |
-| `LIVE_REFRESH_MINUTES` | `30` | TFF yenileme aralığı; `0` arka plan yenilemesini kapatır. |
-| `MAX_CONCURRENT_SIMULATIONS` | `1` | Aynı anda çalışan Rayon simülasyonlarına genel sınır; fazlası HTTP 429 alır. |
+| `LIVE_REFRESH_MINUTES` | `30` | TFF yenileme aralığı; `0` arka plan yenilemesini kapatır. Her yenileme denemesi, varsayılan tahmini önceden hesaplayarak biter; `0` ile bu hesaplama açılışta bir kez yapılır. |
+| `MAX_CONCURRENT_SIMULATIONS` | `1` | Aynı anda çalışabilecek simülasyon sayısı (Rayon tek bir çalıştırmada zaten bütün çekirdekleri kullanır). |
+| `MAX_SIMULATION_QUEUE` | `8` | Boş bir yer için bekleyebilecek ek, birbirinden farklı simülasyon sayısı; bunun ötesinde sunucu `Retry-After` ile 503 döner. |
+| `SIM_QUEUE_TIMEOUT_SECS` | `20` | Kuyruktaki bir simülasyonun, sunucu 503 dönmeden önce boş yer için bekleyeceği saniye. |
 | `ENSEMBLE_WEIGHTS` | `0.5,0.3,0.2` | Virgülle ayrılmış Elo, Dixon–Coles ve pi-rating ağırlıkları. |
 | `TRUST_PROXY` | `0` | `X-Forwarded-For` başlığına yalnızca temizleyici bir ters vekil sunucu arkasında güvenin. |
 
 ## Panelin kullanımı
 
-1. Simülasyon sayısını ve tohumu seçip **Run** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
-2. Beş sekmeyi inceleyin: **Forecast**, **Positions**, **Races**, **Table** ve **Live**.
-3. En güncel TFF sonuçlarını çekip tahmini, maç kartlarını ve isabet görünümünü yeniden hesaplamak için **Update live data** düğmesini kullanın.
-4. `Galatasaray'ın ilk kalecisi beş maç cezalı` gibi bir senaryo yazın. Kimi etkiyi açıklar, doğrulanmış kulüp puanları döndürür ve yeni bir simülasyon başlatır.
+1. Sayfa, sunucunun varsayılan tahminiyle açılır (50.000 sezon, tohum 12345). Değiştirmek için simülasyon sayısını ve tohumu seçip **Çalıştır** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
+2. Beş sayfayı inceleyin: **Özet**, **Maçlar**, **Puan durumu**, **Olasılıklar** ve **Sonuçlar**. İlk maçlar puanlandıktan sonra **Özet** sayfasındaki **Tahmin başarısı** bölümünde **Tahmin geçmişi**'ni açarak puanlanan her maçın dondurulmuş tahminini, sonucuyla yan yana ve haftalara göre gruplanmış olarak görebilirsiniz; birikimli log kaybını genel oranlarla karşılaştıran bir grafik de vardır.
+3. **Maçlar** sayfasında varsaymak istediğiniz sonuçları seçin (en fazla 20, API'nin sınırı) ve **Yeniden hesapla** düğmesine basın.
+4. En güncel TFF sonuçlarını çekip tahmini, maç kartlarını ve isabet görünümünü yeniden hesaplamak için **Canlı veriyi güncelle** düğmesini kullanın. Varsaydığınız sonuçlardan, o arada oynanmış maçlara ait olanlar bir bildirimle kaldırılır.
+5. Doğal dil senaryoları panelin parçası değildir. Bunlar isteğe bağlı bir API uç noktasıdır (`/api/scenario`, aşağıda) ve sunucuda `SCENARIO_ENABLED=1` ile `KIMI_API_KEY` ayarlanmadıkça kapalıdır.
+
+Simülasyon kuyruğu doluysa (503) sayfa sunucunun istediği kadar, ama her seferinde en fazla 10 sn bekleyip üç kez yeniden dener, ardından "biraz sonra yeniden deneyin" iletisini gösterir. IP başına sınır aşıldığında (429) sınır 10 sn içinde açılacaksa bekleyip yeniden dener; aksi hâlde hemen "Çok fazla istek — N sn sonra tekrar deneyin" der. Diğer hatalarda kısa, yerelleştirilmiş bir ileti gösterilir; sunucu bir açıklama gönderdiyse onun metni de parantez içinde yer alır. Son tahmin ekranda kalır. Bir simülasyon başarısız olsa bile fikstür ve sonuçlar görüntülenmeye devam eder.
 
 ## API
 
 | Uç nokta | Yöntem | IP başına sınır | Açıklama |
 |---|---|---:|---|
-| `/api/health` | `GET` | — | Servis sürümü, model yapılandırması ve son canlı yenileme. |
-| `/api/simulate` | `POST` | 30/dk | İsteğe bağlı Elo değişiklikleriyle temel simülasyon. |
-| `/api/scenario` | `POST` | 10/dk | İstemi Kimi ile çözümler ve dönen Elo değişiklikleriyle yeniden çalıştırır. |
+| `/api/health` | `GET` | — | Servis sürümü, model yapılandırması, son canlı yenileme, `world_version` ve varsayılan tahminin önbellekte olup olmadığı (`forecast_cached`). |
+| `/api/forecast` | `GET` | 60/dk | Varsayılan tahmin (50.000 sezon, tohum 12345, değişiklik yok): `POST /api/simulate {}` ile aynı JSON; ligin her durumu için bir kez hesaplanır. |
+| `/api/simulate` | `POST` | 30/dk | İsteğe bağlı Elo değişiklikleri ve sabitlenmiş sonuçlarla simülasyon. Aynı istekler, sonuçlar ya da puanlar değişene kadar önbellekten yanıtlanır. |
+| `/api/scenario` | `POST` | 10/dk | İstemi Kimi ile çözümler ve dönen Elo değişiklikleriyle yeniden çalıştırır. `SCENARIO_ENABLED=1` değilse 404 döner. |
 | `/api/refresh` | `POST` | 5/dk | Güncel TFF sonuçlarını çeker ve uygular. |
 | `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
+| `/api/accuracy` | `GET` | 30/dk | Modelin, başlama düdüğünden önce dondurulmuş tahminlerine karşı karnesi: isabet oranı, temel orana göre log-loss ve kalibrasyon bantları; ayrıca puanlanan her maç, dondurulmuş tahmini ve kendi log-loss değeriyle. |
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
 | `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
 
-Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla, LLM senaryolarının döndürdüğü puan değişiklikleri ±150 ile, istek gövdeleri 1 MiB ile sınırlıdır.
+`/api/accuracy`, `/api/upcoming` ve `/api/matches`, IP başına tek bir 30/dk hakkını paylaşır; `/api/forecast` için ayrı bir 60/dk hakkı vardır. Hız sınırına takılan istek, `Retry-After` başlığıyla HTTP 429 alır.
+
+Simülasyonlar varsayılan olarak birer birer çalışır (`MAX_CONCURRENT_SIMULATIONS`). En fazla `MAX_SIMULATION_QUEUE` ek çalıştırma, sıra için `SIM_QUEUE_TIMEOUT_SECS` saniyeye kadar bekler. Bunun ötesinde `/api/simulate`, `/api/forecast` ve `/api/scenario`, `Retry-After: 10` ile HTTP 503 döner. Önbellekten yanıtlanan istekler ve o anda çalışan bir çalıştırmayla aynı olan istekler kuyrukta hiç beklemez. İstemcilerinin hepsi bağlantıyı kesen, kuyrukta bekleyen bir çalıştırma çalışmadan kuyruktan çıkar.
+
+Gelecek hafta (`/api/upcoming` ve fikstürdeki `current_round`), bugün ya da sonrasına (İstanbul saatiyle) tarihlenmiş en erken oynanmamış maçın haftasıdır. Böylece ertelenen tek bir maç onu geride tutmaz. Ertelenen bir maç bir haftanın maçlarıyla aynı güne denk gelirse, o gün (oynanmış ya da oynanmamış) daha çok maçı olan hafta esas alınır; eşitlikte sonraki hafta, yani normalde o haftanın kendisi kazanır. O gün hafta, sonraki günlerde de olsa oynanacak maçı kaldıkça gelecek hafta olarak kalır; haftanın maçları bittiğinde gelecek hafta, ertelenen maçın haftası olur. Yalnızca tarihi geçmiş maçlar kaldığında, hâlâ oynanmamış maçı olan en erken haftadır; sezon tamamlandığında son haftadır.
+
+API CORS başlığı göndermez: panel aynı kökenden sunulur, Vite geliştirme sunucusu da `/api` isteklerini yönlendirir.
+
+Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla, LLM senaryolarının döndürdüğü puan değişiklikleri ±150 ile, istek gövdeleri 1 MiB ile sınırlıdır. Senaryonun analiz metni 600 karakterle sınırlıdır. LLM çağrısı başarısız olursa istemci genel bir HTTP 502 alır; ayrıntılar yalnızca sunucu günlüğüne yazılır.
+
+### Varsayılan tahmin
+
+```bash
+curl http://localhost:3000/api/forecast
+```
 
 ### Temel simülasyon
 
@@ -186,6 +209,8 @@ curl -X POST http://localhost:3000/api/simulate \
 
 ### Doğal dil senaryosu
 
+Sunucuda `SCENARIO_ENABLED=1` ve `KIMI_API_KEY` gerektirir.
+
 ```bash
 curl -X POST http://localhost:3000/api/scenario \
   -H 'Content-Type: application/json' \
@@ -197,22 +222,23 @@ curl -X POST http://localhost:3000/api/scenario \
 ```bash
 docker build -t superlig-sim .
 docker run --rm -p 3000:3000 \
+  -e SCENARIO_ENABLED=1 \
   -e KIMI_API_KEY=anahtariniz \
   superlig-sim
 ```
 
-Senaryo analizi gerekmiyorsa `KIMI_API_KEY` verilmeyebilir.
+Senaryo analizi gerekmiyorsa `SCENARIO_ENABLED` ve `KIMI_API_KEY` verilmeyebilir. Derleme bağlamı; yerel derleme çıktılarını, `node_modules` klasörlerini, `.env` dosyalarını, Git verilerini ve belgeleri dışarıda bırakır (bkz. `.dockerignore`).
 
 ## Railway'e dağıtım
 
 1. Bu GitHub deposundan bir Railway servisi oluşturun ya da bir klondan `railway init && railway up` çalıştırın.
 2. Railway kökteki `Dockerfile` dosyasını algılar; Rust arka ucunu ve React arayüzünü derler.
-3. Senaryo analizi isteniyorsa `KIMI_API_KEY` ekleyin.
+3. Senaryo analizinin kullanılabilir kalması için hem `SCENARIO_ENABLED=1` hem de `KIMI_API_KEY` ayarlayın; `SCENARIO_ENABLED` olmadan `/api/scenario` 404 döner.
 4. Hız sınırlamasının Railway'in temizleyici uç vekilinden gelen istemci adresini kullanması için `TRUST_PROXY=1` ayarlayın.
-5. İsteğe bağlı olarak `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS` ve `RUST_LOG` değerlerini özelleştirin.
+5. İsteğe bağlı olarak `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, `MAX_CONCURRENT_SIMULATIONS`, `MAX_SIMULATION_QUEUE`, `SIM_QUEUE_TIMEOUT_SECS` ve `RUST_LOG` değerlerini özelleştirin.
 6. Sağlık kontrolü yolunu `/api/health` olarak ayarlayın.
 
-Uygulama, Railway'in enjekte ettiği `PORT` değerini kendiliğinden okur.
+Uygulama, Railway'in enjekte ettiği `PORT` değerini kendiliğinden okur. Zamanlanmış veri yenileme iş akışı (bkz. [Verileri yenileme](#verileri-yenileme)) yeni veriyi işledikten sonra yeniden dağıtım da yapar, ancak yalnızca depoda bir `RAILWAY_TOKEN` sırrı varsa.
 
 ## Doğrulama
 
@@ -222,13 +248,22 @@ GitHub Actions iş akışı aynı temel kontrolleri çalıştırır:
 cargo fmt -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test
+# Örneklerin kendi testleri; --all-targets örnekleri bunlar olmadan derler.
+cargo clippy --examples --profile test -- -D warnings
+cargo test --examples
 cargo build --release
 cargo audit
 
 cd frontend
 npm ci
 npm audit
+npx tsc --noEmit
 npm run build
+npm test            # Node.js 22.6+ gerektirir (--experimental-strip-types)
+cd ..
+
+# Fikstür betiğinin çevrimdışı testleri (ağ gerekmez).
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
 ## Verileri yenileme
@@ -238,7 +273,13 @@ Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibr
 ```bash
 # tff.org'dan resmî 2026-27 fikstürü ve şu ana kadarki sonuçlar.
 # Çift devreli fikstürün yapısını baştan sona doğrular: 306 maç, 34 hafta,
-# hafta başına 9 maç, 153 eşleşmenin her biri tam olarak iki kez.
+# hafta başına 9 maç, 153 eşleşmenin her biri tam olarak iki kez. TFF'nin
+# tarihsiz ("Ertelendi" ya da boş) listelediği ertelenmiş bir maç, depodaki
+# tarihini ve başlama saatini korur (bir çalıştırmada en fazla 18 maç); 9
+# maçının hepsini vermeyen bir hafta sayfası ya da tanınmayan biçimde bir
+# tarih hücresi çalıştırmayı durdurur. Depodaki bir sonuç kaybolur ya da
+# değişirse betik dosyayı yazmadan durur; gerçek bir TFF düzeltmesi ya da
+# hükmen karar için ALLOW_RESULT_CHANGES=1 kullanın.
 python3 scripts/fetch_fixtures.py
 
 # MIT lisanslı Club Football Match Data arşivinden tarih sıralı 2012-13 –
@@ -251,6 +292,8 @@ cargo run --release --example fit_dc
 ```
 
 Yeni bir kalibrasyonu işlemeden önce `data/` altındaki değişiklikleri gözden geçirin.
+
+Depodaki fikstür ayrıca kendiliğinden yenilenir. Zamanlanmış bir GitHub Actions iş akışı (`.github/workflows/refresh-data.yml`) perşembe 15:17 UTC'de, cuma 06:00 UTC'de ve elle tetiklendiğinde çalışır. Fikstürü çeker, yaklaşan maçların tahminlerini dondurur, test paketini çalıştırır ve değişiklikleri işler. Başarısız bir çalıştırma "Weekly data refresh failed" başlıklı bir issue açar ya da açık olana yorum ekler; bir sonraki başarılı çalıştırma onu kapatır. Gerçek bir TFF sonuç düzeltmesini kabul etmek için iş akışını `allow_result_changes` seçeneğiyle elle çalıştırın.
 
 Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 
@@ -273,7 +316,8 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 │   ├── piratings.rs      # Geçmişe dayalı pi-rating modeli
 │   ├── history.rs        # Geçmiş sonuçların yüklenmesi ve kulüp adı eşlemesi
 │   ├── scraper.rs        # TFF canlı sonuç alımı
-│   ├── handlers.rs       # API işleyicileri
+│   ├── handlers.rs       # API işleyicileri ve simülasyon kuyruğu
+│   ├── forecast_cache.rs # Lig durumuna göre önbelleğe alınan simülasyon yanıtları
 │   ├── llm.rs            # Kimi senaryo analizi
 │   ├── models.rs         # API istek ve yanıt tipleri
 │   ├── validation.rs     # İstek doğrulama
@@ -281,9 +325,9 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 ├── data/                 # Fikstür, geçmiş sonuçlar, kalibre edilmiş parametreler
 ├── frontend/             # React ve TypeScript paneli
 ├── examples/             # Model kalibrasyon aracı
-├── scripts/              # Veri toplama betikleri
+├── scripts/              # Veri toplama betikleri ve çevrimdışı testleri
 ├── tests/calibration.rs  # Elo sabitlerini gerçek lige karşı korur
-├── .github/workflows/    # CI yapılandırması
+├── .github/workflows/    # CI ve zamanlanmış veri yenilemesi
 └── Dockerfile            # Üretim için çok aşamalı imaj
 ```
 
