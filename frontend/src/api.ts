@@ -89,8 +89,8 @@ const API_BASE = "";
 export { ApiError } from "./retry";
 
 /** Every call goes through here: a busy server (503, 429) is asked again
- *  after the Retry-After it sent, and any other failure throws ApiError
- *  with the backend's message. */
+ *  after the wait retry.ts derives from its Retry-After, and any other
+ *  failure throws ApiError with the backend's message. */
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const resp = await sendWithRetry(() => fetch(`${API_BASE}${path}`, init), {
     signal: init.signal ?? undefined,

@@ -14,8 +14,8 @@ import {
   type WhatIf,
 } from "./api";
 import { playedResults, prunePlayedPicks } from "./calendar";
-import { useT, type Key } from "./i18n";
-import { isBusy } from "./retry";
+import { describeError, type Failure } from "./errors";
+import { useT } from "./i18n";
 import { ClubDetail } from "./components/ClubDetail";
 import { Footer, type Theme } from "./components/Footer";
 import { Header, pageFromHash, type Page } from "./components/Header";
@@ -53,13 +53,6 @@ function defaultForecast(signal: AbortSignal): Promise<SimResponse> {
   });
 }
 
-/** A busy server gets a friendly line; any other failure the backend's own
- *  words. */
-function errorText(e: unknown, t: (key: Key) => string): string {
-  if (e instanceof ApiError && isBusy(e.status)) return t("serverBusy");
-  return e instanceof Error ? e.message : String(e);
-}
-
 export default function App() {
   const t = useT();
   const [data, setData] = useState<SimResponse | null>(null);
@@ -69,7 +62,7 @@ export default function App() {
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<Failure | null>(null);
   const [nSims, setNSims] = useState(DEFAULT_SIMS);
   const [seed, setSeed] = useState(DEFAULT_SEED);
   const [whatIf, setWhatIf] = useState<WhatIf[]>([]);
@@ -157,26 +150,35 @@ export default function App() {
     return kept;
   }, []);
 
-  const handleSimulate = useCallback(async () => {
-    setError(null);
-    setPrunedPicks(0);
-    const simulate = (pins: WhatIf[]) =>
-      showForecast((signal) => runSimulation({ n_sims: nSims, seed, what_if: pins }, signal));
-    let failure = await simulate(whatIf);
-    // The server's own timed refresh can record a picked match after this
-    // page loaded its calendar, and the backend then refuses the pick (400).
-    // Reload the calendar; if that drops picks, ask once more without them.
-    if (failure instanceof ApiError && failure.status === 400 && whatIf.length > 0) {
+  /** Shows a fresh simulation with these settings and picks. Resolves to
+   *  the failure, or null when it succeeded or a newer request took over. */
+  const simulatePicks = useCallback(
+    async (n: number, s: number, pins: WhatIf[]): Promise<unknown> => {
+      const simulate = (p: WhatIf[]) =>
+        showForecast((signal) => runSimulation({ n_sims: n, seed: s, what_if: p }, signal));
+      const failure = await simulate(pins);
+      // The server can record a picked match after this page loaded its
+      // calendar (its own timed refresh, or a refresh here whose calendar
+      // reload failed), and then refuses the pick (400). Reload the
+      // calendar; if that drops picks, ask once more without them.
+      if (!(failure instanceof ApiError && failure.status === 400 && pins.length > 0)) return failure;
       const id = latestRun.current.id;
       const matches = await getMatches().catch(() => null);
       const before = whatIfRef.current.length;
       const kept = matches ? applyMatches(matches) : whatIfRef.current;
       // A request started meanwhile owns the page now, error line included.
-      if (id !== latestRun.current.id) return;
-      if (kept.length < before) failure = await simulate(kept);
-    }
-    if (failure != null) setError(failure);
-  }, [applyMatches, showForecast, nSims, seed, whatIf]);
+      if (id !== latestRun.current.id) return null;
+      return kept.length < before ? simulate(kept) : failure;
+    },
+    [applyMatches, showForecast],
+  );
+
+  const handleSimulate = useCallback(async () => {
+    setError(null);
+    setPrunedPicks(0);
+    const failure = await simulatePicks(nSims, seed, whatIf);
+    if (failure != null) setError({ error: failure, during: "forecast" });
+  }, [simulatePicks, nSims, seed, whatIf]);
 
   // First load: hydrate cached live data (the backend refreshes it in the
   // background) and show the server's cached forecast without any clicks.
@@ -202,7 +204,7 @@ export default function App() {
         /* the report card is optional */
       });
     void showForecast(defaultForecast).then((failure) => {
-      if (failure != null) setError(failure);
+      if (failure != null) setError({ error: failure, during: "forecast" });
     });
   }, [applyMatches, showForecast]);
 
@@ -210,13 +212,13 @@ export default function App() {
     setRefreshing(true);
     setError(null);
     setPrunedPicks(0);
-    let failure: unknown = null;
+    let failure: Failure | null = null;
     let refreshed = false;
     try {
       setLiveData(await refreshLiveData());
       refreshed = true;
     } catch (e) {
-      failure = e;
+      failure = { error: e, during: "refresh" };
     }
     // Calendar and report land on their own, whatever else fails; fetching
     // them after a failed refresh still recovers a calendar that never loaded.
@@ -233,16 +235,15 @@ export default function App() {
     if (refreshed || pins.length < before.length) {
       const { nSims: n, seed: s } = settingsRef.current;
       const unchanged = n === DEFAULT_SIMS && s === DEFAULT_SEED && pins.length === 0;
-      const simFailure = await showForecast((signal) =>
-        unchanged ? defaultForecast(signal) : runSimulation({ n_sims: n, seed: s, what_if: pins }, signal),
-      );
-      if (failure == null) failure = simFailure;
+      const simFailure = unchanged ? await showForecast(defaultForecast) : await simulatePicks(n, s, pins);
+      if (failure == null && simFailure != null) failure = { error: simFailure, during: "forecast" };
     }
     setError(failure);
     setRefreshing(false);
-  }, [applyMatches, showForecast]);
+  }, [applyMatches, showForecast, simulatePicks]);
 
   const selected = data?.teams.find((x) => x.team === club) ?? null;
+  const shownError = error && describeError(error.error, error.during, t);
   const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
   const assumed = data?.what_if.length ?? 0;
   // The calendar carries every played result even before a live scrape is
@@ -307,9 +308,18 @@ export default function App() {
           {t("picksRemoved")} ({prunedPicks}).
         </p>
       )}
-      {error != null && (
+      {shownError && (
         <p className="notice notice-error" role="alert">
-          <strong>{t("errorLabel")}:</strong> {errorText(error, t)}
+          <strong>{t("errorLabel")}:</strong> {shownError.message}
+          {/* The backend's words, in English, for whoever reports the problem. */}
+          {shownError.detail && (
+            <>
+              {" "}
+              <span className="muted" lang="en">
+                ({shownError.detail})
+              </span>
+            </>
+          )}
         </p>
       )}
       <main>{content}</main>

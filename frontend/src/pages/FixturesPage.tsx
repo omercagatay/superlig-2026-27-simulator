@@ -1,12 +1,17 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { MatchCard, MatchForecast, MatchesResponse, WhatIf } from "../api";
 import { useLang, useT, type Key } from "../i18n";
+import { MAX_WHAT_IF, setPick } from "../calendar";
 import { clubColours, dateSpan, kickoffOrder, matchdayLabel, num, pct, shortDate } from "../clubs";
 import { ClubName, ResultLine } from "../components/Common";
 
 type Outcome = "home" | "draw" | "away";
 
 const OUTCOME_KEY: Record<Outcome, Key> = { home: "pickHome", draw: "pickDraw", away: "pickAway" };
+
+const PICK_LIMIT_ID = "pick-limit";
+
+const pickLimit = (t: (key: Key) => string) => t("pickLimit").replace("{n}", String(MAX_WHAT_IF));
 
 /** Home, draw and away as one bar, each side in its club colour. */
 function ChanceBar({ m, f }: { m: MatchCard; f: MatchForecast }) {
@@ -25,26 +30,35 @@ function ChanceBar({ m, f }: { m: MatchCard; f: MatchForecast }) {
   );
 }
 
-/** Pick a result to assume it in the next calculation. */
+/** Pick a result to assume it in the next calculation. `locked` when the
+ *  picks are full and this fixture has none. */
 function Pick({
   m,
   pinned,
+  locked,
   onPin,
 }: {
   m: MatchCard;
   pinned: Outcome | null;
+  locked: boolean;
   onPin: (o: Outcome | null) => void;
 }) {
   const t = useT();
   return (
-    <div className="pick">
+    <div className="pick" title={locked ? pickLimit(t) : undefined}>
       <span aria-hidden="true">{t("pickLabel")}</span>
-      <div className="segmented" role="group" aria-label={`${t("pickLabel")}: ${m.home}–${m.away}`}>
+      <div
+        className="segmented"
+        role="group"
+        aria-label={`${t("pickLabel")}: ${m.home}–${m.away}`}
+        aria-describedby={locked ? PICK_LIMIT_ID : undefined}
+      >
         {(Object.keys(OUTCOME_KEY) as Outcome[]).map((o) => (
           <button
             key={o}
             type="button"
             aria-pressed={pinned === o}
+            disabled={locked}
             onClick={() => onPin(pinned === o ? null : o)}
           >
             {t(OUTCOME_KEY[o])}
@@ -59,11 +73,13 @@ function Fixture({
   m,
   f,
   pinned,
+  locked,
   onPin,
 }: {
   m: MatchCard;
   f: MatchForecast;
   pinned: Outcome | null;
+  locked: boolean;
   onPin: (o: Outcome | null) => void;
 }) {
   const t = useT();
@@ -101,7 +117,7 @@ function Fixture({
       <p className="fixture-detail">
         {t("likely")}: {f.likely_scores.map((s) => `${s.home}–${s.away} (${pct(s.pct, lang, 0)})`).join(", ")}
       </p>
-      <Pick m={m} pinned={pinned} onPin={onPin} />
+      <Pick m={m} pinned={pinned} locked={locked} onPin={onPin} />
     </li>
   );
 }
@@ -137,10 +153,9 @@ export function FixturesPage({
   );
   const pinOf = (m: MatchCard) =>
     (whatIf.find((w) => w.home === m.home && w.away === m.away)?.outcome ?? null) as Outcome | null;
-  const setPin = (m: MatchCard, o: Outcome | null) => {
-    const rest = whatIf.filter((w) => !(w.home === m.home && w.away === m.away));
-    onWhatIf(o ? [...rest, { home: m.home, away: m.away, outcome: o }] : rest);
-  };
+  // The backend takes at most MAX_WHAT_IF picks; past it only the fixtures
+  // already picked can change.
+  const full = whatIf.length >= MAX_WHAT_IF;
 
   return (
     <>
@@ -195,6 +210,11 @@ export function FixturesPage({
           </span>
         </div>
       )}
+      {full && (
+        <p className="muted" id={PICK_LIMIT_ID} role="status">
+          {pickLimit(t)}
+        </p>
+      )}
       {toPlay.length > 0 && (
         <ul className="fixture-list">
           {toPlay.map((m) => (
@@ -203,7 +223,8 @@ export function FixturesPage({
               m={m}
               f={m.forecast!}
               pinned={pinOf(m)}
-              onPin={(o) => setPin(m, o)}
+              locked={full && pinOf(m) == null}
+              onPin={(o) => onWhatIf(setPick(whatIf, m.home, m.away, o))}
             />
           ))}
         </ul>

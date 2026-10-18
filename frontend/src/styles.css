@@ -763,6 +763,13 @@ input {
   background: var(--bg-2);
 }
 
+/* A fixture left unpicked once the picks are full. */
+.segmented button:disabled {
+  background: var(--bg);
+  opacity: 0.55;
+  cursor: default;
+}
+
 .segmented button[aria-pressed="true"] {
   background: var(--accent);
   color: var(--on-accent);

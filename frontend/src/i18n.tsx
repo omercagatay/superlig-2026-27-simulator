@@ -29,6 +29,21 @@ const DICT = {
     "The server is busy. Please try again in a moment.",
     "Sunucu şu anda yoğun. Lütfen biraz sonra yeniden deneyin.",
   ],
+  tooManyRequests: [
+    "Too many requests — try again in {n} s.",
+    "Çok fazla istek — {n} sn sonra tekrar deneyin.",
+  ],
+  tooManyRequestsSoon: [
+    "Too many requests — try again in a moment.",
+    "Çok fazla istek — biraz sonra tekrar deneyin.",
+  ],
+  settingsRejected: ["These settings were not accepted.", "Bu ayarlar kabul edilmedi."],
+  tffUnreachable: ["Could not reach TFF for live data.", "Canlı veri için TFF'ye ulaşılamadı."],
+  connectionFailed: [
+    "Connection failed. Please try again.",
+    "Bağlantı kurulamadı. Lütfen yeniden deneyin.",
+  ],
+  requestFailed: ["The request failed.", "İstek başarısız oldu."],
   crashed: [
     "Something went wrong. Reload the page to try again.",
     "Bir sorun oluştu. Yeniden denemek için sayfayı yenileyin.",
@@ -72,6 +87,10 @@ const DICT = {
   recalculate: ["Recalculate", "Yeniden hesapla"],
   recalculating: ["Calculating…", "Hesaplanıyor…"],
   clearPicks: ["Clear", "Temizle"],
+  pickLimit: [
+    "You can assume at most {n} results. Remove one to pick another.",
+    "En fazla {n} sonuç varsayabilirsiniz. Başka bir maç seçmek için birini kaldırın.",
+  ],
   pickLabel: ["Assume", "Varsay"],
   pickHome: ["Home", "Ev"],
   pickDraw: ["Draw", "Beraberlik"],

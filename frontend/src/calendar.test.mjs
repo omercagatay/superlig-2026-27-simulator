@@ -1,7 +1,7 @@
 // npm test  (node --experimental-strip-types --test src/calendar.test.mjs)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { playedResults, prunePlayedPicks } from "./calendar.ts";
+import { MAX_WHAT_IF, playedResults, prunePlayedPicks, setPick } from "./calendar.ts";
 
 const card = (home, away, date, kickoff, score) => ({
   home,
@@ -64,4 +64,25 @@ test("picks on fixtures that have been played are dropped, the rest kept", () =>
   );
   assert.equal(whatIf.length, 4);
   assert.deepEqual(prunePlayedPicks([], calendar), []);
+});
+
+test("a pick is set, changed and cleared, and never past the backend's cap", () => {
+  const one = setPick([], "Göztepe", "Beşiktaş", "home");
+  assert.deepEqual(one, [{ home: "Göztepe", away: "Beşiktaş", outcome: "home" }]);
+  assert.deepEqual(setPick(one, "Göztepe", "Beşiktaş", "draw"), [
+    { home: "Göztepe", away: "Beşiktaş", outcome: "draw" },
+  ]);
+  assert.deepEqual(setPick(one, "Göztepe", "Beşiktaş", null), []);
+  // The reverse fixture is a pick of its own.
+  assert.equal(setPick(one, "Beşiktaş", "Göztepe", "away").length, 2);
+
+  const full = Array.from({ length: MAX_WHAT_IF }, (_, i) => ({ home: `H${i}`, away: `A${i}`, outcome: "home" }));
+  assert.equal(MAX_WHAT_IF, 20);
+  assert.equal(setPick(full, "Göztepe", "Beşiktaş", "home"), full, "a 21st pick is refused");
+  const changed = setPick(full, "H3", "A3", "away");
+  assert.equal(changed.length, MAX_WHAT_IF);
+  assert.equal(changed.find((w) => w.home === "H3").outcome, "away");
+  const cleared = setPick(full, "H3", "A3", null);
+  assert.equal(cleared.length, MAX_WHAT_IF - 1);
+  assert.equal(setPick(cleared, "Göztepe", "Beşiktaş", "draw").length, MAX_WHAT_IF, "room again");
 });

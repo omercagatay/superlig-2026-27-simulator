@@ -22,6 +22,20 @@ export function playedResults(matches: MatchesResponse): PlayedMatch[] {
   );
 }
 
+/** The most picks one simulation takes: the backend's MAX_WHAT_IF
+ *  (src/validation.rs) refuses more. */
+export const MAX_WHAT_IF = 20;
+
+/** The picks with `home`–`away` assumed to end in `outcome`, or with its
+ *  pick cleared when `outcome` is null. A new pick past MAX_WHAT_IF is
+ *  not added; changing or clearing one always works. */
+export function setPick(whatIf: WhatIf[], home: string, away: string, outcome: string | null): WhatIf[] {
+  const rest = whatIf.filter((w) => !(w.home === home && w.away === away));
+  if (!outcome) return rest;
+  if (rest.length === whatIf.length && whatIf.length >= MAX_WHAT_IF) return whatIf;
+  return [...rest, { home, away, outcome }];
+}
+
 /** The what-if picks whose fixture is still to play. The backend rejects a
  *  pick on a played match, so a refresh that brings in its result has to
  *  drop the pick before the next simulation. */
