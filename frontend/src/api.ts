@@ -206,9 +206,13 @@ export interface RoundMatches {
 
 export interface MatchesResponse {
   rounds: RoundMatches[];
-  /** The next matchday, the UI's landing round: the round of the earliest
+  /** The next matchday, the UI's landing round, and the round
+   *  /api/upcoming lists (World::next_round_on): the round of the earliest
    *  unplayed fixture dated today or later (Istanbul time), so one
-   *  postponed match does not hold it back. */
+   *  postponed match does not hold it back. If two rounds have unplayed
+   *  fixtures on that date, the one with more fixtures that day wins.
+   *  With only overdue fixtures left, it is the earliest round still
+   *  holding one; once every fixture is played, the last round. */
   current_round: number;
 }
 

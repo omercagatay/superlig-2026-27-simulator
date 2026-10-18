@@ -13,7 +13,7 @@ The local directory and GitHub repository are `superlig-2026-27-simulator`; the 
 ### Backend (Rust, repo root)
 
 ```bash
-cargo run --release             # serve on :3000 (reads .env for KIMI_API_KEY, PORT, RUST_LOG)
+cargo run --release             # serve on :3000 (reads .env; every variable is listed in .env.example)
 cargo test                      # all tests (inline #[cfg(test)] plus tests/calibration.rs)
 cargo test <test_name>          # single test, e.g. cargo test simulate_is_deterministic_for_same_seed
 cargo fmt -- --check            # CI formatting check
@@ -30,9 +30,12 @@ cargo run --release --example log_forecast  # freeze predictions for unplayed fi
 ```bash
 python3 scripts/fetch_fixtures.py   # tff.org -> data/fixtures_2026_27.json (306 fixtures)
 python3 scripts/fetch_history.py    # MIT archive + official TFF -> chronological history
+python3 -m unittest discover -s scripts -p 'test_*.py'   # offline fetch_fixtures.py tests (CI `scripts` job)
 ```
 
 Both are offline/manual: the committed data files are what the binary embeds via `include_str!`/`include_bytes!`. After `fetch_history.py`, re-run `fit_dc`.
+
+`fetch_fixtures.py` treats the committed `data/fixtures_2026_27.json` as its reference. A postponed row with no date on TFF ("Ertelendi" or blank) keeps its committed date and kick-off, with a warning on stderr; it still fails if no committed date exists. A committed result that vanishes or changes fails the run before the file is written, unless `ALLOW_RESULT_CHANGES=1` (a genuine TFF correction or award). It ends with a stderr summary of newly played, re-dated and re-timed fixtures. The comparison helpers are pure, and `scripts/test_fetch_fixtures.py` also replays `main()` against TFF-shaped pages built from the committed calendar.
 
 ### Frontend (`frontend/`)
 
@@ -40,11 +43,11 @@ Both are offline/manual: the committed data files are what the binary embeds via
 npm install
 npm run dev            # Vite dev server on :5173, proxies /api to http://localhost:3001 (note: not :3000 — start the backend with PORT=3001 for the dev proxy to work, or run `npm run build` and hit the backend directly on :3000)
 npx tsc --noEmit        # CI type check
-npm test                # node:test unit tests for src/clubs.ts (Node >= 22.6, --experimental-strip-types)
+npm test                # node:test: src/clubs.test.mjs, src/calendar.test.mjs, src/retry.test.mjs (Node >= 22.6, --experimental-strip-types)
 npm run build           # tsc + vite build -> frontend/dist (served by the Rust binary in prod/docker)
 ```
 
-CI (`.github/workflows/ci.yml`) runs stable backend checks, a Rust 1.87 MSRV check, RustSec/npm audits, and the frontend type check, build and unit tests (Node 22.12).
+CI (`.github/workflows/ci.yml`) runs stable backend checks, a Rust 1.87 MSRV check, RustSec/npm audits, the frontend type check, build and unit tests (Node 22.12), and a `scripts` job with the offline fetch-script tests.
 
 ### Docker
 
@@ -52,25 +55,38 @@ CI (`.github/workflows/ci.yml`) runs stable backend checks, a Rust 1.87 MSRV che
 
 The dummy-layer `rm -rf` globs and the binary copy path both key on the **package name**. Renaming the package without updating the Dockerfile breaks the deploy and nothing else — `cargo build` still passes.
 
+`.dockerignore` excludes `target*` (per-worktree target dirs included), `**/node_modules`, `frontend/dist`, `.git`, `.github`, `.claude`, `**/.env` and `**/.env.*`, Python caches, root `*.md` and `docs/`. Its patterns match from the context root, so a nested path needs `**/`. `node_modules/` alone never matched `frontend/node_modules`, and `COPY frontend/ ./` then laid the host's modules over the stage's `npm ci`.
+
 ## Architecture
 
 ### Request flow
 
-`src/main.rs` builds one `AppState` (`Arc<AppState>`) holding:
+`src/main.rs` builds one `AppState` (`Arc<AppState>`, via `AppState::new`) holding:
 - `world: Arc<RwLock<World>>` — the live simulation state (clubs, Elo ratings, fixture calendar, already-played results)
-- `live_data: Arc<RwLock<Option<LiveData>>>` — cached scrape results
-- `simulation_slots: Arc<Semaphore>` — global CPU-heavy request bound
+- `world_version: Arc<AtomicU64>` — names one world state; bumped by `apply_live` only when a refresh changes `played` or `elo`. Written under the `world` write lock, read under its read lock.
 - `kimi_api_key: Option<String>`
+- `scenario_enabled: bool` — `SCENARIO_ENABLED=1`/`true`; off by default
+- `live_data: Arc<RwLock<Option<LiveData>>>` — cached scrape results
+- `simulation_queue: Arc<SimulationQueue>` — global CPU-heavy bound: `MAX_CONCURRENT_SIMULATIONS` slots (default 1); up to `MAX_SIMULATION_QUEUE` (8) distinct runs wait up to `SIM_QUEUE_TIMEOUT_SECS` (20) for one. A run beyond that, or one that times out, gets 503 with `Retry-After: 10`.
+- `sim_cache: Arc<ResponseCache<SimKey, Bytes, ApiError>>` — serialized simulation responses (see "Response cache")
 
-Routes (`src/handlers.rs`), each with its own per-IP rate limit (`src/rate_limit.rs`, sliding window):
-- `POST /api/simulate` (30/min) — accepts validated `elo_overrides` and up to 20 `what_if` outcomes, clones the current `World`, and applies changes **to the clone only**. Pins fix the *outcome*, not the scoreline: `simulate_one_with` redraws (bounded at 64 attempts, then a minimal fallback scoreline) until the result matches.
-- `POST /api/scenario` (10/min) — sends the prompt to Kimi (`src/llm.rs`), validates the returned Elo adjustments against club names/bounds (`src/validation.rs`), applies them to a cloned `World`, simulates, returns results plus the LLM's `analysis` text.
+Routes (`src/handlers.rs`) sit in per-IP rate-limit groups (`src/rate_limit.rs`, sliding window). One `RateLimitLayer` is one bucket per client shared by every route in its group. A 429 carries `Retry-After`: seconds until the oldest request in the window expires, at least 1. Refused requests are not counted. There is no CORS layer: the SPA is same-origin, and the Vite dev server proxies `/api`.
+- `POST /api/simulate` (30/min) — accepts validated `elo_overrides` and up to 20 `what_if` outcomes, clones the current `World`, and applies changes **to the clone only**. Pins fix the *outcome*, not the scoreline: `simulate_one_with` redraws (bounded at 64 attempts, then a minimal fallback scoreline) until the result matches. Validated against the current world, then answered from `sim_cache`, by joining an identical run in flight, or by a fresh run. Only a fresh run takes a queue seat or slot.
+- `GET /api/forecast` (30/min, shared with upcoming/matches/accuracy) — the default forecast (`DEFAULT_N_SIMS` 50,000, `DEFAULT_SEED` 12345, nothing assumed): the same cache entry, so the same bytes, as `POST /api/simulate {}`. `spawn_forecast_warmup` computes it after every refresh attempt, failed ones included, or once at startup when `LIVE_REFRESH_MINUTES=0`. It is a no-op when already cached.
+- `POST /api/scenario` (10/min) — 404 unless `scenario_enabled` (each call spends money on the LLM API; the UI doesn't call it). **Production must set `SCENARIO_ENABLED=1` to keep this endpoint.** Sends the prompt to Kimi (`src/llm.rs`), validates the returned Elo adjustments against club names/bounds (`src/validation.rs`), applies them to a cloned `World`, simulates through the queue (not cached), returns results plus the LLM's `analysis` text.
 - `POST /api/refresh` (5/min) — validates all 306 TFF fixture rows before applying played results, then **does** mutate the shared `World` and caches the raw scrape. Partial or regressive snapshots keep the last good state.
-- `GET /api/upcoming` (30/min) — home/draw/away probabilities for the next matchday's unplayed fixtures.
-- `GET /api/matches` (30/min) — the whole calendar with per-fixture 1X2, over/under 2.5 and BTTS prices. Probabilities are exact sums over the Dixon-Coles scoreline table (`World::fixture_probs`), not Monte Carlo — the table truncates at 10 goals a side, so the 1X2 triple is renormalized to sum to exactly 100. Played fixtures carry the real score and no forecast (retrodicting with current ratings would mislead).
-- `GET /api/live`, `GET /api/health` — read-only.
+- `GET /api/upcoming` (30/min) — home/draw/away probabilities for the next matchday's unplayed fixtures (`World::next_round_on`, below).
+- `GET /api/matches` (30/min) — the whole calendar with per-fixture 1X2, over/under 2.5 and BTTS prices. Probabilities are exact sums over the Dixon-Coles scoreline table (`World::fixture_probs`), not Monte Carlo — the table truncates at 10 goals a side, so the 1X2 triple is renormalized to sum to exactly 100. Played fixtures carry the real score and no forecast (retrodicting with current ratings would mislead). `current_round`, the UI's landing round, is `next_round_on` too.
+- `GET /api/accuracy` (30/min) — see "Forecast accuracy".
+- `GET /api/live`, `GET /api/health` — read-only, not rate-limited. Health reports the model and weights, `live_fetched_at`, `world_version` and `forecast_cached` (whether the default forecast is cached for the current version).
 
 Everything not matching `/api/*` falls back to `ServeDir::new("frontend/dist")`, so in production this is a single binary serving both API and SPA.
+
+### Response cache (`src/forecast_cache.rs`)
+
+`ResponseCache` holds at most 32 (`SIM_CACHE_ENTRIES`) finished or in-flight results for the newest world version. A newer version drops every older entry. A caller still holding an older version gets a private cell: it gets its answer, but the answer is never published. `SimKey` is canonical: `n_sims`, seed, overrides sorted by club (rating bits) and pins sorted by fixture, so the same request in any order is one key.
+
+Single flight: concurrent identical requests share one computation. It runs in its own spawned task, so a client that disconnects cannot cancel it for the others. Failures are not cached. Everyone waiting on a failed run gets its error, and the next new caller starts a fresh run. The default-forecast key is pinned and never evicted for space. Eviction drops failed entries first, then finished ones least-recently-used first, and runs in flight last. Under overload the newest entries hold 503s, and dropping a run in flight would let an identical request start a second one.
 
 ### Simulation core (`src/sim.rs`)
 
@@ -81,7 +97,11 @@ Per trial (`simulate_one`):
 2. `league::apply_result` folds each result into both clubs' `TeamRecord`.
 3. `league::rank_table` ranks the final table (see below) and returns the finishing order.
 
-Across trials, `simulate` uses Rayon fold/reduce accumulators instead of retaining every season. It aggregates position, title/top-two/third/fourth/top-four/relegation counts, record sums, fixed-size points histograms, and a flat n×n `pairwise_above` matrix. A separate deterministic sample season remains as a test anchor. The projected-table view is built from per-club **expected** records.
+Across trials, `simulate` uses Rayon fold/reduce accumulators instead of retaining every season. It aggregates position, title/top-two/third/fourth/top-four/relegation counts, record sums, fixed-size points histograms, and a flat n×n `pairwise_above` matrix. A separate deterministic sample season remains as a test anchor. The projected-table view is built from per-club **expected** records. `models::projected_record` sets Pts = round(xPts), which is monotone down the table. It then fits integer W/D with W + D ≤ 34 and 3W + D = Pts, taking the valid draw count nearest round(xD). Rounding xPts and xD separately once asked a near-unbeaten leader for 35 results and wrapped the loss count. 101, the one total no 34-game record reaches, is shaded down to 100.
+
+**Next matchday** (`World::next_round_on(today)`, with `today` from `sim::today_istanbul()`, UTC+3): the round of the earliest-dated unplayed fixture dated on or after today. With nothing unplayed dated today or later, the earliest round that still has an unplayed fixture. With everything played, the last round. When two rounds have unplayed fixtures on that date (a rescheduled match landing on a matchday), the round with more fixtures that day wins, counting played and unplayed ones, then the earlier round. It used to be the lowest incomplete round, so one postponed match pinned `/api/upcoming` and the landing round for weeks. `upcoming_matches_on` / `build_matches_response_on` take the date for tests.
+
+**Tests must not depend on the live season's state** in `data/fixtures_2026_27.json`; the scheduled refresh's test step went red for weeks because they did. Build the state with the `#[cfg(test)]` `World::with_played(n)`: the shipped calendar with its results replaced by its first `n` fixtures in date order, each given a fixed made-up score. Use `with_played(0)` for preseason and `with_played(sim::MID_SEASON)` (seven matchdays) for part-played. Date-sensitive tests set their own dates and pass `today`. `tests/calibration.rs` uses `preseason_world()`. The suite must pass with no results, every result, and a part-played calendar.
 
 **Ratings are recomputed, never accumulated.** `World.elo_baseline` holds the preseason ratings from `sim::preseason_ratings()` (every result since 2012-13 replayed with `PRESEASON_K`; clubs with no top-flight result start at `NEW_CLUB_ELO`); `World::elo` is `refresh_ratings()` replaying every played result over that baseline in kick-off order. `update_from_live` calls it after inserting results. Doing it any other way (mutating `elo` in place) double-counts on the timer-driven refresh — there is a test for this.
 
@@ -126,13 +146,15 @@ The 0.5/0.3/0.2 ensemble weights are validated by backtest, not guessed: the are
 
 ### Scheduled refresh and scraper canary (`.github/workflows/refresh-data.yml`)
 
-A weekly job (Fridays 06:00 UTC, before the weekend's matches) re-runs `scripts/fetch_fixtures.py` and `log_forecast`, runs the test suite, and commits any data changes. Its real job is the canary: the fetch script's structural assertions fail loudly if TFF changes its markup, instead of the app quietly serving a stale calendar. The deploy step is skipped unless a `RAILWAY_TOKEN` secret exists, since this project normally deploys by CLI.
+Runs Thursdays 15:17 UTC and Fridays 06:00 UTC (before the weekend's matches), plus `workflow_dispatch`. It re-runs `scripts/fetch_fixtures.py` and `log_forecast`, runs the test suite, and commits any data changes. `log_forecast` never touches a fixture dated today (UTC) or earlier, so Thursday is the run that logs Friday's matches. GitHub starts scheduled runs hours late, hence the off-the-hour slot well before the UTC date turns. Its real job is the canary: the fetch script's structural assertions fail loudly if TFF changes its markup, instead of the app quietly serving a stale calendar. So does its committed-result guard. The dispatch input `allow_result_changes` sets `ALLOW_RESULT_CHANGES=1` for a genuine correction.
+
+The job has a `refresh-data` concurrency group (no cancel-in-progress), a 30-minute timeout and `Swatinem/rust-cache`. A failed, timed-out or cancelled run opens an issue titled "Weekly data refresh failed" naming the run and the step that failed or was interrupted. If one is already open, it comments there instead. The next green run closes it. The deploy step runs only when the commit step changed something and the job-level `HAS_RAILWAY_TOKEN` is true. A step's own `env` is not in scope for its `if`, which is why the old `env.RAILWAY_TOKEN` gate never fired. The token itself reaches only that step. Without the secret the step is skipped, since this project normally deploys by CLI.
 
 ### Forecast accuracy (`src/accuracy.rs`, `examples/log_forecast.rs`)
 
 `log_forecast` writes the model's current 1X2 probabilities for every *unplayed* fixture into `data/forecast_log.json` and **never overwrites an existing entry** — the first prediction recorded is the one the model is judged on, and the committed file plus git history is the audit trail. `accuracy::report` joins that log against played results and reports hit rate, log-loss, the base-rate baseline, and calibration bands; `GET /api/accuracy` serves it.
 
-`log_forecast` refreshes an entry only while its fixture is still in the future and unplayed; once the match date arrives, that prediction is frozen forever. So the thing being scored is the model's most recent view *before* kick-off, not a preseason guess about matchday 34. The weekly workflow runs it; a fixture already played when the log is written is skipped, so the tracker reads 0 scored until a logged matchday completes — the honest state, not a bug.
+`log_forecast` refreshes an entry only while its fixture is still in the future and unplayed; once the match date arrives, that prediction is frozen forever. So the thing being scored is the model's most recent view *before* kick-off, not a preseason guess about matchday 34. The scheduled refresh workflow runs it; a fixture already played when the log is written is skipped, so the tracker reads 0 scored until a logged matchday completes — the honest state, not a bug.
 
 ### No licensed betting sources
 
@@ -146,17 +168,21 @@ Residual known limitation: even at the calibrated sigma, an 86-point played-matc
 
 ### Calibration (`tests/calibration.rs`)
 
-`BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. Current fit: 44.7% home wins (empirical 45.3%), 24.5% draws (empirical 25.8%).
+`BASE`/`D_DIV`/`HOME_ADV` are verified against the real league rather than inherited. The test compares simulated home-win and draw rates and mean points per club against 14 seasons of history and fails the build on drift. It runs on `preseason_world()` (preseason ratings, nothing played) so the check is of the model, not of how far the season has got. Current fit: 44.7% home wins (empirical 45.3%), 24.5% draws (empirical 25.8%).
 
 ### LLM scenario analysis (`src/llm.rs`)
 
 Calls the Kimi/Moonshot chat completions API (`kimi-k2.6`, thinking disabled for latency) with a system prompt that enumerates all 18 valid club names and Elo-adjustment heuristics. Expects strict JSON back (`{"analysis": ..., "adjustments": {...}}`); `strip_fences` tolerates markdown code fences some models add. The LLM returns rating **changes**, not absolute ratings (self-computed ratings are not on ClubElo's scale); `validation::scenario_overrides` re-checks names, caps each change at ±150 and applies it to the current rating, then `validate_elo_overrides` enforces the 1200-2000 bound, since the LLM output isn't trusted.
 
+The endpoint is off unless `SCENARIO_ENABLED` is set (see Request flow). The request sets `max_tokens` 800, and the analysis is trimmed to `MAX_ANALYSIS_CHARS` (600) on a character boundary. Upstream error bodies and raw model output (truncated to 2,000 characters) and rejected adjustments are only logged with `tracing::warn!`, never returned. Clients get `LlmError`'s generic messages as 502s: "unavailable" for an unreachable or refusing API, "unusable answer" for unparseable JSON or adjustments that fail validation.
+
 ### Frontend (`frontend/src/`)
 
-`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `LiveData`) — when changing Rust response structs, update `api.ts` in the same change. `App.tsx` owns simulation, calendar, live-data, what-if and theme state and is otherwise a shell: `Header` (site name and sticky page tabs), one page component from `pages/` chosen by hash route (`#overview`, `#fixtures`, `#table`, `#probabilities`, `#results` → `OverviewPage`, `FixturesPage`, `TablePage`, `ProbabilitiesPage`, `ResultsPage`), `Footer` (sims/seed, run, live-data refresh, language and dark-mode toggles, disclaimer), and the `ClubDetail` dialog. There's no separate state management library.
+`api.ts` mirrors the backend's JSON response shapes exactly (`SimResponse`, `TeamRow`, `PositionRow`, `TableRow`, `RivalryPair`, `UpcomingMatch`, `LiveData`/`PlayedMatch`) — when changing Rust response structs, update `api.ts` in the same change. Every call goes through its `request()` and `retry.ts`'s `sendWithRetry`. A 503 or 429 is retried up to 3 times, honouring `Retry-After` up to 10 s; with no header it backs off 1/2/4 s. A server that asks for longer fails at once: the rate limiter's `Retry-After` is exact, so asking sooner would only be refused. Any other failure throws `ApiError` (status plus the backend's text), and a busy one shows the localized `serverBusy` line. `App.tsx` owns simulation, calendar, live-data, what-if and theme state and is otherwise a shell: `Header` (site name and sticky page tabs), one page component from `pages/` chosen by hash route (`#overview`, `#fixtures`, `#table`, `#probabilities`, `#results` → `OverviewPage`, `FixturesPage`, `TablePage`, `ProbabilitiesPage`, `ResultsPage`), `Footer` (sims/seed, run, live-data refresh, language and dark-mode toggles, disclaimer), and the `ClubDetail` dialog. There's no separate state management library.
 
-The design is deliberately plain: system fonts, white (or neutral dark grey) background, one accent colour for interactive states and bars, red only for relegation, square tables, no decorative concept. It replaced a "matchday programme" design on 2026-10-13 because that one read as AI-generated; do not reintroduce themed metaphors, serif display type, paper textures or explainer copy under every heading. Colour tokens live on `:root` and `:root[data-theme="dark"]` in `styles.css` (nothing else hard-codes a colour except club colours and the form badges). All number, percent and date formatting goes through `clubs.ts` (Turkish `%59,9` vs English `59.9%`, `"–"` for zero, `"<%0,1"` for traces, `kickoffOrder` for fixture order) alongside the club colour map; it is pure so `clubs.test.mjs` can test it. Shared pieces (`Swatch`, `ClubName`, `Bar`, `ResultLine`) live in `components/Common.tsx`; club names render through `ClubName` (`lang="tr"`). No odds, bookmaker or betting-market figures appear in the UI (say "3+ goals" / "both teams score", never market names).
+`App.tsx` boots from `GET /api/forecast` and falls back to `POST /api/simulate {}` only on a 404 from an older backend. Run and Recalculate send `POST /api/simulate` with the current settings and picks. Forecast requests carry an id and an `AbortController`, so a late answer to an older request is dropped. Only Overview, Table and Probabilities wait on the simulation. Fixtures and Results read the `/api/matches` calendar (Results via `calendar.ts`'s `playedResults`, with the `/api/live` scrape only as a fallback), so they stay up when the simulation fails. Whenever a calendar arrives, what-if picks on fixtures it shows as played are dropped (`prunePlayedPicks`) with a one-off notice. A 400 on a run with picks reloads the calendar once and asks again without the stale ones, because the server's timed refresh can record a picked match behind the page's back. `localStorage` reads and writes (theme, language) are wrapped in try/catch, and `components/ErrorBoundary.tsx` shows a localized reload prompt instead of a blank page.
+
+The design is deliberately plain: system fonts, white (or neutral dark grey) background, one accent colour for interactive states and bars, red only for relegation, square tables, no decorative concept. It replaced a "matchday programme" design on 2026-10-13 because that one read as AI-generated; do not reintroduce themed metaphors, serif display type, paper textures or explainer copy under every heading. Colour tokens live on `:root` and `:root[data-theme="dark"]` in `styles.css` (nothing else hard-codes a colour except club colours and the form badges). All number, percent and date formatting goes through `clubs.ts` (Turkish `%59,9` vs English `59.9%`, `"–"` for zero, `"<%0,1"` for traces, `kickoffOrder` for fixture order) alongside the club colour map; it is pure so `clubs.test.mjs` can test it, as `calendar.ts` and `retry.ts` are for `calendar.test.mjs` and `retry.test.mjs`. Shared pieces (`Swatch`, `ClubName`, `Bar`, `ResultLine`) live in `components/Common.tsx`; club names render through `ClubName` (`lang="tr"`). No odds, bookmaker or betting-market figures appear in the UI (say "3+ goals" / "both teams score", never market names).
 
 ## Data-source traps
 
