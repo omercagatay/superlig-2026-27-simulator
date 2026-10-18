@@ -676,17 +676,22 @@ impl World {
     }
 
     /// The league's "next matchday" as of `today` (ISO `YYYY-MM-DD`): the
-    /// round of the earliest-dated unplayed fixture on or after `today`.
+    /// round being played on the date of the earliest unplayed fixture on or
+    /// after `today`.
     /// Keyed on dates rather than on the lowest incomplete round, so one
     /// postponed match from an earlier round does not pin the calendar. With
     /// nothing unplayed dated today or later, the earliest round that still
     /// has an unplayed fixture; with the season complete, the last round.
     ///
-    /// Two rounds unplayed on that date means a rescheduled match landed on
-    /// a matchday: the round with more fixtures that day, played or not, is
-    /// the one being played, the earlier round on a tie. Counting only the
-    /// unplayed ones would hand the day to the rescheduled match as soon as
-    /// the matchday's early kick-offs were in.
+    /// Two rounds on that date means a rescheduled match landed on a
+    /// matchday. Every round with a fixture that day, played or not, and a
+    /// game still to come from `today` on is in the running; the one with
+    /// more fixtures that day is the one being played, the later round on a
+    /// tie, since a rescheduled match always belongs to an earlier round
+    /// than the matchday it lands on. Looking only at unplayed games would
+    /// hand the day to the rescheduled match as soon as the matchday's games
+    /// that day were in, though the matchday carries on tomorrow. A
+    /// rescheduled match alone on its date is simply the next fixture.
     pub fn next_round_on(&self, today: &str) -> u8 {
         let unplayed: Vec<usize> = (0..self.fixtures.len())
             .filter(|&i| {
@@ -694,32 +699,26 @@ impl World {
                 !self.played.contains_key(&(f.home, f.away))
             })
             .collect();
-        let next_date = unplayed
+        let to_come: Vec<usize> = unplayed
             .iter()
-            .map(|&i| self.dates[i].date.as_str())
-            .filter(|&date| date >= today)
-            .min();
+            .copied()
+            .filter(|&i| self.dates[i].date.as_str() >= today)
+            .collect();
+        let next_date = to_come.iter().map(|&i| self.dates[i].date.as_str()).min();
         match next_date {
             Some(date) => {
-                // Rounds with a game still to play that day, then every
-                // fixture each of them has on it.
-                let mut per_round: BTreeMap<u8, usize> = unplayed
-                    .iter()
-                    .filter(|&&i| self.dates[i].date == date)
-                    .map(|&i| (self.fixtures[i].round, 0))
-                    .collect();
+                let mut per_round: BTreeMap<u8, usize> = BTreeMap::new();
                 for (i, f) in self.fixtures.iter().enumerate() {
                     if self.dates[i].date == date {
-                        if let Some(count) = per_round.get_mut(&f.round) {
-                            *count += 1;
-                        }
+                        *per_round.entry(f.round).or_default() += 1;
                     }
                 }
                 per_round
                     .into_iter()
-                    .max_by_key(|&(round, count)| (count, std::cmp::Reverse(round)))
+                    .filter(|&(round, _)| to_come.iter().any(|&i| self.fixtures[i].round == round))
+                    .max_by_key(|&(round, count)| (count, round))
                     .map(|(round, _)| round)
-                    .expect("the date came from an unplayed fixture")
+                    .expect("the date came from a fixture still to come")
             }
             None => unplayed
                 .iter()
@@ -1465,6 +1464,58 @@ mod tests {
         let up = w.upcoming_matches_on(&today);
         assert_eq!(up.len(), 1);
         assert_eq!((up[0].home, up[0].away), (f.home, f.away));
+    }
+
+    /// Matchday 7 complete, one matchday-5 game postponed and unplayed:
+    /// the world and that game's fixture index.
+    fn season_with_a_postponed_round_5_game() -> (World, usize) {
+        let mut w = season_through(7);
+        let i = fixtures_on(&w, 5, &day(5, 0))[0];
+        let f = w.fixtures[i];
+        w.played.remove(&(f.home, f.away));
+        (w, i)
+    }
+
+    #[test]
+    fn a_rescheduled_match_does_not_take_over_a_matchday_still_running() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // It lands on matchday 8's first day, and every matchday-8 game that
+        // day is in before it kicks off; matchday 8 has two days to go.
+        let matchday = day(8, 0);
+        w.dates[i].date = matchday.clone();
+        for j in fixtures_on(&w, 8, &matchday) {
+            record(&mut w, j);
+        }
+        assert_eq!(
+            w.next_round_on(&matchday),
+            8,
+            "the rescheduled match took over"
+        );
+        let up = w.upcoming_matches_on(&matchday);
+        assert_eq!(up.len(), 6, "matchday 8's last two days");
+        assert!(up.iter().all(|f| f.round == 8));
+    }
+
+    #[test]
+    fn a_matchday_opener_beats_a_rescheduled_match_on_the_same_day() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        // Matchday 8 opens with a single game the day before its main days,
+        // and the rescheduled match is played that day too: one game each,
+        // and the regular matchday is the later round.
+        let opening_day = day(7, 6);
+        let opener = fixtures_on(&w, 8, &day(8, 0))[0];
+        w.dates[opener].date = opening_day.clone();
+        w.dates[i].date = opening_day.clone();
+        for today in [day(7, 4), opening_day.clone()] {
+            assert_eq!(w.next_round_on(&today), 8, "as of {today}");
+            assert_eq!(w.upcoming_matches_on(&today).len(), 9);
+        }
+
+        // The opener in, the rescheduled match still to come that evening:
+        // matchday 8 carries on tomorrow, so it is still the matchday.
+        record(&mut w, opener);
+        assert_eq!(w.next_round_on(&opening_day), 8);
+        assert_eq!(w.upcoming_matches_on(&opening_day).len(), 8);
     }
 
     #[test]
