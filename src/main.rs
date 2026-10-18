@@ -143,9 +143,16 @@ async fn main() -> anyhow::Result<()> {
                 .route("/api/simulate", post(handlers::run_sim))
                 .route_layer(RateLimitLayer::new(30, 60, trust_proxy)),
         )
+        // Every page load asks for the default forecast, a cached byte copy
+        // (or one shared run while it is computed), so it has its own, larger
+        // allowance instead of eating into the calendar's.
         .merge(
             Router::new()
                 .route("/api/forecast", get(handlers::forecast))
+                .route_layer(RateLimitLayer::new(60, 60, trust_proxy)),
+        )
+        .merge(
+            Router::new()
                 .route("/api/upcoming", get(handlers::upcoming))
                 .route("/api/matches", get(handlers::matches))
                 .route("/api/accuracy", get(handlers::accuracy))

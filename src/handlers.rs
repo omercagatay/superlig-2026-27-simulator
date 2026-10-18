@@ -21,7 +21,11 @@ use crate::validation::{
 
 /// Distinct simulation responses kept for the current world state.
 const SIM_CACHE_ENTRIES: usize = 32;
-/// How long a 503 asks the client to wait: a few default runs.
+/// How long a 503 asks the client to wait: a few default runs. A queued run
+/// that timed out sends the same, though the queue may then take longer to
+/// drain: on a 503 it is a hint. The site waits min(Retry-After,
+/// `MAX_WAIT_MS`) and asks again (frontend/src/retry.ts, 10 s), so keep this
+/// at or under that cap.
 const BUSY_RETRY_AFTER_SECS: u64 = 10;
 
 #[derive(Clone)]
@@ -222,7 +226,8 @@ pub async fn run_sim(
 }
 
 /// The default forecast: the same bytes as `POST /api/simulate {}`, from a
-/// cache warmed at startup and after every refresh that changes the world.
+/// cache warmed after every refresh attempt (or at startup when the
+/// background refresh is off).
 pub async fn forecast(State(state): State<Arc<AppState>>) -> Result<Response, ApiError> {
     Ok(json_response(default_forecast(&state).await?))
 }
@@ -254,7 +259,8 @@ pub fn spawn_forecast_warmup(state: Arc<AppState>) {
 
 /// Validate a simulation request against the current world, then answer it
 /// from the cache, by joining an identical run already in flight, or by
-/// starting one. Only a fresh run takes a simulation slot.
+/// starting one. Only a fresh run takes a queue seat or a simulation slot,
+/// and it gives up its seat if every client waiting for it disconnects.
 async fn cached_simulation(
     state: &Arc<AppState>,
     n_sims: usize,
@@ -283,33 +289,37 @@ async fn cached_simulation(
     let queue = state.simulation_queue.clone();
     state
         .sim_cache
-        .get_or_compute(version, key, move || async move {
-            let mut world = world;
-            world.apply_overrides(&config.elo_overrides);
-            let resp = simulate_off_runtime(world, config, None, &queue).await?;
-            let body = serde_json::to_vec(&resp).map_err(|e| {
-                ApiError::from((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to encode simulation: {e}"),
-                ))
-            })?;
-            Ok::<_, ApiError>(Bytes::from(body))
-        })
+        .get_or_compute(
+            version,
+            key,
+            move || async move { queue.acquire().await },
+            move |slot| async move {
+                let mut world = world;
+                world.apply_overrides(&config.elo_overrides);
+                let resp = simulate_off_runtime(slot, world, config, None).await?;
+                let body = serde_json::to_vec(&resp).map_err(|e| {
+                    ApiError::from((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        format!("Failed to encode simulation: {e}"),
+                    ))
+                })?;
+                Ok::<_, ApiError>(Bytes::from(body))
+            },
+        )
         .await
 }
 
 /// Run the CPU-bound rayon simulation on the blocking pool so it can't
-/// stall tokio's worker threads (and with them /api/health), once a
-/// simulation slot is free.
+/// stall tokio's worker threads (and with them /api/health), holding a
+/// simulation slot until it ends.
 async fn simulate_off_runtime(
+    slot: OwnedSemaphorePermit,
     world: World,
     config: SimConfig,
     scenario: Option<String>,
-    queue: &SimulationQueue,
 ) -> Result<SimResponse, ApiError> {
-    let permit = queue.acquire().await?;
     let resp = tokio::task::spawn_blocking(move || {
-        let _permit = permit;
+        let _slot = slot;
         let results = world.simulate(&config);
         build_response(&world, &results, &config, scenario)
     })
@@ -364,13 +374,8 @@ pub async fn scenario(
         elo_overrides: overrides,
         forced: HashMap::new(),
     };
-    let resp = simulate_off_runtime(
-        world,
-        config,
-        Some(impact.analysis),
-        &state.simulation_queue,
-    )
-    .await?;
+    let slot = state.simulation_queue.acquire().await?;
+    let resp = simulate_off_runtime(slot, world, config, Some(impact.analysis)).await?;
     Ok(Json(resp))
 }
 
@@ -540,9 +545,11 @@ mod tests {
     use crate::scraper::ScrapedMatch;
     use serde_json::json;
 
+    /// A part-played season of made-up results, so the tests behave the
+    /// same whatever the shipped calendar holds.
     fn test_state(slots: usize, max_waiting: usize, timeout: Duration) -> Arc<AppState> {
         Arc::new(AppState::new(
-            World::new(),
+            World::with_played(crate::sim::MID_SEASON),
             None,
             false,
             SimulationQueue::new(slots, max_waiting, timeout),
@@ -596,7 +603,8 @@ mod tests {
             .get_or_compute(
                 0,
                 SimKey::default_forecast(),
-                move || async move { Ok(cached) },
+                || async { Ok(()) },
+                move |()| async move { Ok(cached) },
             )
             .await
             .unwrap();
@@ -678,6 +686,46 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_queued_request_whose_client_leaves_gives_up_its_seat() {
+        let state = test_state(1, 1, Duration::from_secs(10));
+        let held = hold_every_slot(&state);
+        let waiting = || state.simulation_queue.waiting.load(Ordering::SeqCst);
+        let until = |n: usize| {
+            tokio::time::timeout(Duration::from_secs(1), async move {
+                while waiting() != n {
+                    tokio::time::sleep(Duration::from_millis(1)).await;
+                }
+            })
+        };
+        let left = tokio::spawn(run_sim(
+            State(state.clone()),
+            sim_request(json!({ "n_sims": 100, "seed": 1 })),
+        ));
+        until(1).await.expect("the first request queues");
+        left.abort();
+        assert!(left.await.unwrap_err().is_cancelled());
+        until(0)
+            .await
+            .expect("the abandoned run gives its seat back");
+
+        // The only seat is free again, so the client's next request queues
+        // instead of getting a 503, and gets the slot first.
+        let next = tokio::spawn(run_sim(
+            State(state.clone()),
+            sim_request(json!({ "n_sims": 100, "seed": 2 })),
+        ));
+        until(1).await.expect("the next request queues");
+        drop(held);
+        let next = next.await.unwrap().into_response();
+        assert_eq!(next.status(), StatusCode::OK);
+        let abandoned = SimKey::new(100, 1, &HashMap::new(), &HashMap::new());
+        assert!(
+            state.sim_cache.get(0, &abandoned).is_none(),
+            "the abandoned run never ran"
+        );
+    }
+
+    #[tokio::test]
     async fn a_cached_request_in_any_order_needs_no_simulation_slot() {
         let state = test_state(1, 0, Duration::from_secs(5));
         let pins: Vec<serde_json::Value> = {
@@ -697,6 +745,7 @@ mod tests {
                 })
                 .collect()
         };
+        assert_eq!(pins.len(), 3, "three unplayed fixtures to pin");
         let reversed: Vec<serde_json::Value> = pins.iter().rev().cloned().collect();
         let overrides = json!({ "Galatasaray": 1700.0, "Fenerbahçe": 1690.0 });
 
