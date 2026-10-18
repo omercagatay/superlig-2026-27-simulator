@@ -140,7 +140,8 @@ def apply_week_dates(fixtures, weeks):
         out.append({**f, "date": iso, "kickoff": kickoff})
     if len(postponed) > MAX_UNDATED:
         problems.append(f"  {len(postponed)} fixtures undated, more than "
-                        f"MAX_UNDATED={MAX_UNDATED}")
+                        f"MAX_UNDATED={MAX_UNDATED} (raise it only for a genuine "
+                        "mass postponement)")
     if problems:
         shown = problems[:12]
         if len(problems) > len(shown):

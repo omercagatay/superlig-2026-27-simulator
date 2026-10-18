@@ -88,6 +88,23 @@ class Helpers(unittest.TestCase):
         for text in ("17 Ekim 2026", "2026-10-17", "17.10.26", "İptal"):
             self.assertFalse(ff.no_date(text), text)
 
+    def test_every_page_must_hold_one_round_even_if_all_fixtures_are_found(self):
+        # Week 1's last match shows up on week 2's page instead: every fixture
+        # is still dated, but the pages no longer line up with the rounds.
+        fixtures = [fx(f"H{i}", f"A{i}", rnd=r) for r in (1, 2) for i in range(r * 10, r * 10 + 9)]
+
+        def rows(fs):
+            return [(f["home"], f["away"], f["date"], f["kickoff"]) for f in fs], []
+
+        weeks = {1: rows(fixtures[:8]), 2: rows(fixtures[8:])}
+        with self.assertRaises(SystemExit) as e:
+            ff.apply_week_dates(fixtures, weeks)
+        self.assertIn("week 1: matched 8 of 9", str(e.exception))
+        self.assertIn("week 2: matched 10 of 9", str(e.exception))
+        self.assertNotIn("on no week page", str(e.exception))
+        weeks = {1: rows(fixtures[:9]), 2: rows(fixtures[9:])}
+        self.assertEqual(ff.apply_week_dates(fixtures, weeks), fixtures)
+
 
 def season_page(fixtures):
     """The pageID=198 season list: "N. Hafta" headings, then score rows."""
@@ -204,31 +221,35 @@ class EndToEnd(unittest.TestCase):
         got = self.run_main(self.base, self.base, undated=undated)
         self.assertEqual(got, self.expected(self.base))
 
-    def assertFailsAndKeepsFile(self, **kwargs):
-        with self.assertRaises(SystemExit):
+    def assertFailsAndKeepsFile(self, reason, **kwargs):
+        with self.assertRaises(SystemExit) as e:
             self.run_main(self.base, self.base, **kwargs)
+        self.assertIn(reason, str(e.exception))
         self.assertEqual(self.written(), self.base, "committed file left alone")
 
     def test_more_postponements_than_the_cap_fail(self):
         undated = {(f["home"], f["away"]) for f in self.base[:ff.MAX_UNDATED + 1]}
-        self.assertFailsAndKeepsFile(undated=undated)
+        self.assertFailsAndKeepsFile(f"{ff.MAX_UNDATED + 1} fixtures undated", undated=undated)
 
     def test_unparsed_date_cell_fails(self):
         f = self.base[100]
-        self.assertFailsAndKeepsFile(week=lambda rnd: week_page(
-            self.base, rnd, undated={(f["home"], f["away"])}, marker="17 Ekim 2026"))
+        self.assertFailsAndKeepsFile(
+            "date cell '17 Ekim 2026' is not a date", week=lambda rnd: week_page(
+                self.base, rnd, undated={(f["home"], f["away"])}, marker="17 Ekim 2026"))
 
     def test_renamed_week_widget_fails(self):
         # One page or all of them: none of their rows match WEEK_ROW.
         for renamed in ({9}, set(range(1, 35))):
-            self.assertFailsAndKeepsFile(week=lambda rnd: week_page(
-                self.base, rnd, widget="macTarih" if rnd in renamed else
-                "haftaninMaclariTarih"))
+            self.assertFailsAndKeepsFile(
+                f"week {min(renamed)}: matched 0 of 9", week=lambda rnd: week_page(
+                    self.base, rnd, widget="macTarih" if rnd in renamed else
+                    "haftaninMaclariTarih"))
 
     def test_week_page_short_of_a_match_fails(self):
         dropped = next(f for f in self.base if f["round"] == 9)
         rest = [f for f in self.base if f is not dropped]
-        self.assertFailsAndKeepsFile(week=lambda rnd: week_page(rest, rnd))
+        self.assertFailsAndKeepsFile("week 9: matched 8 of 9",
+                                     week=lambda rnd: week_page(rest, rnd))
 
     def test_postponed_row_with_no_committed_date_fails(self):
         undated = {(self.base[-1]["home"], self.base[-1]["away"])}

@@ -9,9 +9,10 @@
 //! is frozen forever. That gives the honest thing to score: the model's most
 //! recent view *before* kick-off, rather than a preseason guess about matchday
 //! 34 that no one would have relied on. A refresh that would change nothing
-//! but `logged_at` is skipped, and percentages are stored to a precision that
-//! reads back exactly (`logged_pct`), so a rerun with no new results writes
-//! the same file byte for byte and commits nothing.
+//! but `logged_at` is skipped, and a run with nothing new or refreshed leaves
+//! the file untouched, so a rerun with no new results commits nothing.
+//! Percentages are stored to a precision that reads back exactly
+//! (`logged_pct`), so entries kept through a rewrite keep their digits.
 //!
 //! Run weekly, before each matchday: `cargo run --release --example log_forecast`
 
@@ -28,10 +29,15 @@ fn main() {
         Err(e) => eprintln!("warning: running on pure Elo ({e})"),
     }
 
-    let existing: Vec<LoggedForecast> = std::fs::read_to_string(FORECAST_LOG_PATH)
-        .ok()
-        .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default();
+    // Only a missing log starts afresh. One that cannot be read or parsed
+    // stops the run: treating it as empty would drop every frozen entry.
+    let existing: Vec<LoggedForecast> = match std::fs::read_to_string(FORECAST_LOG_PATH) {
+        Ok(s) => serde_json::from_str(&s).unwrap_or_else(|e| {
+            panic!("{FORECAST_LOG_PATH} does not parse ({e}); not touching it")
+        }),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Vec::new(),
+        Err(e) => panic!("read {FORECAST_LOG_PATH}: {e}"),
+    };
     let mut by_key: HashMap<(String, String), LoggedForecast> = existing
         .into_iter()
         .map(|f| ((f.home.clone(), f.away.clone()), f))
@@ -72,25 +78,29 @@ fn main() {
         by_key.insert(key, fresh);
     }
 
+    let added = by_key.len() - before;
+    let counts = format!("{added} new, {refreshed} refreshed, {unchanged} unchanged");
+    // Nothing new to say: leave the file exactly as it is. Rewriting it would
+    // still re-serialize older full-precision entries a last digit off.
+    if added == 0 && refreshed == 0 {
+        println!("forecast log: {before} entries ({counts}), {FORECAST_LOG_PATH} left as is");
+        return;
+    }
     let mut out: Vec<LoggedForecast> = by_key.into_values().collect();
     out.sort_by(|a, b| (a.round, &a.date, &a.home).cmp(&(b.round, &b.date, &b.home)));
     let json = serde_json::to_string_pretty(&out).expect("serialize forecasts");
     std::fs::write(FORECAST_LOG_PATH, json).expect("write forecast log");
     println!(
-        "forecast log: {} entries ({} new, {} refreshed, {} unchanged), written to {}",
-        out.len(),
-        out.len() - before,
-        refreshed,
-        unchanged,
-        FORECAST_LOG_PATH
+        "forecast log: {} entries ({counts}), written to {FORECAST_LOG_PATH}",
+        out.len()
     );
 }
 
 /// A percentage as the log stores it: to 12 decimal places. That is far past
 /// any meaningful precision, yet few enough digits for serde_json (without
 /// its `float_roundtrip` feature) to read back exactly. A full-precision value
-/// can come back a last bit off, so an entry kept as read would still be
-/// rewritten one digit different, and the run would commit anyway.
+/// can come back a last bit off, so an entry kept as read (frozen or
+/// unchanged) would be rewritten one digit different whenever the file is.
 fn logged_pct(pct: f64) -> f64 {
     (pct * 1e12).round() / 1e12
 }
