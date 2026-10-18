@@ -691,8 +691,11 @@ impl World {
     /// one from an earlier round (one brought forward from a later round
     /// would take the tie). Looking only at unplayed games would
     /// hand the day to the rescheduled match as soon as the matchday's games
-    /// that day were in, though the matchday carries on tomorrow. A
-    /// rescheduled match alone on its date is simply the next fixture.
+    /// that day were in, though the matchday carries on tomorrow. A round
+    /// stays in the running only with a game still to come that day or
+    /// before the next round starts, so its own game postponed for weeks
+    /// does not hold the day. A rescheduled match alone on its date is
+    /// simply the next fixture.
     pub fn next_round_on(&self, today: &str) -> u8 {
         let unplayed: Vec<usize> = (0..self.fixtures.len())
             .filter(|&i| {
@@ -714,9 +717,25 @@ impl World {
                         *per_round.entry(f.round).or_default() += 1;
                     }
                 }
+                // A round's own matchday ends where the next round starts; a
+                // game of it postponed past that does not keep it running.
+                let next_round_start = |round: u8| {
+                    (0..self.fixtures.len())
+                        .filter(|&i| self.fixtures[i].round == round + 1)
+                        .map(|i| self.dates[i].date.as_str())
+                        .min()
+                };
+                let still_running = |round: u8| {
+                    let ends = next_round_start(round);
+                    to_come.iter().any(|&i| {
+                        let d = self.dates[i].date.as_str();
+                        self.fixtures[i].round == round
+                            && (d == date || ends.is_none_or(|end| d < end))
+                    })
+                };
                 per_round
                     .into_iter()
-                    .filter(|&(round, _)| to_come.iter().any(|&i| self.fixtures[i].round == round))
+                    .filter(|&(round, _)| still_running(round))
                     .max_by_key(|&(round, count)| (count, round))
                     .map(|(round, _)| round)
                     .expect("the date came from a fixture still to come")
@@ -1548,6 +1567,27 @@ mod tests {
         );
         record(&mut w, i);
         assert_eq!(w.next_round_on(&last_day), 9);
+    }
+
+    #[test]
+    fn a_matchday_game_postponed_for_weeks_does_not_hold_a_shared_day() {
+        let (mut w, i) = season_with_a_postponed_round_5_game();
+        let last_day = day(8, 2);
+        w.dates[i].date = last_day.clone();
+        // One matchday-8 game moves out past matchday 9's start; every
+        // other matchday-8 game, that day included, is in.
+        let far = fixtures_on(&w, 8, &day(8, 0))[0];
+        w.dates[far].date = day(12, 1);
+        let rest: Vec<usize> = (0..w.fixtures.len())
+            .filter(|&j| w.fixtures[j].round == 8 && j != far)
+            .collect();
+        for j in rest {
+            record(&mut w, j);
+        }
+        assert_eq!(w.next_round_on(&last_day), 5, "a far-off game held the day");
+        let up = w.upcoming_matches_on(&last_day);
+        assert_eq!(up.len(), 1);
+        assert_eq!(up[0].round, 5);
     }
 
     #[test]
