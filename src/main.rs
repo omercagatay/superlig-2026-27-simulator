@@ -1,19 +1,27 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::{
     routing::{get, post},
     Router,
 };
-use tower_http::{cors::CorsLayer, limit::RequestBodyLimitLayer, services::ServeDir};
+use tower_http::{limit::RequestBodyLimitLayer, services::ServeDir};
 use tracing_subscriber::EnvFilter;
 
 use superlig_sim::{
-    handlers::{self, AppState},
+    handlers::{self, AppState, SimulationQueue},
     rate_limit::RateLimitLayer,
     sim::World,
 };
-use tokio::sync::{RwLock, Semaphore};
+
+/// `1` or `true` (any case) turns a boolean env var on; anything else, or
+/// unset, leaves it off.
+fn env_flag(name: &str) -> bool {
+    std::env::var(name)
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -43,11 +51,16 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Ensemble weights disable DC/pi components; using pure Elo");
     }
 
+    // Each scenario call spends money on the LLM API, so the endpoint is off
+    // unless explicitly enabled.
+    let scenario_enabled = env_flag("SCENARIO_ENABLED");
     let kimi_api_key = std::env::var("KIMI_API_KEY").ok();
-    if kimi_api_key.is_some() {
+    if !scenario_enabled {
+        tracing::info!("Scenario analysis disabled (SCENARIO_ENABLED unset); /api/scenario is 404");
+    } else if kimi_api_key.is_some() {
         tracing::info!("Kimi scenario analysis enabled");
     } else {
-        tracing::warn!("KIMI_API_KEY not set — scenario endpoint will return an error");
+        tracing::warn!("SCENARIO_ENABLED is on but KIMI_API_KEY is not set — scenario endpoint will return an error");
     }
 
     let simulation_capacity = std::env::var("MAX_CONCURRENT_SIMULATIONS")
@@ -55,18 +68,34 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|value| value.parse::<usize>().ok())
         .filter(|&value| value > 0)
         .unwrap_or(1);
-    tracing::info!("Simulation concurrency limit: {simulation_capacity}");
+    let queue_length = std::env::var("MAX_SIMULATION_QUEUE")
+        .ok()
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(8);
+    let queue_timeout_secs = std::env::var("SIM_QUEUE_TIMEOUT_SECS")
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .unwrap_or(20);
+    tracing::info!(
+        "Simulation concurrency limit: {simulation_capacity}, queue: {queue_length} waiting for up to {queue_timeout_secs}s"
+    );
 
-    let state = Arc::new(AppState {
-        world: Arc::new(RwLock::new(world)),
+    let state = Arc::new(AppState::new(
+        world,
         kimi_api_key,
-        live_data: Arc::new(RwLock::new(None)),
-        simulation_slots: Arc::new(Semaphore::new(simulation_capacity)),
-    });
+        scenario_enabled,
+        SimulationQueue::new(
+            simulation_capacity,
+            queue_length,
+            Duration::from_secs(queue_timeout_secs),
+        ),
+    ));
 
     // Keep the simulation current with the real tournament: refresh live
     // data immediately on startup, then on an interval. LIVE_REFRESH_MINUTES=0
-    // disables the background task (manual /api/refresh still works).
+    // disables the background task (manual /api/refresh still works). Each
+    // refresh attempt ends by warming the default forecast for the current
+    // world; without the task it is warmed straight away.
     let refresh_minutes: u64 = std::env::var("LIVE_REFRESH_MINUTES")
         .ok()
         .and_then(|v| v.parse().ok())
@@ -74,8 +103,7 @@ async fn main() -> anyhow::Result<()> {
     if refresh_minutes > 0 {
         let bg_state = state.clone();
         tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(std::time::Duration::from_secs(refresh_minutes * 60));
+            let mut interval = tokio::time::interval(Duration::from_secs(refresh_minutes * 60));
             loop {
                 interval.tick().await;
                 match handlers::perform_live_refresh(&bg_state).await {
@@ -90,20 +118,21 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Background live refresh enabled (every {refresh_minutes} min)");
     } else {
         tracing::info!("Background live refresh disabled (LIVE_REFRESH_MINUTES=0)");
+        handlers::spawn_forecast_warmup(state.clone());
     }
 
     // Only trust X-Forwarded-For for rate limiting when a sanitizing reverse
     // proxy (e.g. Railway's edge) fronts the server; a spoofed header would
     // otherwise give every request a fresh rate-limit bucket.
-    let trust_proxy = std::env::var("TRUST_PROXY")
-        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
-        .unwrap_or(false);
+    let trust_proxy = env_flag("TRUST_PROXY");
     if trust_proxy {
         tracing::info!("TRUST_PROXY on: rate limiting keys on X-Forwarded-For");
     } else {
         tracing::info!("TRUST_PROXY off: rate limiting keys on socket peer address");
     }
 
+    // No CORS layer: the SPA is served from this origin, and the Vite dev
+    // server proxies /api, so no cross-origin caller needs access.
     let app = Router::new()
         .route("/api/health", get(handlers::health))
         .route("/api/live", get(handlers::get_live_data))
@@ -114,6 +143,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .merge(
             Router::new()
+                .route("/api/forecast", get(handlers::forecast))
                 .route("/api/upcoming", get(handlers::upcoming))
                 .route("/api/matches", get(handlers::matches))
                 .route("/api/accuracy", get(handlers::accuracy))
@@ -130,7 +160,6 @@ async fn main() -> anyhow::Result<()> {
                 .route_layer(RateLimitLayer::new(5, 60, trust_proxy)),
         )
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
-        .layer(CorsLayer::permissive())
         .with_state(state)
         .fallback_service(ServeDir::new("frontend/dist"));
 

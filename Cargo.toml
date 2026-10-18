@@ -13,7 +13,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 rand_distr = "0.4"
 rayon = "1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
-tower-http = { version = "0.5", features = ["cors", "fs", "limit"] }
+tower-http = { version = "0.5", features = ["fs", "limit"] }
 tower = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
