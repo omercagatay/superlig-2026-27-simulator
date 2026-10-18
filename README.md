@@ -311,7 +311,7 @@ The repository already includes the fixture calendar, historical results, and fi
 # Asserts the full double round-robin structure: 306 fixtures, 34 rounds,
 # 9 per round, 153 pairs each played exactly twice. A postponed match that
 # TFF lists without a date ("Ertelendi" or blank) keeps its committed date and
-# kick-off, at most 9 per run; a week page that does not yield all 9 of its
+# kick-off, at most 18 per run; a week page that does not yield all 9 of its
 # matches, or a date cell in an unknown format, stops the run. A committed
 # result that disappears or changes stops the run before the file is written;
 # set ALLOW_RESULT_CHANGES=1 for a genuine TFF correction or award.

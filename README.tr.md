@@ -275,7 +275,7 @@ Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibr
 # Çift devreli fikstürün yapısını baştan sona doğrular: 306 maç, 34 hafta,
 # hafta başına 9 maç, 153 eşleşmenin her biri tam olarak iki kez. TFF'nin
 # tarihsiz ("Ertelendi" ya da boş) listelediği ertelenmiş bir maç, depodaki
-# tarihini ve başlama saatini korur (bir çalıştırmada en fazla 9 maç); 9
+# tarihini ve başlama saatini korur (bir çalıştırmada en fazla 18 maç); 9
 # maçının hepsini vermeyen bir hafta sayfası ya da tanınmayan biçimde bir
 # tarih hücresi çalıştırmayı durdurur. Depodaki bir sonuç kaybolur ya da
 # değişirse betik dosyayı yazmadan durur; gerçek bir TFF düzeltmesi ya da

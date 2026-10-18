@@ -84,10 +84,11 @@ ROUND_SIZE = 9
 # compared case- and accent-insensitively (see no_date).
 NO_DATE_MARKERS = {"", "-", "–", "—", "ertelendi", "belirlenmedi"}
 
-# At most this many fixtures may keep their committed date in one run: one
-# round's worth, as when a whole matchday is postponed. More reads as a week
-# widget that has stopped yielding dates, and fails the run.
-MAX_UNDATED = 9
+# At most this many fixtures may keep their committed date in one run: two
+# rounds' worth, so a whole postponed matchday plus postponements still
+# awaiting a new date fit. More reads as a week widget that has stopped
+# yielding dates, and fails the run.
+MAX_UNDATED = 18
 
 
 def parse_week_dates(page):
