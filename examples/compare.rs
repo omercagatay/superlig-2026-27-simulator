@@ -258,7 +258,7 @@ const T975: [f64; 60] = [
 ];
 
 /// The 0.975 quantile of Student's t with `df` degrees of freedom. Past
-/// the table df 60's stands in, at most 2% above the normal's 1.96.
+/// the table df 60's stands in, within 2.1% of the normal's 1.96.
 fn t975(df: usize) -> f64 {
     assert!(df >= 1, "Student's t needs a degree of freedom");
     T975[df.min(T975.len()) - 1]
@@ -1216,6 +1216,118 @@ mod tests {
             hi - lo > 5.0 * (boot.1 - boot.0),
             "season t [{lo}, {hi}], date bootstrap {boot:?}"
         );
+    }
+
+    /// The bracketed intervals of a report line, in order.
+    fn intervals_in(line: &str) -> Vec<&str> {
+        line.match_indices('[')
+            .map(|(start, _)| {
+                let end = start + line[start..].find(']').expect("a closed interval");
+                &line[start..=end]
+            })
+            .collect()
+    }
+
+    /// Three seasons in which every aspect differs by its own amount: each
+    /// aspect line ends with that aspect's season t interval, after its
+    /// date bootstrap interval.
+    #[test]
+    fn each_aspect_line_prints_its_own_season_interval() {
+        let pairs: Vec<Paired> = (0..3usize)
+            .flat_map(|s| {
+                (0..12usize).map(move |i| Paired {
+                    season: 2017 + s as i32,
+                    date: date(s * 100 + i / 3),
+                    a: [1.0; 5],
+                    b: std::array::from_fn(|k| {
+                        let sign = if (s + k) % 2 == 0 { 1.0 } else { -0.5 };
+                        1.0 + sign * 0.01 * (k + 1) as f64 * (1.0 + 0.1 * (i + s) as f64)
+                    }),
+                })
+            })
+            .collect();
+        let refs: Vec<&Paired> = pairs.iter().collect();
+        let season_t: Vec<String> = season_t_cis(&match_season_blocks(&refs))
+            .into_iter()
+            .map(interval_text)
+            .collect();
+        let boot = bootstrap_ci(&date_blocks(&refs), 300, 4);
+        let distinct: HashSet<&String> = season_t.iter().collect();
+        assert_eq!(distinct.len(), 5, "{season_t:?}");
+        let text = report("dev", &refs, 300, 4);
+        assert!(
+            text.contains("36 matches on 12 dates, 3 seasons\n"),
+            "{text}"
+        );
+        for (k, aspect) in ASPECTS.iter().enumerate() {
+            let line = text
+                .lines()
+                .find(|l| l.trim_start().starts_with(&format!("{aspect} ")))
+                .unwrap_or_else(|| panic!("no {aspect} line in {text}"));
+            let bootstrap = format!("[{:+.5}, {:+.5}]", boot[k].0, boot[k].1);
+            assert_eq!(
+                intervals_in(line),
+                vec![bootstrap.as_str(), season_t[k].as_str()],
+                "{line}"
+            );
+            assert!(line.ends_with(&season_t[k]), "{line}");
+        }
+    }
+
+    /// Four seasons in which B is better in a different number of seasons
+    /// for every aspect: each line of every group prints the bootstrap
+    /// interval, then the season t interval (not the bootstrap's again),
+    /// then that aspect's own k/G.
+    #[test]
+    fn season_lines_print_the_t_interval_and_the_season_count() {
+        let pairs: Vec<SeasonPaired> = (0..4usize)
+            .flat_map(|s| {
+                (0..12usize).map(move |i| SeasonPaired {
+                    season: 2017 + s as i32,
+                    snapshot: ["s0", "s33"][i % 2].to_string(),
+                    a: [1.0; 5],
+                    b: std::array::from_fn(|k| {
+                        let sign = if s < k { -1.0 } else { 1.0 };
+                        1.0 + sign * 0.01 * (k + 1) as f64 * (1.0 + 0.1 * i as f64 + 0.3 * s as f64)
+                    }),
+                })
+            })
+            .collect();
+        let all: Vec<&SeasonPaired> = pairs.iter().collect();
+        let text = season_report("dev", &all, 400, 6);
+        let mut checked = 0;
+        for label in ["s0", "s33", "pooled"] {
+            let set: Vec<&SeasonPaired> = all
+                .iter()
+                .copied()
+                .filter(|p| label == "pooled" || p.snapshot == label)
+                .collect();
+            let summary = season_summary(&set, 400, 6);
+            let group = text
+                .split(&format!("  {label} ({} rows)\n", set.len()))
+                .nth(1)
+                .unwrap_or_else(|| panic!("no {label} group in {text}"));
+            for (k, line) in summary.iter().enumerate() {
+                let printed = group
+                    .lines()
+                    .find(|l| {
+                        l.trim_start()
+                            .starts_with(&format!("{} ", SEASON_ASPECTS[k]))
+                    })
+                    .expect("an aspect line");
+                let boot = format!("[{:+.5}, {:+.5}]", line.boot.0, line.boot.1);
+                let t = interval_text(line.t);
+                assert_ne!(boot, t, "{label} {}", SEASON_ASPECTS[k]);
+                assert_eq!(intervals_in(printed), vec![boot.as_str(), t.as_str()]);
+                assert_eq!((line.better, line.seasons), (k.min(4), 4));
+                assert!(
+                    printed.ends_with(&format!(" {}/4", k.min(4))),
+                    "{label}: {printed}"
+                );
+                checked += 1;
+            }
+        }
+        assert_eq!(checked, 15);
     }
 
     #[test]

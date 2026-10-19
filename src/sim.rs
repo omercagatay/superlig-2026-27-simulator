@@ -578,11 +578,12 @@ impl Default for SimConfig {
 /// blended λ pair either way.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ShockOn {
-    /// Added to the Elo ratings before `elo_lambdas`. Elo carries only its
-    /// blend weight of each λ and the underdog lift compresses low λs
-    /// further, so an offset moves the whole model by much less than an Elo
-    /// gap of its size moves the Elo component. Not mean-preserving: the
-    /// convexity of 10^x raises the league's mean λ a little.
+    /// Added to the Elo ratings before `elo_lambdas`, as production does.
+    /// Elo carries only its blend weight of each λ and the underdog lift
+    /// compresses low λs further, so an offset moves the whole model by
+    /// much less than an Elo gap of its size moves the Elo component. Not
+    /// mean-preserving: the convexity of 10^x raises the league's mean λ a
+    /// little.
     Elo,
     /// Applied to the blended, lifted λ pair (`offset_lambdas`): with Δ =
     /// offset_home − offset_away, `λ_home · 10^(Δ/D_DIV)` and `λ_away ·
@@ -590,7 +591,10 @@ pub enum ShockOn {
     /// the whole model the way an Elo gap acts on the Elo component. Both λ
     /// are divided by E[10^(Δ/D_DIV)] (`shock_inflation`, from each club's
     /// variance at that fixture: sigma², plus drift² per step taken), so
-    /// the shock spreads strengths without changing the scoring rate.
+    /// the shock spreads strengths without changing the scoring rate. An
+    /// evaluated alternative, not production: it widened the development
+    /// seasons to nominal coverage but failed the holdout check (CLAUDE.md,
+    /// "Season-level evaluation").
     Blend,
 }
 
@@ -618,10 +622,10 @@ pub struct Dispersion {
 
 impl Dispersion {
     /// What production simulates: one N(0, `RATING_SIGMA`) shock per club
-    /// per season on the whole model, mean-preserving, cold, no drift.
+    /// per season on the Elo ratings, cold, no drift.
     pub const PRODUCTION: Dispersion = Dispersion {
         sigma: data::RATING_SIGMA,
-        shock_on: ShockOn::Blend,
+        shock_on: ShockOn::Elo,
         hot_k: 0.0,
         drift: 0.0,
     };
@@ -933,11 +937,11 @@ impl World {
     }
 
     /// One simulated season under `disp`. `Dispersion::PRODUCTION` is
-    /// `simulate_one_with`, draw for draw. Without pins, hot updates or
-    /// drift the fixtures are played in calendar order; with any of them,
-    /// in kick-off order (date, then round, as `refresh_ratings` walks
-    /// them), so a result or a drift step moves only what is played after
-    /// it.
+    /// `simulate_one_with`, draw for draw. Without a pin on an unplayed
+    /// fixture, hot updates or drift the fixtures are played in calendar
+    /// order; with any of them, in kick-off order (date, then round, as
+    /// `refresh_ratings` walks them), so a result or a drift step moves only
+    /// what is played after it.
     pub fn simulate_one_dispersed(
         &self,
         rng: &mut SmallRng,
@@ -949,15 +953,18 @@ impl World {
     }
 
     /// The order a trial plays the fixtures in (`simulate_one_dispersed`).
+    /// A pin on a fixture already played binds nothing (the real result
+    /// stands), so it leaves the order alone.
     fn play_order(
         &self,
         forced: &HashMap<(usize, usize), ForcedOutcome>,
         disp: &Dispersion,
     ) -> Vec<usize> {
-        if forced.is_empty() && !disp.moves_in_season() {
-            (0..self.fixtures.len()).collect()
-        } else {
+        let pins_bind = forced.keys().any(|k| !self.played.contains_key(k));
+        if pins_bind || disp.moves_in_season() {
             self.kickoff_order()
+        } else {
+            (0..self.fixtures.len()).collect()
         }
     }
 
@@ -1035,37 +1042,9 @@ impl World {
                     let (hg, ag) = self.draw_score(lh, la, want, rng);
                     let goals =
                         |g: i64| u16::try_from(g).expect("a simulated score is a small count");
-                    if disp.hot_k > 0.0 {
-                        // The win expectancy is the one the match was drawn
-                        // with: rating plus offset (shock, drift and any
-                        // override). The update is then noise around the
-                        // strength the trial committed to, which is what a
-                        // hot simulation adds. Taking it from the rating
-                        // alone would let results drawn at rating + offset
-                        // pull the rating towards that, so later in a season
-                        // λ would carry the offset up to twice over: a
-                        // compounded shock, not in-season learning.
-                        // (Production's margin multiplier still gives
-                        // favourites a small upward drift, as it does in the
-                        // real walk.)
-                        let d = elo_delta_k(
-                            disp.hot_k,
-                            elo[f.home] + (shock[f.home] + self.offset[f.home]),
-                            elo[f.away] + (shock[f.away] + self.offset[f.away]),
-                            goals(hg),
-                            goals(ag),
-                        );
-                        elo[f.home] += d;
-                        elo[f.away] -= d;
-                    } else if want.is_some() {
-                        // A pin says what will happen, so it moves the
-                        // ratings as `refresh_ratings` would were it real:
-                        // from the trial's Elo ratings, without the offsets,
-                        // which are the trial's draw and the user's override
-                        // rather than anything the results taught. (A pin
-                        // dated before results already in lands after them
-                        // here, where the walk would slot it in by date.)
-                        let d = elo_delta_k(pin_k, elo[f.home], elo[f.away], goals(hg), goals(ag));
+                    let score = (goals(hg), goals(ag));
+                    let pinned_k = want.map(|_| pin_k);
+                    if let Some(d) = self.trial_elo_delta(&elo, &shock, disp, pinned_k, f, score) {
                         elo[f.home] += d;
                         elo[f.away] -= d;
                     }
@@ -1078,6 +1057,50 @@ impl World {
 
         let order = rank_table(&records, &results, &mut || rng.gen::<u64>());
         SeasonResult { order, records }
+    }
+
+    /// The home side's change to the trial's Elo ratings after the result
+    /// `(hg, ag)` of `f`; the away side's is the negation. `pin_k` is
+    /// `Some(K)` for a pinned result, which a cold simulation learns from
+    /// with that K, and `None` for a simulated one. `None` when the result
+    /// moves nothing: a cold simulation learns from pinned results only.
+    fn trial_elo_delta(
+        &self,
+        elo: &[f64],
+        shock: &[f64],
+        disp: &Dispersion,
+        pin_k: Option<f64>,
+        f: LeagueFixture,
+        (hg, ag): (u16, u16),
+    ) -> Option<f64> {
+        let (h, a) = (f.home, f.away);
+        if disp.hot_k > 0.0 {
+            // Every result, pinned or not, with the hot rule alone. The win
+            // expectancy is the one the match was drawn with: rating plus
+            // offset (shock, drift and any override). The update is then
+            // noise around the strength the trial committed to, which is
+            // what a hot simulation adds. Taking it from the rating alone
+            // would let results drawn at rating + offset pull the rating
+            // towards that, so later in a season λ would carry the offset up
+            // to twice over: a compounded shock, not in-season learning.
+            // (Production's margin multiplier still gives favourites a small
+            // upward drift, as it does in the real walk.)
+            Some(elo_delta_k(
+                disp.hot_k,
+                elo[h] + (shock[h] + self.offset[h]),
+                elo[a] + (shock[a] + self.offset[a]),
+                hg,
+                ag,
+            ))
+        } else {
+            // A pin says what will happen, so it moves the ratings as
+            // `refresh_ratings` would were it real: from the trial's Elo
+            // ratings, without the offsets, which are the trial's draw and
+            // the user's override rather than anything the results taught.
+            // (A pin dated before results already in lands after them here,
+            // where the walk would slot it in by date.)
+            pin_k.map(|k| elo_delta_k(k, elo[h], elo[a], hg, ag))
+        }
     }
 
     /// `(λ_home, λ_away)` from the trial's ratings, each club's random
@@ -1498,6 +1521,10 @@ mod tests {
             (dispersion(0.0, ShockOn::Blend, 0.0, 0.0), 0.8),
             (dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 0.8),
             (Dispersion::PRODUCTION, 1.2),
+            (
+                dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0),
+                1.2,
+            ),
         ] {
             let got = mean_goals_for(&w, &disp, club, 1500, 31);
             assert!(
@@ -2243,8 +2270,7 @@ mod tests {
     }
 
     /// An unpinned `simulate_one` as it stood before `Dispersion` existed,
-    /// kept verbatim as the reference a 75-point shock on the Elo ratings
-    /// must reproduce.
+    /// kept verbatim as the reference production must reproduce.
     fn simulate_one_before_dispersion(w: &World, rng: &mut SmallRng) -> SeasonResult {
         let n = w.teams.len();
         let season_elo: Vec<f64> = if data::RATING_SIGMA > 0.0 {
@@ -2373,9 +2399,16 @@ mod tests {
         }
     }
 
+    /// Production with nothing pinned and no override is the simulator
+    /// from before `Dispersion`, pins and offsets existed, draw for draw:
+    /// through `simulate_one_dispersed`, `simulate_one_with` and every
+    /// trial of `simulate`.
     #[test]
-    fn an_elo_shock_reproduces_the_simulator_before_dispersion_draw_for_draw() {
-        let elo_shock = dispersion(data::RATING_SIGMA, ShockOn::Elo, 0.0, 0.0);
+    fn production_reproduces_the_simulator_before_dispersion_draw_for_draw() {
+        assert_eq!(
+            Dispersion::PRODUCTION,
+            dispersion(data::RATING_SIGMA, ShockOn::Elo, 0.0, 0.0)
+        );
         let mid = World::with_played(MID_SEASON);
         for (k, w) in [shipped(World::with_played(0)), shipped(mid.clone()), mid]
             .iter()
@@ -2383,23 +2416,39 @@ mod tests {
         {
             assert_draw_for_draw(
                 w,
-                &elo_shock,
+                &Dispersion::PRODUCTION,
                 |rng| simulate_one_before_dispersion(w, rng),
                 &format!("case {k}"),
             );
+            for seed in 0..3u64 {
+                let with = w.simulate_one_with(&mut SmallRng::seed_from_u64(seed), &HashMap::new());
+                let before = simulate_one_before_dispersion(w, &mut SmallRng::seed_from_u64(seed));
+                assert_eq!(with.records, before.records, "case {k} seed {seed}");
+            }
+            let config = SimConfig {
+                n_sims: 4,
+                seed: 31,
+                ..SimConfig::default()
+            };
+            let mut points = vec![0.0; w.teams.len()];
+            for i in 0..config.n_sims as u64 {
+                let mut rng = SmallRng::seed_from_u64(config.seed.wrapping_add(i * 2_654_435_761));
+                let season = simulate_one_before_dispersion(w, &mut rng);
+                for (sum, r) in points.iter_mut().zip(&season.records) {
+                    *sum += r.points as f64;
+                }
+            }
+            assert_eq!(w.simulate(&config).points_sum, points, "case {k}");
         }
     }
 
-    /// Production with nothing pinned: calendar order and the shock's
-    /// draws, as before pins and hot updates existed. With drift, one step
-    /// per round still to be played: the rounds already complete take none,
-    /// and a part-played round takes one.
+    /// The whole-model shock with nothing pinned: calendar order and the
+    /// shock's draws. With drift, one step per round still to be played:
+    /// the rounds already complete take none, and a part-played round takes
+    /// one.
     #[test]
     fn unpinned_blend_seasons_follow_their_reference_draw_for_draw() {
-        assert_eq!(
-            Dispersion::PRODUCTION,
-            dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0)
-        );
+        let blend = dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0);
         let pre = shipped(World::with_played(0));
         let mid = shipped(World::with_played(MID_SEASON + 4));
         let played_in = |round: u8| {
@@ -2418,16 +2467,9 @@ mod tests {
         for (k, w) in [&pre, &mid].into_iter().enumerate() {
             assert_draw_for_draw(
                 w,
-                &Dispersion::PRODUCTION,
+                &blend,
                 |rng| blend_season_reference(w, rng, data::RATING_SIGMA, 0.0),
-                &format!("production, case {k}"),
-            );
-            let with = w.simulate_one_with(&mut SmallRng::seed_from_u64(3), &HashMap::new());
-            let blend =
-                blend_season_reference(w, &mut SmallRng::seed_from_u64(3), data::RATING_SIGMA, 0.0);
-            assert_eq!(
-                with.records, blend.records,
-                "simulate_one_with is production"
+                &format!("blend, case {k}"),
             );
             assert_draw_for_draw(
                 w,
@@ -2495,7 +2537,7 @@ mod tests {
         };
         let cold = goals(&dispersion(0.0, ShockOn::Blend, 0.0, 0.0));
         for disp in [
-            Dispersion::PRODUCTION,
+            dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0),
             dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 15.0),
         ] {
             let shocked = goals(&disp);
@@ -2567,6 +2609,176 @@ mod tests {
                 0.4
             )
         );
+    }
+
+    /// A pinned draw's scoreline comes from the score table with the
+    /// world's fitted ρ. With every other result in and no shock, the
+    /// pinned fixture is the only match a season plays, so its score is the
+    /// home club's goals beyond those of its played fixtures; the share of
+    /// 0-0 among its draws must be the table's, which at ρ = 0 it is not.
+    #[test]
+    fn a_pinned_draw_is_drawn_with_the_fitted_rho() {
+        let mut w = shipped(World::with_played(data::N_FIXTURES));
+        let f = w.fixtures[0];
+        w.played.remove(&(f.home, f.away));
+        w.refresh_ratings();
+        let rho = w.score_rho().expect("Dixon-Coles has weight");
+        let (lh, la) = w.lam_pair(f.home, f.away);
+        let goalless_share = |rho: f64| {
+            let t = crate::dixoncoles::score_table(lh, la, rho);
+            t[0][0] / (0..t.len()).map(|g| t[g][g]).sum::<f64>()
+        };
+        let (want, independent) = (goalless_share(rho), goalless_share(0.0));
+        // The home club's goals for and against in its played fixtures.
+        let (mut gf, mut ga) = (0i64, 0i64);
+        for g in &w.fixtures {
+            if let Some(&(hs, as_)) = w.played.get(&(g.home, g.away)) {
+                if g.home == f.home {
+                    (gf, ga) = (gf + i64::from(hs), ga + i64::from(as_));
+                } else if g.away == f.home {
+                    (gf, ga) = (gf + i64::from(as_), ga + i64::from(hs));
+                }
+            }
+        }
+        let forced = HashMap::from([((f.home, f.away), ForcedOutcome::Draw)]);
+        let cold = dispersion(0.0, ShockOn::Elo, 0.0, 0.0);
+        let trials = 60_000u64;
+        // Seasons whose pinned fixture ended 0-0, and ones it did not end level.
+        let (goalless, not_drawn) = (0..trials)
+            .into_par_iter()
+            .map(|t| {
+                let mut rng = SmallRng::seed_from_u64(41 + t * 2_654_435_761);
+                let season = w.simulate_one_dispersed(&mut rng, &forced, &cold);
+                let r = &season.records[f.home];
+                let (hg, ag) = (r.gf - gf, r.ga - ga);
+                (usize::from(hg == 0 && ag == 0), usize::from(hg != ag))
+            })
+            .reduce(|| (0, 0), |x, y| (x.0 + y.0, x.1 + y.1));
+        assert_eq!(not_drawn, 0, "the pin binds");
+        let got = goalless as f64 / trials as f64;
+        let se = (want * (1.0 - want) / trials as f64).sqrt();
+        assert!(
+            (want - independent).abs() > 8.0 * se,
+            "ρ {rho} barely moves the share: {want:.4} against {independent:.4}"
+        );
+        assert!(
+            (got - want).abs() < 4.0 * se,
+            "0-0 in {got:.4} of pinned draws; table {want:.4} at ρ {rho}, {independent:.4} at 0"
+        );
+    }
+
+    /// How a trial's ratings learn from a result. Cold, a pinned result
+    /// moves them by production's `elo_delta` from the trial's Elo ratings
+    /// alone, whatever shock and override the trial carries, and a simulated
+    /// one not at all. Hot, every result moves them by the hot rule only,
+    /// pinned or not.
+    #[test]
+    fn a_trial_learns_from_a_pin_as_refresh_ratings_would() {
+        let mut w = shipped(World::with_played(MID_SEASON));
+        let f = *w
+            .fixtures
+            .iter()
+            .find(|f| !w.played.contains_key(&(f.home, f.away)))
+            .expect("an unplayed fixture");
+        let (h, a) = (f.home, f.away);
+        w.offset[h] = 40.0;
+        w.offset[a] = -25.0;
+        // The trial's ratings, already moved by an earlier pin, and its shock.
+        let mut elo = w.elo.clone();
+        elo[h] += 13.0;
+        elo[a] -= 13.0;
+        let mut shock = vec![0.0; w.teams.len()];
+        shock[h] = 90.0;
+        shock[a] = -60.0;
+        let score = (3, 0);
+
+        let cold = Dispersion::PRODUCTION;
+        let pinned = w.trial_elo_delta(&elo, &shock, &cold, Some(data::ELO_K), f, score);
+        let want = elo_delta(elo[h], elo[a], 3, 0);
+        assert_eq!(pinned, Some(want));
+        // Each of what it must leave out, or the margin, would change it.
+        let with_shock = elo_delta(elo[h] + shock[h], elo[a] + shock[a], 3, 0);
+        let with_override = elo_delta(elo[h] + w.offset[h], elo[a] + w.offset[a], 3, 0);
+        let by_one = elo_delta(elo[h], elo[a], 1, 0);
+        for other in [
+            with_shock,
+            with_override,
+            by_one,
+            elo_delta(w.elo[h], w.elo[a], 3, 0),
+        ] {
+            assert!((other - want).abs() > 0.5, "{other} against {want}");
+        }
+        assert_eq!(w.trial_elo_delta(&elo, &shock, &cold, None, f, score), None);
+
+        let hot = dispersion(data::RATING_SIGMA, ShockOn::Elo, 40.0, 0.0);
+        let hot_delta = elo_delta_k(
+            40.0,
+            elo[h] + (shock[h] + w.offset[h]),
+            elo[a] + (shock[a] + w.offset[a]),
+            3,
+            0,
+        );
+        for pin_k in [None, Some(data::ELO_K)] {
+            assert_eq!(
+                w.trial_elo_delta(&elo, &shock, &hot, pin_k, f, score),
+                Some(hot_delta),
+                "pin {pin_k:?}"
+            );
+        }
+    }
+
+    /// A pin on a fixture already played binds nothing: the real result
+    /// stands and the season is the unpinned one, draw for draw, in
+    /// calendar order. A pin on an unplayed fixture switches to kick-off
+    /// order, which here puts unplayed fixtures in another order.
+    #[test]
+    fn a_pin_on_a_played_fixture_changes_nothing() {
+        let w = shipped(World::with_played(MID_SEASON));
+        let calendar: Vec<usize> = (0..w.fixtures.len()).collect();
+        let unplayed = |order: &[usize]| -> Vec<usize> {
+            order
+                .iter()
+                .copied()
+                .filter(|&i| {
+                    let f = w.fixtures[i];
+                    !w.played.contains_key(&(f.home, f.away))
+                })
+                .collect()
+        };
+        assert_ne!(unplayed(&w.kickoff_order()), unplayed(&calendar));
+        let key = |f: &LeagueFixture| (f.home, f.away);
+        let played = w
+            .fixtures
+            .iter()
+            .find(|f| w.played.contains_key(&key(f)))
+            .map(key)
+            .expect("a played fixture");
+        let open = w
+            .fixtures
+            .iter()
+            .find(|f| !w.played.contains_key(&key(f)))
+            .map(key)
+            .expect("an unplayed fixture");
+        let on_played = HashMap::from([(played, ForcedOutcome::Draw)]);
+        let disp = Dispersion::PRODUCTION;
+        assert_eq!(w.play_order(&on_played, &disp), calendar);
+        let both = HashMap::from([(played, ForcedOutcome::Draw), (open, ForcedOutcome::Home)]);
+        assert_eq!(w.play_order(&both, &disp), w.kickoff_order());
+        for seed in 0..4u64 {
+            let pinned = w.simulate_one_with(&mut SmallRng::seed_from_u64(seed), &on_played);
+            let plain = simulate_one_before_dispersion(&w, &mut SmallRng::seed_from_u64(seed));
+            assert_eq!(pinned.records, plain.records, "seed {seed}");
+        }
+        let config = SimConfig {
+            n_sims: 50,
+            seed: 8,
+            ..SimConfig::default()
+        };
+        let pinned = w.simulate(&SimConfig {
+            forced: on_played,
+            ..config.clone()
+        });
+        assert_eq!(pinned.points_sum, w.simulate(&config).points_sum);
     }
 
     /// `club`'s title share over `trials` production seasons with `forced`

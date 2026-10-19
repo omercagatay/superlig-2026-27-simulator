@@ -20,16 +20,17 @@ pub const ELO_DIV: f64 = 400.0;
 /// carry error. Treating them as exact makes favourites' title odds run hot
 /// and the tails too thin.
 ///
-/// The offset acts on the whole model, the blended and lifted λ pair, as an
-/// Elo gap acts on the Elo component (`sim::ShockOn::Blend`), and is
-/// mean-preserving: it spreads strengths without moving the league's
-/// scoring rate. Chosen in `examples/arena.rs`, whose replay tilts the whole
-/// blended forecast by the drawn gap, against the spread of real final
-/// tables (a row of its sweep). On the development seasons it is also near
-/// the points-CRPS optimum of this shock (`examples/season_eval.rs`, 5,000
-/// seasons): 50, 75 and 100 change pooled `pts_crps` by −0.022, −0.033 and
-/// +0.013 points against the same 75 on the Elo ratings alone. Costs nothing
-/// per analytic match forecast; only season simulation draws it.
+/// The shock is added to the Elo ratings (`sim::ShockOn::Elo`). 75 was
+/// chosen in `examples/arena.rs` against the spread of real final tables (a
+/// row of its sweep). Its replay tilts each match's win/loss log-odds by
+/// ln 10 / 400 per Elo point of the drawn gap, draws held: a different
+/// mechanism, slightly weaker per Elo point than a shock on the whole
+/// model's λs. `examples/season_eval.rs` finds the development seasons'
+/// forecasts over-confident under this shock; the same 75 on the whole
+/// model (`sim::ShockOn::Blend`) fixed them there but failed the holdout
+/// check registered before it was run, so production keeps this one
+/// (CLAUDE.md, "Season-level evaluation"). Costs nothing per analytic match
+/// forecast; only season simulation draws it.
 pub const RATING_SIGMA: f64 = 75.0;
 
 /// In-season Elo update rate for one league match, before the goal-difference

@@ -8,9 +8,9 @@
 //! and two thirds of its fixtures played) it rebuilds the `World` production
 //! would have held on that date and replays the rest of the season
 //! `SEASON_SIMS` times with `World::simulate_one_dispersed`, the production
-//! simulator (`sim::Dispersion::PRODUCTION`: a mean-preserving
-//! `data::RATING_SIGMA` shock on the whole model drawn per trial, the
-//! shipped ensemble) unless the dispersion knobs below say otherwise:
+//! simulator (`sim::Dispersion::PRODUCTION`: a `data::RATING_SIGMA` shock on
+//! the Elo ratings drawn per trial, the shipped ensemble) unless the
+//! dispersion knobs below say otherwise:
 //!   - clubs and fixtures are the season's own, from the embedded history;
 //!   - results dated before the snapshot are `played`, the rest simulated;
 //!   - ratings are production's: `sim::preseason_ratings_with` over every
@@ -104,10 +104,10 @@
 //! with all four at their defaults the run is production's draw for draw):
 //!   SEASON_SIGMA=75         SD of each club's per-season strength offset,
 //!                           in Elo points [data::RATING_SIGMA]
-//!   SEASON_SHOCK=blend|elo  where offsets act: on the blended, lifted λ
-//!                           pair as an Elo gap acts on the Elo component,
-//!                           mean-preserving (production), or added to the
-//!                           Elo ratings [blend]
+//!   SEASON_SHOCK=elo|blend  where offsets act: added to the Elo ratings
+//!                           (production), or on the blended, lifted λ pair
+//!                           as an Elo gap acts on the Elo component,
+//!                           mean-preserving [elo]
 //!   SEASON_HOT_K=0          hot simulation: K of the Elo update after every
 //!                           simulated result (production's rule; 0 is cold)
 //!   SEASON_DRIFT=0          SD, in Elo points, of each club's random-walk

@@ -1367,8 +1367,22 @@ mod tests {
             ("EVAL_REFIT", "week"),
         ]);
         assert_eq!(cfg.season_sim, Some(200));
+        // The knobs the header says it refuses, and no others.
+        let refused = [
+            "EVAL_HA",
+            "EVAL_DDIV",
+            "EVAL_BASE",
+            "EVAL_GOALS",
+            "EVAL_RHO",
+            "EVAL_PIVOT",
+            "EVAL_LIFT",
+            "EVAL_FOLLOW",
+        ];
+        let listed: HashSet<&str> = SEASON_SIM_IGNORES.into_iter().collect();
+        assert_eq!(listed, refused.into_iter().collect::<HashSet<_>>());
+        assert_eq!(listed.len(), SEASON_SIM_IGNORES.len(), "listed once each");
         // Every λ knob is caught by being set, whatever its value.
-        for knob in SEASON_SIM_IGNORES {
+        for knob in refused {
             let set = |k: &str| (k == knob).then(|| "1".to_string());
             assert_eq!(season_sim_conflicts(&set), vec![knob]);
         }
