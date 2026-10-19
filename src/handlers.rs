@@ -534,6 +534,9 @@ pub async fn health(State(state): State<Arc<AppState>>) -> Json<serde_json::Valu
         "version": env!("CARGO_PKG_VERSION"),
         "live_fetched_at": live_fetched_at,
         "model": model,
+        // The label forecast-log entries are filed under; it names the
+        // default blend, so read it together with `model.weights`.
+        "model_version": crate::model_version::current(),
         "world_version": world_version,
         "forecast_cached": forecast_cached,
     }))
@@ -846,6 +849,7 @@ mod tests {
         let state = test_state(1, 0, Duration::from_secs(5));
         let Json(health) = health(State(state)).await;
         assert_eq!(health["status"], "ok");
+        assert_eq!(health["model_version"], crate::model_version::current());
         assert_eq!(health["world_version"], 0);
         assert_eq!(health["forecast_cached"], false);
     }

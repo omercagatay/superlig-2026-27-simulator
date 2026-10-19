@@ -245,11 +245,35 @@ export interface ScoredMatch {
   away_pct: number;
   /** The day the forecast was written down. */
   logged_at: string;
+  /** Label of the model that made the forecast ("2026-08"); null for an
+   *  entry logged before forecasts were labelled. */
+  model_version: string | null;
   /** This match's -ln p of the true outcome; the report's log_loss is
    *  the mean of these. */
   log_loss: number;
   /** The base-rate forecast's -ln p for the same outcome. */
   baseline_log_loss: number;
+}
+
+/** Model log-loss minus base-rate log-loss per match, over `n` matches;
+ *  below zero, the model did better. */
+export interface VsBaseline {
+  n: number;
+  mean: number;
+  /** Null below two matches. */
+  std_error: number | null;
+  /** [low, high], mean ± 1.96 standard errors; null below two matches. */
+  ci95: [number, number] | null;
+}
+
+/** One model's scored forecasts on their own. */
+export interface ModelScore {
+  model_version: string | null;
+  scored: number;
+  hit_rate_pct: number;
+  log_loss: number;
+  baseline_log_loss: number;
+  vs_baseline: VsBaseline;
 }
 
 export interface CalibrationBucket {
@@ -265,6 +289,13 @@ export interface AccuracyReport {
   hit_rate_pct: number;
   log_loss: number;
   baseline_log_loss: number;
+  /** log_loss − baseline_log_loss, with its uncertainty. */
+  vs_baseline: VsBaseline;
+  /** Label of the running model. */
+  current_model_version: string;
+  /** Each model's record: the running model first, then older ones newest
+   *  first, unlabelled last. Only models with a scored forecast appear. */
+  by_model: ModelScore[];
   calibration: CalibrationBucket[];
   matches: ScoredMatch[];
 }

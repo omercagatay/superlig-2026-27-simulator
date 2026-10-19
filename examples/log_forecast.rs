@@ -14,19 +14,41 @@
 //! serde_json parses floats exactly (its `float_roundtrip` feature), so an
 //! entry kept through a rewrite, frozen or unchanged, keeps every digit.
 //!
+//! Each new or refreshed entry is labelled with the model that made it
+//! (`model_version::current()`); a kept entry keeps its label as it keeps
+//! `logged_at`. The label names the shipped model, so the run refuses to
+//! log under anything else: other `ENSEMBLE_WEIGHTS`, pure Elo after a
+//! failed ensemble load, or inputs that no longer match the label's
+//! fingerprint.
+//!
 //! Run weekly, before each matchday: `cargo run --release --example log_forecast`
 
 use std::collections::HashMap;
 
 use superlig_sim::accuracy::{LoggedForecast, FORECAST_LOG_PATH};
+use superlig_sim::model_version;
 use superlig_sim::sim::World;
 
 fn main() {
+    let label = model_version::current();
+    assert_eq!(
+        model_version::fingerprint(),
+        model_version::FINGERPRINT,
+        "model inputs no longer match the label {label:?}; bump it in src/model_version.rs \
+         before logging forecasts"
+    );
+    let weights = superlig_sim::ensemble_weights();
+    assert_eq!(
+        weights,
+        model_version::DEFAULT_ENSEMBLE_WEIGHTS,
+        "ENSEMBLE_WEIGHTS sets other weights than the model {label:?} names; \
+         unset it to log forecasts"
+    );
     let mut world = World::new();
-    let (w_elo, w_dc, w_pi) = superlig_sim::ensemble_weights();
+    let (w_elo, w_dc, w_pi) = weights;
     match superlig_sim::sim::Ensemble::from_embedded_data(w_elo, w_dc, w_pi) {
         Ok(e) => world.ensemble = Some(e),
-        Err(e) => eprintln!("warning: running on pure Elo ({e})"),
+        Err(e) => panic!("the ensemble did not load ({e}); pure Elo is not the model {label:?}"),
     }
 
     // Only a missing log starts afresh. One that cannot be read or parsed
@@ -65,17 +87,13 @@ fn main() {
             draw_pct: logged_pct(p.draw_pct),
             away_pct: logged_pct(p.away_win_pct),
             logged_at: today.clone(),
+            model_version: Some(label.to_string()),
         };
-        let key = (fresh.home.clone(), fresh.away.clone());
-        match by_key.get(&key) {
-            Some(old) if same_forecast(old, &fresh) => {
-                unchanged += 1;
-                continue;
-            }
-            Some(_) => refreshed += 1,
-            None => {}
+        match merge(&mut by_key, fresh) {
+            Merge::Added => {}
+            Merge::Refreshed => refreshed += 1,
+            Merge::Unchanged => unchanged += 1,
         }
-        by_key.insert(key, fresh);
     }
 
     let added = by_key.len() - before;
@@ -91,9 +109,32 @@ fn main() {
     let json = serde_json::to_string_pretty(&out).expect("serialize forecasts");
     std::fs::write(FORECAST_LOG_PATH, json).expect("write forecast log");
     println!(
-        "forecast log: {} entries ({counts}), written to {FORECAST_LOG_PATH}",
+        "forecast log: {} entries ({counts}, model {label}), written to {FORECAST_LOG_PATH}",
         out.len()
     );
+}
+
+/// What `merge` did with a fresh forecast.
+#[derive(Debug, PartialEq)]
+enum Merge {
+    Added,
+    Refreshed,
+    Unchanged,
+}
+
+/// File `fresh` under its fixture: a new entry, a replacement for an entry
+/// that said something else, or nothing at all when the logged entry
+/// already says it. A kept entry keeps its `logged_at` and its
+/// `model_version`: it is still the forecast that model made that day.
+fn merge(by_key: &mut HashMap<(String, String), LoggedForecast>, fresh: LoggedForecast) -> Merge {
+    let key = (fresh.home.clone(), fresh.away.clone());
+    let outcome = match by_key.get(&key) {
+        Some(old) if same_forecast(old, &fresh) => return Merge::Unchanged,
+        Some(_) => Merge::Refreshed,
+        None => Merge::Added,
+    };
+    by_key.insert(key, fresh);
+    outcome
 }
 
 /// A percentage as the log stores it: to 12 decimal places, far past any
@@ -128,6 +169,7 @@ mod tests {
             draw_pct: pcts[1],
             away_pct: pcts[2],
             logged_at: logged_at.to_string(),
+            model_version: Some(model_version::current().to_string()),
         }
     }
 
@@ -181,5 +223,38 @@ mod tests {
         let redated = entry(PCTS.map(logged_pct), "2026-10-25", "2026-10-16");
         assert!(!same_forecast(old, &moved));
         assert!(!same_forecast(old, &redated));
+    }
+
+    /// A refreshed forecast is filed under the model that made it; one that
+    /// has not moved stays the older model's, logged on its own day.
+    #[test]
+    fn a_kept_entry_keeps_its_model_and_a_refresh_takes_the_current_one() {
+        let mut old = entry(PCTS.map(logged_pct), "2026-10-24", "2026-10-16");
+        old.model_version = Some("2026-10a".to_string());
+        let key = (old.home.clone(), old.away.clone());
+        let mut by_key = HashMap::from([(key.clone(), through_log(&[old])[0].clone())]);
+
+        let same = entry(PCTS.map(logged_pct), "2026-10-24", "2026-10-22");
+        assert_eq!(merge(&mut by_key, same), Merge::Unchanged);
+        assert_eq!(by_key[&key].model_version.as_deref(), Some("2026-10a"));
+        assert_eq!(by_key[&key].logged_at, "2026-10-16");
+
+        let [h, d, a] = PCTS;
+        let moved = entry(
+            [h + 0.5, d, a - 0.5].map(logged_pct),
+            "2026-10-24",
+            "2026-10-22",
+        );
+        assert_eq!(merge(&mut by_key, moved), Merge::Refreshed);
+        assert_eq!(
+            by_key[&key].model_version.as_deref(),
+            Some(model_version::current())
+        );
+        assert_eq!(by_key[&key].logged_at, "2026-10-22");
+
+        let mut other = entry(PCTS.map(logged_pct), "2026-10-25", "2026-10-22");
+        other.home = "Beşiktaş".to_string();
+        assert_eq!(merge(&mut by_key, other), Merge::Added);
+        assert_eq!(by_key.len(), 2);
     }
 }

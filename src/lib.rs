@@ -6,6 +6,7 @@ pub mod handlers;
 pub mod history;
 pub mod league;
 pub mod llm;
+pub mod model_version;
 pub mod models;
 pub mod odds;
 pub mod piratings;

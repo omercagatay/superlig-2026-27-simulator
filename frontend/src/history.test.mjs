@@ -4,7 +4,10 @@ import assert from "node:assert/strict";
 import {
   byMatchday,
   fill,
+  intervalNote,
   matchOrder,
+  modelName,
+  modelRows,
   readoutLeft,
   roundTicks,
   runningSeries,
@@ -26,6 +29,7 @@ const scored = (round, date, home, away, hit, logLoss, baseline) => ({
   draw_pct: 25,
   away_pct: 25,
   logged_at: "2026-08-01",
+  model_version: "2026-08",
   log_loss: logLoss,
   baseline_log_loss: baseline,
 });
@@ -151,4 +155,78 @@ test("matchday ticks thin out to fit the width", () => {
   assert.deepEqual(roundTicks(4, 4, 300), [4]);
   // Fewer rounds than one step: label both ends.
   assert.deepEqual(roundTicks(6, 8, 20), [6, 8]);
+});
+
+const EN_WORDS = { current: "Current model", ofMonth: "{month} model", unlabelled: "Unlabelled model" };
+const TR_WORDS = { current: "güncel model", ofMonth: "{month} modeli", unlabelled: "etiketsiz model" };
+
+test("models are named for the month they shipped, the running one as current", () => {
+  const labels = ["2026-10b", "2026-10a", "2026-08"];
+  assert.equal(modelName("2026-10b", "2026-10b", labels, "en", EN_WORDS), "Current model");
+  assert.equal(modelName("2026-08", "2026-10b", labels, "en", EN_WORDS), "August model");
+  assert.equal(modelName("2026-08", "2026-10b", labels, "tr", TR_WORDS), "Ağustos modeli");
+  // The other October model is the current one, so no letter is needed.
+  assert.equal(modelName("2026-10a", "2026-10b", labels, "en", EN_WORDS), "October model");
+  assert.equal(modelName("2026-10a", "2026-10b", labels, "tr", TR_WORDS), "Ekim modeli");
+  assert.equal(modelName("2026-10b", "2026-10b", labels, "tr", TR_WORDS), "güncel model");
+  // Once both October models are past, their letters tell them apart.
+  const later = ["2026-11", "2026-10b", "2026-10a", "2026-08"];
+  assert.equal(modelName("2026-10a", "2026-11", later, "en", EN_WORDS), "October model (a)");
+  assert.equal(modelName("2026-10b", "2026-11", later, "en", EN_WORDS), "October model (b)");
+  assert.equal(modelName("2026-08", "2026-11", later, "en", EN_WORDS), "August model");
+  assert.equal(modelName(null, "2026-10b", labels, "en", EN_WORDS), "Unlabelled model");
+  assert.equal(modelName("custom", "2026-10b", labels, "en", EN_WORDS), "custom");
+});
+
+const EN_INTERVAL = { interval: "95% CI {lo} to {hi}", matches: "{n} matches", oneMatch: "1 match" };
+const TR_INTERVAL = { interval: "%95 GA {lo} ile {hi}", matches: "{n} maç", oneMatch: "1 maç" };
+
+test("the interval note gives the interval and the match count", () => {
+  const v = { n: 63, mean: -0.078, std_error: 0.0337, ci95: [-0.144, -0.012] };
+  assert.equal(intervalNote(v, "en", EN_INTERVAL), "95% CI −0.144 to −0.012 · 63 matches");
+  assert.equal(intervalNote(v, "tr", TR_INTERVAL), "%95 GA −0,144 ile −0,012 · 63 maç");
+  // An interval across zero keeps both signs.
+  const across = { n: 1200, mean: 0.01, std_error: 0.02, ci95: [-0.0292, 0.0492] };
+  assert.equal(intervalNote(across, "en", EN_INTERVAL), "95% CI −0.029 to +0.049 · 1,200 matches");
+  assert.equal(intervalNote(across, "tr", TR_INTERVAL), "%95 GA −0,029 ile +0,049 · 1.200 maç");
+  // One match has no interval.
+  const one = { n: 1, mean: 0.2, std_error: null, ci95: null };
+  assert.equal(intervalNote(one, "en", EN_INTERVAL), "1 match");
+  assert.equal(intervalNote(one, "tr", TR_INTERVAL), "1 maç");
+});
+
+test("the breakdown puts the running model first, scored or not", () => {
+  const score = (model_version, scored) => ({
+    model_version,
+    scored,
+    hit_rate_pct: 50,
+    log_loss: 1,
+    baseline_log_loss: 1.05,
+    vs_baseline: { n: scored, mean: -0.05, std_error: 0.1, ci95: [-0.25, 0.15] },
+  });
+  // Nothing of the running model's scored yet: it still leads, empty.
+  const early = modelRows({
+    current_model_version: "2026-10b",
+    by_model: [score("2026-10a", 9), score("2026-08", 55), score(null, 2)],
+  });
+  assert.deepEqual(
+    early.map((r) => [r.version, r.score?.scored ?? null]),
+    [
+      ["2026-10b", null],
+      ["2026-10a", 9],
+      ["2026-08", 55],
+      [null, 2],
+    ],
+  );
+  const later = modelRows({
+    current_model_version: "2026-10b",
+    by_model: [score("2026-10b", 18), score("2026-08", 55)],
+  });
+  assert.deepEqual(
+    later.map((r) => [r.version, r.score?.scored ?? null]),
+    [
+      ["2026-10b", 18],
+      ["2026-08", 55],
+    ],
+  );
 });
