@@ -14,3 +14,7 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Bookmaker odds for the offline market benchmark (scripts/fetch_odds.py):
+# evaluation input only, never committed.
+data/odds/

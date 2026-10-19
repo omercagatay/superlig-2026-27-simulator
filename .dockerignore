@@ -22,3 +22,7 @@ frontend/dist
 # Docs (nothing in the build reads them)
 *.md
 docs
+
+# Bookmaker odds for the offline market benchmark (scripts/fetch_odds.py):
+# never committed, and never in an image either.
+data/odds

@@ -136,6 +136,19 @@ On the development seasons the gain is statistically significant for results, RP
 
 A later sweep of 202 settings on the development seasons (the overall goal level, the low-score correction, and every blend weighting in steps of 0.1) found nothing worth shipping. The best setting changed result log-loss by −0.0006 [−0.0015, +0.0003], within the noise, and when the setting was chosen without seeing the season it was scored on, the gain disappeared (+0.0002). Scaling goals down closes the gap in goal totals but costs both-teams-score, and on the development seasons its gain did not hold up when it was chosen without seeing the season scored. A look at the holdout seasons after that decision found it improves exact scores there, where goals are over-predicted more, so the goal level stays an open question for the live season. A stronger low-score correction would bring draws to 25.3% without moving goal totals, but its gain is as small (−0.0003 [−0.0010, +0.0003]). No setting gives both-teams-score any skill.
 
+### Against the market
+
+`examples/market.rs` scores the same walk-forward forecasts against bookmaker prices: Bet365's pre-match odds from the MIT-licensed match archive, with the bookmaker's margin removed by Shin's method (chosen before any result was looked at). This is offline evaluation only. The odds are not committed, and no odds or market figure reaches the API or the dashboard.
+
+| Result log-loss, matches with odds | Development | Holdout |
+|---|---:|---:|
+| Matches | <!-- metric:market:dev_n:,d -->2,714<!-- /metric --> | <!-- metric:market:hold_n:,d -->620<!-- /metric --> |
+| Model | <!-- metric:market:dev_model_1x2_ll:.4f -->0.9993<!-- /metric --> | <!-- metric:market:hold_model_1x2_ll:.4f -->0.9754<!-- /metric --> |
+| Market | <!-- metric:market:dev_market_1x2_ll:.4f -->0.9888<!-- /metric --> | <!-- metric:market:hold_market_1x2_ll:.4f -->0.9425<!-- /metric --> |
+| Model minus market | <!-- metric:market:dev_diff_1x2_ll:+.4f -->+0.0106<!-- /metric --> [+0.005, +0.017] | <!-- metric:market:hold_diff_1x2_ll:+.4f -->+0.0328<!-- /metric --> [+0.017, +0.050] |
+
+The market is clearly better in both periods (95% intervals from resampling whole match days), on ranked probability score too, and less clearly on 3+ goals. Removing the margin proportionally, or taking the best price across bookmakers, gives the same picture. Mixing the model into the market does not help: the best weight for the model on the development seasons is <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric --> (interval 0 to 0.21), and at that weight the mix does worse than the market alone on the holdout seasons. So the model carries no information the market lacks. On the development seasons the gap is small over the first ten matchdays and opens after that; on the holdout seasons it is large from the start. The archive's odds are pre-match prices, not closing ones, and closing prices are sharper still, so the gap to the closing line is probably wider. Of the live season, only <!-- metric:market:live_n -->19<!-- /metric --> matches have both a frozen forecast and odds so far: far too few to say anything.
+
 ### Season-level evaluation
 
 `examples/season_eval.rs` scores the season forecasts themselves (finishing positions, title, top four, relegation and final points) by replaying each past season from three points: before it starts, a third of the way in and two thirds in, each time with only the information available then. Over the <!-- metric:season:dev_n_seasons -->8<!-- /metric --> development seasons:
@@ -365,6 +378,8 @@ python3 scripts/check_metrics.py docs
 
 The shipped model's figures in [Backtest results](#backtest-results) and [Season-level evaluation](#season-level-evaluation) are checked this way. Figures from tools that write no metrics file are not: the tuning comparison (`examples/compare.rs`), the season intervals (only printed), the later sweeps (the 202 match settings and the season-spread trials), the holdout comparison of the season-spread change, and the examples of overrides and pinned outcomes (one-off runs, dated where the calendar matters). If a change moves the checked figures, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
 
+The market comparison in [Against the market](#against-the-market) is quoted from `data/metrics/market.json`, which CI cannot regenerate: its odds are fetched over the network and never committed. To regenerate it, run `python3 scripts/fetch_odds.py`, the holdout backtest with `EVAL_DUMP=/tmp/prod.csv`, then `MARKET_METRICS=data/metrics/market.json cargo run --release --example market -- /tmp/prod.csv`.
+
 ## Refresh the data
 
 The repository already includes the fixture calendar, historical results, and fitted Dixon–Coles parameters used at build time. To refresh them:
@@ -391,6 +406,11 @@ python3 scripts/fetch_history.py
 # The same, but reusing (and re-validating) the committed 2025-26 rows
 # instead of fetching tff.org.
 python3 scripts/fetch_history.py --keep-tff
+
+# Bookmaker odds for the offline market benchmark only, from the same archive,
+# reconciled with the history and pinned by SHA-256. Written to data/odds/,
+# which is not committed; nothing in the app reads them.
+python3 scripts/fetch_odds.py
 
 # Refit Dixon–Coles against the refreshed history (~0.3 s).
 cargo run --release --example fit_dc
@@ -432,9 +452,9 @@ Data-source details worth knowing about:
 │   ├── validation.rs     # Request validation
 │   └── rate_limit.rs     # Per-IP rate limiting
 ├── data/                 # Fixture calendar, historical results, fitted params, forecast log
-│   └── metrics/          # Committed backtest and season-evaluation figures
+│   └── metrics/          # Committed backtest, season-evaluation and market-benchmark figures
 ├── frontend/             # React and TypeScript dashboard
-├── examples/             # Model fitting, backtest, season evaluation, comparison, forecast logging
+├── examples/             # Model fitting, backtest, season evaluation, comparison, market benchmark, forecast logging
 ├── scripts/              # Data-acquisition scripts, the metrics checker, their offline tests
 ├── tests/calibration.rs  # Checks the shipped blend against the real league
 ├── .github/workflows/    # CI and the scheduled data refresh

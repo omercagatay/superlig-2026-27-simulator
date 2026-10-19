@@ -138,6 +138,19 @@ Geliştirme sezonlarında kazanç sonuçlar, RPS, karşılıklı gol ve tam skor
 
 Sonraki bir taramada geliştirme sezonlarında 202 ayar denendi (genel gol düzeyi, az gollü skor düzeltmesi ve 0,1'lik adımlarla her harman ağırlığı); yayına alınmaya değer bir şey çıkmadı. En iyi ayar sonuç log kaybını −0,0006 [−0,0015; +0,0003] değiştirdi, yani gürültü içinde kaldı; ayar, puanlandığı sezon görülmeden seçildiğinde ise kazanç kayboldu (+0,0002). Golleri aşağı ölçeklemek gol toplamlarındaki farkı kapatır ama karşılıklı gol tahminine zarar verir; geliştirme sezonlarında ise, puanlandığı sezon görülmeden seçildiğinde kazancı tutmadı. Bu karardan sonra ayrılmış sezonlara bakıldığında, gollerin daha da fazla tahmin edildiği bu sezonlarda tam skor tahminini iyileştirdiği görüldü; bu yüzden genel gol düzeyi canlı sezon için açık bir soru olarak kalıyor. Daha güçlü bir az gollü skor düzeltmesi, gol toplamlarını oynatmadan beraberlikleri %25,3'e çıkarırdı; ama onun kazancı da o kadar küçüktür (−0,0003 [−0,0010; +0,0003]). Hiçbir ayar karşılıklı gol tahminine beceri kazandırmaz.
 
+### Piyasaya karşı
+
+`examples/market.rs` aynı ileriye dönük tahminleri bahis şirketi oranlarıyla karşılaştırır: MIT lisanslı maç arşivindeki Bet365 maç öncesi oranları; şirketin marjı Shin yöntemiyle çıkarılır (yöntem hiçbir sonuca bakılmadan seçildi). Bu yalnızca çevrimdışı bir değerlendirmedir. Oranlar depoya eklenmez; hiçbir oran ya da piyasa rakamı API'ye veya panele ulaşmaz.
+
+| Sonuç log kaybı, oranı olan maçlar | Geliştirme | Ayrılmış |
+|---|---:|---:|
+| Maç | <!-- metric:market:dev_n:,d:tr -->2.714<!-- /metric --> | <!-- metric:market:hold_n:,d:tr -->620<!-- /metric --> |
+| Model | <!-- metric:market:dev_model_1x2_ll:.4f:tr -->0,9993<!-- /metric --> | <!-- metric:market:hold_model_1x2_ll:.4f:tr -->0,9754<!-- /metric --> |
+| Piyasa | <!-- metric:market:dev_market_1x2_ll:.4f:tr -->0,9888<!-- /metric --> | <!-- metric:market:hold_market_1x2_ll:.4f:tr -->0,9425<!-- /metric --> |
+| Model eksi piyasa | <!-- metric:market:dev_diff_1x2_ll:+.4f:tr -->+0,0106<!-- /metric --> [+0,005; +0,017] | <!-- metric:market:hold_diff_1x2_ll:+.4f:tr -->+0,0328<!-- /metric --> [+0,017; +0,050] |
+
+Piyasa iki dönemde de açıkça daha iyidir (%95 aralıklar, maç günlerinin bütün olarak yeniden örneklenmesiyle); sıralı olasılık skorunda da öndedir, 3+ golde ise daha az belirgin biçimde. Marjı orantılı olarak çıkarmak ya da şirketler arasındaki en iyi oranı kullanmak aynı tabloyu verir. Modeli piyasayla karıştırmak işe yaramaz: geliştirme sezonlarında modele en uygun ağırlık <!-- metric:market:dev_pool_w:.2f:tr -->0,07<!-- /metric --> çıkar (aralık 0 ile 0,21), ve bu ağırlıktaki karışım ayrılmış sezonlarda tek başına piyasadan daha kötü sonuç verir. Yani model, piyasanın bilmediği bir bilgi taşımıyor. Geliştirme sezonlarında fark ilk on haftada küçüktür ve ondan sonra açılır; ayrılmış sezonlarda ise baştan büyüktür. Arşivdeki oranlar kapanış değil maç öncesi oranlarıdır; kapanış oranları daha da keskin olduğundan, kapanış çizgisine olan fark büyük olasılıkla daha geniştir. Canlı sezonda şimdiye kadar hem dondurulmuş tahmini hem oranı olan yalnızca <!-- metric:market:live_n -->19<!-- /metric --> maç var: bir şey söylemek için çok az.
+
 ### Sezon düzeyinde değerlendirme
 
 `examples/season_eval.rs`, sezon tahminlerinin kendisini (sıralama, şampiyonluk, ilk dört, küme düşme ve sezon sonu puanı) puanlar. Her geçmiş sezonu üç noktadan, yani sezon başlamadan önce, üçte biri ve üçte ikisi oynandığında, her seferinde yalnızca o an elde olan bilgiyle yeniden oynatır. <!-- metric:season:dev_n_seasons -->8<!-- /metric --> geliştirme sezonu üzerinden:
@@ -368,6 +381,8 @@ python3 scripts/check_metrics.py docs
 
 *Geriye dönük test sonuçları* ve *Sezon düzeyinde değerlendirme* bölümlerindeki yayındaki modele ait rakamlar bu şekilde denetlenir. Metrik dosyası yazmayan araçlardan gelen rakamlar denetlenmez: ayar karşılaştırması (`examples/compare.rs`), sezon aralıkları (yalnızca yazdırılır), sonraki taramalar (202 maç ayarı ve sezon yayılımı denemeleri), sezon yayılımı değişikliğinin ayrılmış sezonlardaki karşılaştırması ve elle yapılan değişiklik ile sabitlenen sonuç örnekleri (tek seferlik çalıştırmalar; fikstüre bağlı olanlar tarihlidir). Bir değişiklik denetlenen rakamları oynatırsa depodaki dosyaları `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` ve `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval` ile yeniden üretin, ardından aktarılan rakamları güncelleyin.
 
+*Piyasaya karşı* bölümündeki karşılaştırma `data/metrics/market.json` dosyasından aktarılır; CI bu dosyayı yeniden üretemez, çünkü oranlar ağdan çekilir ve depoya hiç eklenmez. Yeniden üretmek için `python3 scripts/fetch_odds.py`'ı, ardından ayrılmış sezonlu geriye dönük testi `EVAL_DUMP=/tmp/prod.csv` ile ve son olarak `MARKET_METRICS=data/metrics/market.json cargo run --release --example market -- /tmp/prod.csv` komutunu çalıştırın.
+
 ## Verileri yenileme
 
 Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibre edilmiş Dixon–Coles parametrelerini zaten içerir. Yenilemek için:
@@ -396,6 +411,11 @@ python3 scripts/fetch_history.py
 # Aynısı; ancak tff.org'dan çekmek yerine depodaki 2025-26 satırlarını
 # yeniden doğrulayıp kullanır.
 python3 scripts/fetch_history.py --keep-tff
+
+# Yalnızca çevrimdışı piyasa karşılaştırması için, aynı arşivden bahis
+# şirketi oranları; geçmişle karşılaştırılır ve SHA-256 ile sabitlenir.
+# data/odds/ altına yazılır, depoya eklenmez; uygulamada hiçbir şey okumaz.
+python3 scripts/fetch_odds.py
 
 # Yenilenen geçmişle Dixon–Coles'u yeniden kalibre et (~0,3 sn).
 cargo run --release --example fit_dc
@@ -437,9 +457,9 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 │   ├── validation.rs     # İstek doğrulama
 │   └── rate_limit.rs     # IP başına hız sınırı
 ├── data/                 # Fikstür, geçmiş sonuçlar, kalibre edilmiş parametreler, tahmin günlüğü
-│   └── metrics/          # Depodaki geriye dönük test ve sezon değerlendirmesi rakamları
+│   └── metrics/          # Depodaki geriye dönük test, sezon değerlendirmesi ve piyasa karşılaştırması rakamları
 ├── frontend/             # React ve TypeScript paneli
-├── examples/             # Kalibrasyon, geriye dönük test, sezon değerlendirmesi, karşılaştırma, tahmin kaydı
+├── examples/             # Kalibrasyon, geriye dönük test, sezon değerlendirmesi, karşılaştırma, piyasa karşılaştırması, tahmin kaydı
 ├── scripts/              # Veri toplama betikleri, metrik denetleyicisi ve çevrimdışı testleri
 ├── tests/calibration.rs  # Yayındaki harmanı gerçek lige karşı denetler
 ├── .github/workflows/    # CI ve zamanlanmış veri yenilemesi
