@@ -28,14 +28,18 @@
 //! 2022-23 earthquake walkovers (CSV rows that `history::load_history` drops
 //! from the training data) and the 2024-25 Galatasaray v Adana Demirspor
 //! award (`AWARDS_NOT_IN_CSV`). An award dated before a snapshot is a played
-//! result there, as it stood in the table; one dated after is simulated, as
-//! production would have simulated it. Training data (ratings, Dixon-Coles,
-//! pi) leaves them out, as production does. Nothing could have foreseen the
-//! withdrawals, so 2022-23 scores worse this way: the forecast plays out 29
-//! fixtures that were never contested. `SEASON_AWARDS=drop` scores played
-//! football only, with the awarded fixtures in neither the calendar nor the
-//! table (as `examples/arena.rs` compares played-fixture points); the title,
-//! top-four and bottom-four clubs are the same either way.
+//! result there, as it stood in the table, and the in-season Elo walk takes
+//! it like any other result, as production's `World` would take an awarded
+//! score from the live calendar (four of the walkovers and the 2024-25
+//! award fall before the two-thirds cut); one dated after is simulated, as
+//! production would have simulated it. The training history behind the
+//! preseason ratings, Dixon-Coles and pi leaves them out, as production's
+//! does. Nothing could have foreseen the withdrawals, so 2022-23 scores
+//! worse this way: the forecast plays out 29 fixtures that were never
+//! contested. `SEASON_AWARDS=drop` scores played football only, with the
+//! awarded fixtures in neither the calendar nor the table (as
+//! `examples/arena.rs` compares played-fixture points); the title, top-four
+//! and bottom-four clubs are the same either way.
 //!
 //! Relegation is the bottom `R` places, `R` being the season's relegation
 //! places under its rules at kick-off. `R` comes from the data: the season's
@@ -81,7 +85,8 @@
 //!                           [count: the official tables]
 //!   SEASON_DUMP=path.csv    write one row per club, season and snapshot
 //!   SEASON_METRICS=path.json write the pooled point estimates as JSON
-//!                           ({set}_{snapshot}_{metric}, sorted keys)
+//!                           ({set}_{snapshot}_{metric}, sorted keys, each
+//!                           value as printed; counts are integers)
 //!
 //! Run: cargo run --release --example season_eval
 //! (seconds: dev and holdout at the defaults take about 5 s on 4 cores)
@@ -587,10 +592,12 @@ fn simulate(world: &World, n_sims: usize, seed: u64) -> Vec<SeasonResult> {
         .collect()
 }
 
+/// Score one snapshot's simulated seasons (`played` results were already
+/// in) against how `season` ended.
 fn score(
     season: &Season,
     snapshot: usize,
-    world: &World,
+    played: usize,
     trials: &[SeasonResult],
     pit_seed: u64,
 ) -> Scored {
@@ -659,7 +666,7 @@ fn score(
     Scored {
         year: season.year,
         snapshot,
-        played: world.played.len(),
+        played,
         relegation: season.relegation,
         rows,
         table_sd_sim: table_sd / n_sims as f64,
@@ -790,8 +797,16 @@ fn bootstrap(seasons: &[&Scored], resamples: usize, seed: u64) -> Vec<(f64, f64)
         .collect()
 }
 
-fn round_to(x: f64, digits: usize) -> f64 {
-    format!("{x:.digits$}").parse().expect("formatted number")
+/// `x` for the metrics JSON, as printed to `digits` places: an integer at
+/// 0 digits, a zero never signed, `NaN` as null.
+fn json_number(x: f64, digits: usize) -> serde_json::Value {
+    let printed = format!("{x:.digits$}");
+    let printed = if printed.parse::<f64>() == Ok(0.0) {
+        format!("{:.digits$}", 0.0)
+    } else {
+        printed
+    };
+    serde_json::from_str(&printed).unwrap_or(serde_json::Value::Null)
 }
 
 fn main() {
@@ -882,7 +897,13 @@ fn main() {
             let world = world_on(season, &elo, Some(&ensemble), snapshot_cut(season, share));
             let base = seed.wrapping_add(year as u64 * 10 + si as u64);
             let trials = simulate(&world, n_sims, base);
-            scored.push(score(season, si, &world, &trials, base ^ 0x5049_5400));
+            scored.push(score(
+                season,
+                si,
+                world.played.len(),
+                &trials,
+                base ^ 0x5049_5400,
+            ));
         }
         eprintln!(
             "{} done ({:.1}s)",
@@ -928,9 +949,9 @@ fn main() {
         }
     }
 
-    let mut json: BTreeMap<String, f64> = BTreeMap::new();
-    json.insert("n_sims".into(), n_sims as f64);
-    json.insert("awards_counted".into(), f64::from(u8::from(count_awards)));
+    let mut json: BTreeMap<String, serde_json::Value> = BTreeMap::new();
+    json.insert("n_sims".into(), n_sims.into());
+    json.insert("awards_counted".into(), u8::from(count_awards).into());
     for (set, years) in [
         (
             "dev",
@@ -993,7 +1014,7 @@ fn main() {
                 print!(" {cell:<27}");
                 json.insert(
                     format!("{set}_{}_{key}", SNAPSHOTS[si].0),
-                    round_to(point[m], digits),
+                    json_number(point[m], digits),
                 );
             }
             println!();
@@ -1015,8 +1036,8 @@ fn main() {
                 get(point, "table_sd_actual")
             );
         }
-        json.insert(format!("{set}_n_seasons"), years.len() as f64);
-        json.insert(format!("{set}_n_club_seasons"), clubs as f64);
+        json.insert(format!("{set}_n_seasons"), years.len().into());
+        json.insert(format!("{set}_n_club_seasons"), clubs.into());
     }
     println!(
         "\n(uniform PIT: mean 0.500, sd 0.289, 20% per quintile; a calibrated forecast's randomized interval covers exactly its share)"
@@ -1233,6 +1254,77 @@ mod tests {
         }
         assert!((get(&point, "pos_rps") - 0.085).abs() < 1e-12);
         assert_eq!(get(&point, "pts_sd_pred"), 8.0);
+    }
+
+    /// Four hand-made trials of a five-club season with two relegation
+    /// places: every event is counted from the season's own places, and the
+    /// pooled scores match the arithmetic done by hand.
+    #[test]
+    fn score_counts_each_event_from_the_season_s_own_places() {
+        let season = Season {
+            year: 2000,
+            rows: Vec::new(),
+            teams: ["A", "B", "C", "D", "E"].map(String::from).to_vec(),
+            final_pos: vec![0, 1, 2, 3, 4],
+            final_pts: vec![10, 8, 6, 4, 2],
+            relegation: 2,
+            relegated: BTreeSet::new(),
+        };
+        let trial = |order: [usize; 5], points: [i64; 5]| SeasonResult {
+            order: order.to_vec(),
+            records: points
+                .map(|points| TeamRecord {
+                    points,
+                    ..TeamRecord::default()
+                })
+                .to_vec(),
+        };
+        let trials = [
+            trial([0, 1, 2, 3, 4], [10, 8, 6, 4, 2]),
+            trial([0, 1, 2, 3, 4], [10, 8, 6, 4, 2]),
+            trial([1, 0, 2, 4, 3], [8, 10, 6, 1, 3]),
+            trial([0, 1, 3, 2, 4], [12, 8, 4, 5, 0]),
+        ];
+        let s = score(&season, 1, 7, &trials, 3);
+        assert_eq!((s.played, s.relegation), (7, 2));
+        let p = |e: fn(&Row) -> &Event| s.rows.iter().map(|r| e(r).p).collect::<Vec<_>>();
+        assert_eq!(p(|r| &r.title), [0.75, 0.25, 0.0, 0.0, 0.0]);
+        assert_eq!(p(|r| &r.top4), [1.0, 1.0, 1.0, 0.75, 0.25]);
+        // Bottom two, not three: C is third-last in every trial but one.
+        assert_eq!(p(|r| &r.rel), [0.0, 0.0, 0.25, 0.75, 1.0]);
+        let happened: Vec<bool> = s.rows.iter().map(|r| r.rel.happened).collect();
+        assert_eq!(happened, [false, false, false, true, true]);
+        assert!(s.rows.iter().all(|r| r.rel.base_rate == 0.4));
+        assert!(s.rows.iter().all(|r| r.top4.base_rate == 0.8));
+        // A: P(1st) 0.75 when first; only "first or better" misses.
+        assert!((s.rows[0].rps - 0.0625 / 4.0).abs() < 1e-12);
+        // A's points: 8, 10, 10, 12 around the 10 it got.
+        assert_eq!((s.rows[0].mean_pts, s.rows[0].sd_pts), (10.0, 2f64.sqrt()));
+        assert!((0.25..=0.75).contains(&s.rows[0].pit) && s.rows[0].closed80);
+
+        let m = metrics(&[&s]);
+        // Relegation Brier: C 0.25², D 0.25², the rest exact; the base rate
+        // 0.4 scores 3 × 0.4² + 2 × 0.6² = 1.2.
+        assert!((get(&m, "rel_brier") - 0.125 / 5.0).abs() < 1e-12);
+        assert!((get(&m, "rel_bss") - (1.0 - 0.125 / 1.2)).abs() < 1e-12);
+        // Title: A 0.25², B 0.25²; the base rate 0.2 scores 0.8 in all.
+        assert!((get(&m, "title_bss") - (1.0 - 0.125 / 0.8)).abs() < 1e-12);
+        assert_eq!(get(&m, "p_champion"), 0.75);
+    }
+
+    #[test]
+    fn metrics_json_keeps_the_printed_digits() {
+        let map = BTreeMap::from([
+            ("a", json_number(0.13221, 4)),
+            ("b", json_number(2000.0, 0)),
+            ("c", json_number(-0.0001, 3)),
+            ("d", json_number(f64::NAN, 3)),
+            ("e", json_number(70.44, 1)),
+        ]);
+        assert_eq!(
+            serde_json::to_string(&map).expect("serialize"),
+            r#"{"a":0.1322,"b":2000,"c":0.0,"d":null,"e":70.4}"#
+        );
     }
 
     /// The official record is the training history plus the awards: the 29
