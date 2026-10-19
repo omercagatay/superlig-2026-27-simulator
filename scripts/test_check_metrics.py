@@ -289,7 +289,13 @@ class Docs(TempDir):
         self.assertEqual(cm.SEASON_COMMITTED, cm.ROOT / "data" / "metrics" / "season.json")
         self.assertEqual(
             [p.relative_to(cm.ROOT).as_posix() for p in cm.DOCS],
-            ["README.md", "README.tr.md", "CLAUDE.md", "docs/model-card.md"],
+            [
+                "README.md",
+                "README.tr.md",
+                "CLAUDE.md",
+                "docs/model-card.md",
+                "docs/model-card.tr.md",
+            ],
         )
         for doc in cm.DOCS:
             self.assertTrue(doc.is_file(), doc)
@@ -305,10 +311,10 @@ class Docs(TempDir):
             code, out, err = self.run_main(["docs", "--metrics", metrics])
             self.assertEqual(code, 0, err)
             self.assertIn("1 metric marker(s)", out)
-            cm.DOCS = [good, self.dir / "model-card.tr.md"]
+            cm.DOCS = [good, self.dir / "never-written.md"]
             code, _, err = self.run_main(["docs", "--metrics", metrics])
             self.assertEqual(code, 1)
-            self.assertIn("model-card.tr.md does not exist", err)
+            self.assertIn("never-written.md does not exist", err)
         finally:
             cm.DOCS = saved
 

@@ -8,7 +8,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 
 > The probabilities and fair odds produced by this project are model estimates, not betting or financial advice.
 
-The [model card](docs/model-card.md) sets out what the model is, what it is and is not for, how it was evaluated, its results with intervals, and where it falls short.
+The [model card](docs/model-card.md) ([in Turkish](docs/model-card.tr.md)) sets out what the model is, what it is and is not for, how it was evaluated, its results with intervals, and where it falls short.
 
 ## Highlights
 
@@ -468,7 +468,7 @@ Data-source details worth knowing about:
 │   └── rate_limit.rs     # Per-IP rate limiting
 ├── data/                 # Fixture calendar, historical results, fitted params, forecast log
 │   └── metrics/          # Committed backtest, season-evaluation and market-benchmark figures
-├── docs/model-card.md    # What the model is for, how it was evaluated, its limits
+├── docs/                 # The model card, in English and Turkish: what the model is for, how it was evaluated, its limits
 ├── frontend/             # React and TypeScript dashboard
 ├── examples/             # Model fitting, backtest, season evaluation, comparison, market benchmark, forecast logging
 ├── scripts/              # Data-acquisition scripts, the metrics checker, their offline tests
