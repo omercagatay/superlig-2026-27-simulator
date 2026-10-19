@@ -246,8 +246,7 @@ fn in_central(pit: f64, share: f64) -> bool {
     (tail..=1.0 - tail).contains(&pit)
 }
 
-/// Sample quantile, in the convention of the site's points thresholds
-/// (`models.rs`): the value at rank round((n - 1)·q).
+/// Sample quantile: the value at rank round((n - 1)·q).
 fn quantile(sorted: &[i64], q: f64) -> i64 {
     sorted[((sorted.len() - 1) as f64 * q).round() as usize]
 }

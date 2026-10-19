@@ -1,7 +1,7 @@
 // npm test  (node --experimental-strip-types --test src/calendar.test.mjs)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MAX_WHAT_IF, playedResults, prunePlayedPicks, setPick } from "./calendar.ts";
+import { MAX_WHAT_IF, asOfLine, playedResults, prunePlayedPicks, setPick } from "./calendar.ts";
 
 const card = (home, away, date, kickoff, score) => ({
   home,
@@ -85,4 +85,26 @@ test("a pick is set, changed and cleared, and never past the backend's cap", () 
   const cleared = setPick(full, "H3", "A3", null);
   assert.equal(cleared.length, MAX_WHAT_IF - 1);
   assert.equal(setPick(cleared, "Göztepe", "Beşiktaş", "draw").length, MAX_WHAT_IF, "room again");
+});
+
+test("the as-of line says how many results are in and the latest one's date", () => {
+  const en = {
+    none: "No matches played yet",
+    some: "{played} of {fixtures} matches played · latest result {date}",
+    all: "All {fixtures} matches played · last result {date}",
+  };
+  const tr = {
+    none: "Henüz maç oynanmadı",
+    some: "{played}/{fixtures} maç oynandı · son sonuç {date}",
+    all: "{fixtures} maçın tamamı oynandı · son sonuç {date}",
+  };
+  const part = { played: 63, fixtures: 306, latest_result: "2026-10-18" };
+  assert.equal(asOfLine(part, "en", en), "63 of 306 matches played · latest result 18 October");
+  assert.equal(asOfLine(part, "tr", tr), "63/306 maç oynandı · son sonuç 18 Ekim");
+  const none = { played: 0, fixtures: 306, latest_result: null };
+  assert.equal(asOfLine(none, "en", en), "No matches played yet");
+  assert.equal(asOfLine(none, "tr", tr), "Henüz maç oynanmadı");
+  const all = { played: 306, fixtures: 306, latest_result: "2027-05-23" };
+  assert.equal(asOfLine(all, "en", en), "All 306 matches played · last result 23 May");
+  assert.equal(asOfLine(all, "tr", tr), "306 maçın tamamı oynandı · son sonuç 23 Mayıs");
 });

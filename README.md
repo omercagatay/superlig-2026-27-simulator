@@ -15,7 +15,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Uses Dixon–Coles joint score sampling, which represents low-scoring and drawn matches better than independent Poissons.
 - Locks confirmed results from the official TFF calendar and simulates only the remaining fixtures.
 - Applies the Süper Lig's own classification rules, in which **head-to-head decides before goal difference**.
-- Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
+- Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table beside the current one; the fewest final points that gave a 50, 75 or 90% chance of the title, the top two, the top four or staying up in the simulated seasons; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
 - Optionally converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season (an API endpoint, off unless `SCENARIO_ENABLED=1`).
 - Computes the default forecast once per state of the league and serves it from a cache; a bounded queue absorbs bursts of fresh simulations.
 - Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
@@ -86,7 +86,7 @@ The table is ranked by:
 6. Overall goals scored
 7. Play-off
 
-Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test.
+Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test. A simulated season settles a tie that survives every rule with a random draw in place of the play-off; the current table has no play-off to draw on and lists such clubs by name, in Turkish alphabetical order.
 
 The dashboard reports exact finishing bands—top two, third, fourth, and top four—rather than assigning UEFA competition names. Actual qualification depends on the Turkish Cup winner and that season's UEFA access list, so league position alone is not enough. The bottom three are relegated.
 
@@ -270,7 +270,7 @@ When the simulation queue is full (503), the page waits as long as the server as
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
 | `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline with a 95% interval for the difference, and calibration bands, pooled and for each model version (`by_model`), plus every scored match with its frozen forecast, the model that made it, and its own log-loss. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
-| `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
+| `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest; the table as it stands (`standings`); and how far the season has got (`as_of`: results recorded, fixtures, the latest result's date). |
 
 `/api/accuracy`, `/api/upcoming`, and `/api/matches` share one 30/min allowance per IP; `/api/forecast` has its own 60/min allowance. A rate-limited request gets HTTP 429 with a `Retry-After` header.
 

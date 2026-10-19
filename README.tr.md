@@ -15,7 +15,7 @@
 - Skorları Dixon–Coles ortak dağılımından çeker; bu, az gollü ve berabere biten maçları bağımsız Poisson'lara göre daha iyi temsil eder.
 - TFF'nin resmî fikstüründeki oynanmış maçları sabitler ve yalnızca kalan maçları simüle eder.
 - Süper Lig'in kendi sıralama kurallarını uygular: **averaj değil, önce ikili averaj (head-to-head)** belirleyicidir.
-- Şampiyonluk, ilk iki, tam üçüncülük/dördüncülük, ilk dört ve küme düşme olasılıkları; 18×18 sıralama ızgarası; tahminî final tablosu; gelecek hafta tahminleri ve "kim kimin üstünde bitirir" olasılıkları üretir.
+- Şampiyonluk, ilk iki, tam üçüncülük/dördüncülük, ilk dört ve küme düşme olasılıkları; 18×18 sıralama ızgarası; güncel puan durumunun yanında tahminî final tablosu; simüle edilen sezonlarda şampiyonluk, ilk iki, ilk dört ve ligde kalma için %50, %75 ve %90 ihtimal veren en düşük sezon sonu puanları; gelecek hafta tahminleri ve "kim kimin üstünde bitirir" olasılıkları üretir.
 - İsteğe bağlı olarak doğal dildeki senaryoları Kimi ile doğrulanmış Elo değişikliklerine çevirir ve sezonu yeniden simüle eder (`SCENARIO_ENABLED=1` olmadıkça kapalı olan bir API uç noktası).
 - Varsayılan tahmini ligin her durumu için bir kez hesaplar ve önbellekten sunar; sınırlı bir kuyruk, yeni simülasyon isteklerindeki ani yoğunluğu karşılar.
 - IP başına hız sınırı, istek doğrulama, deterministik tohum (seed), açık/koyu tema, Docker desteği ve GitHub Actions CI içerir.
@@ -88,7 +88,7 @@ Puan durumu şu sırayla belirlenir:
 
 İkili maç sonuçları averajdan **önce** gelir; bu, FIFA/UEFA grup aşaması sıralamasından farklıdır.
 
-İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`).
+İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`). Simüle edilen bir sezonda hiçbir kuralın ayıramadığı eşitlik, play-off yerine rastgele bir çekilişle çözülür; güncel puan durumunda başvurulacak bir play-off olmadığından bu kulüpler Türk alfabesine göre adlarıyla sıralanır.
 
 Panel ilk iki, üçüncü, dördüncü ve ilk dört gibi kesin lig sıralamalarını gösterir; bu sıralara doğrudan UEFA turnuvası adı vermez. Gerçek katılım Türkiye Kupası şampiyonuna ve o sezonun UEFA erişim listesine de bağlıdır. Son üç takım küme düşer.
 
@@ -272,7 +272,7 @@ Simülasyon kuyruğu doluysa (503) sayfa sunucunun istediği kadar, ama her sefe
 | `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
 | `/api/accuracy` | `GET` | 30/dk | Modelin, başlama düdüğünden önce dondurulmuş tahminlerine karşı karnesi: isabet oranı, temel orana göre log-loss ve bu farkın %95 aralığı, kalibrasyon bantları; hem toplu hem her model sürümü için ayrı (`by_model`); ayrıca puanlanan her maç, dondurulmuş tahmini, onu yapan model ve kendi log-loss değeriyle. |
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
-| `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
+| `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar; güncel puan durumu (`standings`) ve sezonun nereye geldiği (`as_of`: oynanan maç sayısı, toplam maç, son sonucun tarihi). |
 
 `/api/accuracy`, `/api/upcoming` ve `/api/matches`, IP başına tek bir 30/dk hakkını paylaşır; `/api/forecast` için ayrı bir 60/dk hakkı vardır. Hız sınırına takılan istek, `Retry-After` başlığıyla HTTP 429 alır.
 
