@@ -55,7 +55,7 @@ After blending, an expected-goals rate below 0.9 is lifted 70% of the way back t
 
 Clubs promoted from the 1. Lig (Amedspor and Çorum for 2026-27) have no top-flight record, so the Dixon–Coles and pi-rating components give them league-average profiles; their Elo rating still distinguishes them.
 
-**Ratings are uncertain, and the simulation says so.** Each simulated season draws every club's true strength once from a normal around its current rating (`RATING_SIGMA`, 75 Elo points), held fixed for that season. Treating ratings as exact makes favourites' odds run hot and the tails too thin.
+**Ratings are uncertain, and the simulation says so.** Each simulated season draws every club's true strength once from a normal around its current Elo rating (`RATING_SIGMA`, 75 Elo points), held fixed for that season. Treating ratings as exact makes favourites' odds run hot and the tails too thin.
 
 The sigma is calibrated, not guessed. The arena replays each held-out season from the model's own match probabilities and compares the spread of the resulting points table with the real one:
 
@@ -66,13 +66,13 @@ The sigma is calibrated, not guessed. The arena replays each held-out season fro
 | Model spread, σ=0 | 13.4 | 13.0 |
 | Model spread, σ=75 | 15.0 | 14.4 |
 
-Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes about two-fifths of that gap on 2024-25 and two-thirds on 2025-26. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 history leaves out the season's one administrative award (Galatasaray v Adana Demirspor, awarded 3-0), so this diagnostic deliberately compares points from played fixtures on both sides.
+Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes about two-fifths of that gap on 2024-25 and two-thirds on 2025-26. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 history leaves out the season's one administrative award (Galatasaray v Adana Demirspor, awarded 3-0), so this diagnostic deliberately compares points from played fixtures on both sides. The arena applies the draw to each match's win/loss odds, a different mechanism from the simulator's, which adds it to the Elo ratings; the [season-level evaluation](#season-level-evaluation) checks what the simulator itself produces.
 
 **A known residual:** the model remains under-dispersed on 2024-25; a 92-point played-match leader occurs in roughly 14% of replays from the season's start (`EVAL_SEASON_SIM` in `examples/backtest.rs`). Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
 
 **Ratings move with the season.** The Elo component starts from a preseason rating computed from the results history and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 
-Manual overrides and Kimi scenarios update the Elo component. The embedded Dixon–Coles and pi-rating parameters stay unchanged until the historical models are explicitly refitted.
+**Overrides move the whole model.** A manual override or a Kimi scenario asks for a club rating; its difference from the club's current Elo rating shifts the blended expected goals of every one of its matches, as the same Elo gap shifts the Elo component, so the Dixon–Coles and pi-rating parts follow it too. Overrides used to change the Elo component alone and so worked at about half strength. At preseason, +50 points now moves a club's expected season points by about 5.5 on average (20,000 simulated seasons; about 2.8 before). The shift applies after the underdog lift, so two clubs overridden to the same rating need not end up with the same projection. The embedded Dixon–Coles and pi-rating parameters themselves stay unchanged until the historical models are explicitly refitted.
 
 ### Classification rules
 
@@ -119,8 +119,10 @@ Home wins agree within the history's own sampling error. Draws are under-predict
 | Skill: 3+ goals | <!-- metric:dev_ou25_skill:.1% -->1.4%<!-- /metric --> | <!-- metric:hold_ou25_skill:.1% -->2.4%<!-- /metric --> |
 | Skill: both teams score | <!-- metric:dev_btts_skill:.2% -->0.06%<!-- /metric --> | <!-- metric:hold_btts_skill:.2% -->-0.12%<!-- /metric --> |
 | Draws: forecast / happened | <!-- metric:dev_cal_draw_pred:.1% -->24.6%<!-- /metric --> / <!-- metric:dev_cal_draw_obs:.1% -->25.4%<!-- /metric --> | <!-- metric:hold_cal_draw_pred:.1% -->23.6%<!-- /metric --> / <!-- metric:hold_cal_draw_obs:.1% -->26.1%<!-- /metric --> |
+| Goals per match: forecast / scored | <!-- metric:dev_goals_pred:.2f -->2.86<!-- /metric --> / <!-- metric:dev_goals_obs:.2f -->2.82<!-- /metric --> | <!-- metric:hold_goals_pred:.2f -->2.98<!-- /metric --> / <!-- metric:hold_goals_obs:.2f -->2.80<!-- /metric --> |
+| Both teams score: forecast / happened | <!-- metric:dev_btts_pred:.1% -->54.8%<!-- /metric --> / <!-- metric:dev_btts_obs:.1% -->56.1%<!-- /metric --> | <!-- metric:hold_btts_pred:.1% -->55.2%<!-- /metric --> / <!-- metric:hold_btts_obs:.1% -->55.6%<!-- /metric --> |
 
-Lower log-loss is better. Skill is the share of the base-rate forecast's loss that the model removes; the base rates come only from seasons before the one scored. The model clearly beats them on results and on goal totals, but its both-teams-score forecast is no better than the base rate. Draws come out slightly too rare in both periods, as in the calibration check above.
+Lower log-loss is better. Skill is the share of the base-rate forecast's loss that the model removes; the base rates come only from seasons before the one scored. The model clearly beats them on results and on goal totals, but its both-teams-score forecast is no better than the base rate. Draws come out slightly too rare in both periods, as in the calibration check above. Goals come out too high, by about 0.05 a match in the development seasons and 0.18 in the holdout seasons (the goals row above), and both-teams-score slightly too low, so the model splits goals too unevenly between the two sides.
 
 The October 2026 tuning (faster in-season rating updates and the underdog lift), compared match by match with the model before it (`examples/compare.rs`; 95% intervals from resampling whole match days):
 
@@ -131,6 +133,8 @@ The October 2026 tuning (faster in-season rating updates and the underdog lift),
 | Both teams score log-loss | −0.0016 [−0.0026, −0.0006] | −0.0044 [−0.0081, −0.0008] |
 
 On the development seasons the gain is statistically significant for results, RPS, both-teams-score and exact scores. On the holdout seasons only both-teams-score is; the result gain there is the same size but within the noise of <!-- metric:hold_n:,d -->647<!-- /metric --> matches. The faster rating updates are what improve results; the underdog lift improves only both-teams-score. The development seasons were used to choose the tuning, so their intervals are optimistic. The live 2026-27 season is the clean test.
+
+A later sweep of 202 settings on the development seasons (the overall goal level, the low-score correction, and every blend weighting in steps of 0.1) found nothing worth shipping. The best setting changed result log-loss by −0.0006 [−0.0015, +0.0003], within the noise, and when the setting was chosen without seeing the season it was scored on, the gain disappeared (+0.0002). Scaling goals down closes the gap in goal totals but costs both-teams-score, and on the development seasons its gain did not hold up when it was chosen without seeing the season scored. A look at the holdout seasons after that decision found it improves exact scores there, where goals are over-predicted more, so the goal level stays an open question for the live season. A stronger low-score correction would bring draws to 25.3% without moving goal totals, but its gain is as small (−0.0003 [−0.0010, +0.0003]). No setting gives both-teams-score any skill.
 
 ### Season-level evaluation
 
@@ -143,8 +147,11 @@ On the development seasons the gain is statistically significant for results, RP
 | Top four, Brier skill | <!-- metric:season:dev_s0_top4_bss:.3f -->0.430<!-- /metric --> | <!-- metric:season:dev_s33_top4_bss:.3f -->0.584<!-- /metric --> | <!-- metric:season:dev_s67_top4_bss:.3f -->0.813<!-- /metric --> |
 | Relegation, Brier skill | <!-- metric:season:dev_s0_rel_bss:.3f -->0.145<!-- /metric --> | <!-- metric:season:dev_s33_rel_bss:.3f -->0.319<!-- /metric --> | <!-- metric:season:dev_s67_rel_bss:.3f -->0.590<!-- /metric --> |
 | Final points inside the 80% range | <!-- metric:season:dev_s0_cov80_pct:.1f -->70.4<!-- /metric -->% | <!-- metric:season:dev_s33_cov80_pct:.1f -->67.8<!-- /metric -->% | <!-- metric:season:dev_s67_cov80_pct:.1f -->73.0<!-- /metric -->% |
+| Final points, CRPS in points (lower is better) | <!-- metric:season:dev_s0_pts_crps:.2f -->6.18<!-- /metric --> | <!-- metric:season:dev_s33_pts_crps:.2f -->5.04<!-- /metric --> | <!-- metric:season:dev_s67_pts_crps:.2f -->2.93<!-- /metric --> |
 
 The forecasts improve as the season goes on, but they are over-confident: final-points ranges that should contain 80% of clubs contained about 70%, and simulated tables are less spread out than real ones (<!-- metric:season:dev_s0_table_sd_sim:.1f -->13.6<!-- /metric -->–<!-- metric:season:dev_s67_table_sd_sim:.1f -->14.4<!-- /metric --> points standard deviation against <!-- metric:season:dev_s0_table_sd_actual:.1f -->15.1<!-- /metric -->). The preseason title forecast is not distinguishable from simply using base rates (95% interval for its skill: −0.099 to 0.209, eight seasons). Treat the dashboard's ranges as somewhat too narrow. The two holdout seasons point both ways and settle nothing; their spread is also what `RATING_SIGMA` was tuned on (see above), so they are no independent test of it.
+
+The CRPS scores the whole forecast distribution of each club's final points, in points (for a forecast of a single number it would be the plain miss), and rewards wider ranges only where the misses need them. Widening the ranges was tried and not shipped. Applying the per-season strength draw to the whole model, not only to the Elo ratings, brought the development seasons to nominal coverage (80% ranges covering 79.6–82.9% of clubs, in runs of 5,000 seasons per snapshot) and improved finishing-position RPS in 7 of the 8 seasons. Its points CRPS gain was weaker: better in only 5 of the 8 seasons, with an interval that includes no change, and it was no better two thirds of the way in. Those intervals also ignore that it was the pick of more than 47 settings tried. A rule written down before the holdout seasons were run (in the working notes; it was committed only after the result) said to adopt it unless their points CRPS or position RPS, each pooled over the three snapshots, got worse, and both did. The position-RPS difference was tiny and changed with the random seed; the CRPS difference decided it, worse at each seed tried and in both seasons. From a third of the way in, where the shipped forecasts had not been too narrow, it made them too wide. So the simulator is unchanged. Two seasons settle little, and the live 2026-27 season is the clean test.
 
 ### Model selection
 
@@ -260,9 +267,9 @@ The next matchday, used by `/api/upcoming` and as the calendar's `current_round`
 
 The API sends no CORS headers: the dashboard is served from the same origin, and the Vite development server proxies `/api`.
 
-`/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline — the model keeps drawing until the result matches, so goal difference stays honest. Pinning an already-played or non-existent fixture is an error rather than a silent no-op.
+`/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline: the scoreline is drawn from the model's score probabilities for that match, restricted to the pinned outcome, so goal difference stays honest. A pinned result then updates the simulated season's Elo ratings as the same real result would, and the season is played in kick-off order, so only later fixtures feel it. On the 2026-10-19 calendar (50,000 seasons), pinning a Fenerbahçe win in the round-9 Galatasaray v Fenerbahçe takes Galatasaray's title odds from 59.1% to 32.1%, between entering the match as a real 1-2 (34.5%) and 1-3 (29.8%). Pinning an already-played or non-existent fixture, or one fixture twice, is an error rather than a silent no-op.
 
-Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000; LLM scenarios return rating changes of at most ±150 points, and request bodies are limited to 1 MiB. The scenario's analysis text is capped at 600 characters. When the LLM call fails, the client gets a generic HTTP 502; the details go to the server log only.
+Simulation requests accept 100–200,000 trials. Scenario prompts are limited to 2,000 characters, Elo overrides must name a known club and fall between 1,200 and 2,000; LLM scenarios return rating changes of at most ±150 points (a change that would carry a club outside 1,200–2,000 stops at the bound), and request bodies are limited to 1 MiB. The scenario's analysis text is capped at 600 characters. When the LLM call fails, the client gets a generic HTTP 502; the details go to the server log only.
 
 ### Default forecast
 
@@ -280,7 +287,7 @@ curl -X POST http://localhost:3000/api/simulate \
 
 ### Simulation with a manual rating override
 
-`elo_overrides` contains replacement ratings, not point deltas.
+`elo_overrides` contains requested ratings, not point deltas. Each is applied as its difference from the club's current Elo rating, on the whole model (see [How the model works](#how-the-model-works)); the Elo ratings themselves are not replaced.
 
 ```bash
 curl -X POST http://localhost:3000/api/simulate \
@@ -356,7 +363,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/check_metrics.py docs
 ```
 
-The shipped model's figures in [Backtest results](#backtest-results) and [Season-level evaluation](#season-level-evaluation) are checked this way; the tuning comparison and the season intervals are not, since `examples/compare.rs` and the printed intervals write no metrics file. If a change moves them, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
+The shipped model's figures in [Backtest results](#backtest-results) and [Season-level evaluation](#season-level-evaluation) are checked this way. Figures from tools that write no metrics file are not: the tuning comparison (`examples/compare.rs`), the season intervals (only printed), the later sweeps (the 202 match settings and the season-spread trials), the holdout comparison of the season-spread change, and the examples of overrides and pinned outcomes (one-off runs, dated where the calendar matters). If a change moves the checked figures, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
 
 ## Refresh the data
 
@@ -441,6 +448,6 @@ Data-source details worth knowing about:
 - Promoted clubs are the least well-modelled: they have no top-flight history for the Dixon–Coles and pi-rating components, so their forecasts lean entirely on their Elo rating.
 - The head-to-head-once rule (see above) is a stated assumption, not a published one.
 - Scenario ratings are model-generated assumptions. Read the returned explanation and treat the output as exploratory.
-- Season-level ranges are too narrow: in backtests, final-points ranges meant to contain 80% of clubs contained about 70% (see [Season-level evaluation](#season-level-evaluation)).
+- Season-level ranges are too narrow: in backtests, final-points ranges meant to contain 80% of clubs contained about 70%. Applying the strength draw to the whole model fixed that on the development seasons but made the holdout seasons worse, so it was not shipped (see [Season-level evaluation](#season-level-evaluation)).
 - Draws are forecast slightly too rarely and goals slightly too often (see [Calibration](#calibration)).
 - Forecast quality depends on ratings, historical-data coverage, model assumptions, and the number of trials.

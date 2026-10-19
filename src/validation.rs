@@ -4,9 +4,10 @@ use crate::sim::World;
 
 const MIN_SIMS: usize = 100;
 const MAX_SIMS: usize = 200_000;
-/// ClubElo's club scale is compressed relative to international Elo: the
-/// 2026-27 Süper Lig spans roughly 1509-1779. These bounds leave room for
-/// large scenario swings in both directions without admitting nonsense.
+/// The 2026-27 preseason ratings (`sim::preseason_ratings`) run from about
+/// 1420 to 1855. These bounds leave room for large scenario swings in both
+/// directions without admitting nonsense; a scenario change that would
+/// cross them is clamped to them (`scenario_overrides`).
 const MIN_ELO: f64 = 1200.0;
 const MAX_ELO: f64 = 2000.0;
 /// Scenario prompts are forwarded verbatim to the paid LLM API, so cap them
@@ -35,13 +36,14 @@ pub fn validate_n_sims(n: usize) -> Result<usize, String> {
     }
 }
 
-/// A generous cap: enough to pin a whole matchday and then some, low enough
-/// that rejection sampling for improbable pins cannot dominate a run.
+/// A generous cap: enough to pin a whole matchday and then some.
 pub const MAX_WHAT_IF: usize = 20;
 
 /// Resolve pinned outcomes to fixture indices, rejecting anything that is not
 /// a real, still-unplayed fixture. A pin on a played match would silently do
-/// nothing, which is worse than an error.
+/// nothing, which is worse than an error. So would a second pin on one
+/// fixture, which would quietly replace the first (and count twice against
+/// `MAX_WHAT_IF`), even when it pins the same outcome.
 pub fn validate_what_if(
     world: &World,
     what_if: &[crate::models::WhatIf],
@@ -72,7 +74,9 @@ pub fn validate_what_if(
             "away" => crate::sim::ForcedOutcome::Away,
             other => return Err(format!("Unknown outcome {other:?}; use home, draw or away")),
         };
-        out.insert((h, a), outcome);
+        if out.insert((h, a), outcome).is_some() {
+            return Err(format!("{} v {} is pinned twice", w.home, w.away));
+        }
     }
     Ok(out)
 }
@@ -99,7 +103,12 @@ pub const MAX_SCENARIO_SHIFT: f64 = 150.0;
 
 /// Turn an LLM scenario's per-club rating changes into absolute overrides on
 /// the world's current ratings. The LLM's output is untrusted, so names and
-/// the size of every change are checked here.
+/// the size of every change are checked here. A change within
+/// ±`MAX_SCENARIO_SHIFT` that would carry a club past `MIN_ELO` or
+/// `MAX_ELO` lands on the bound, logged, instead of failing the scenario:
+/// the model kept to its cap, and how near the bound the club already
+/// stood is not its doing. (`validate_elo_overrides` still refuses an
+/// API caller's override outside the bound.)
 pub fn scenario_overrides(
     world: &World,
     shifts: &HashMap<String, f64>,
@@ -114,9 +123,15 @@ pub fn scenario_overrides(
                 "Scenario change for {team} must be within ±{MAX_SCENARIO_SHIFT:.0} points, got {shift:.1}"
             ));
         }
-        overrides.insert(team.clone(), world.elo[i] + shift);
+        let wanted = world.elo[i] + shift;
+        let rating = wanted.clamp(MIN_ELO, MAX_ELO);
+        if rating != wanted {
+            tracing::warn!(
+                "Scenario change of {shift:+.1} for {team} would rate it {wanted:.1}; clamped to {rating:.0}"
+            );
+        }
+        overrides.insert(team.clone(), rating);
     }
-    validate_elo_overrides(world, &overrides)?;
     Ok(overrides)
 }
 
@@ -139,6 +154,66 @@ mod tests {
         assert!(scenario_overrides(&world, &unknown).is_err());
         let nan = HashMap::from([("Galatasaray".to_string(), f64::NAN)]);
         assert!(scenario_overrides(&world, &nan).is_err());
+    }
+
+    /// A change within ±`MAX_SCENARIO_SHIFT` that would carry a club past
+    /// the rating bound lands on the bound instead of failing the scenario;
+    /// the other clubs' changes are applied as they are.
+    #[test]
+    fn a_scenario_change_past_the_rating_bound_is_clamped_to_it() {
+        let mut world = World::with_played(0);
+        let (gs, fb) = (world.idx["Galatasaray"], world.idx["Fenerbahçe"]);
+        world.elo[gs] = MIN_ELO + 112.0;
+        world.elo[fb] = MAX_ELO - 30.0;
+        let shifts = HashMap::from([
+            ("Galatasaray".to_string(), -120.0),
+            ("Fenerbahçe".to_string(), MAX_SCENARIO_SHIFT),
+            ("Göztepe".to_string(), -40.0),
+        ]);
+        let o = scenario_overrides(&world, &shifts).expect("in-bounds changes are usable");
+        assert_eq!(o["Galatasaray"], MIN_ELO);
+        assert_eq!(o["Fenerbahçe"], MAX_ELO);
+        let gz = world.idx["Göztepe"];
+        assert!((o["Göztepe"] - (world.elo[gz] - 40.0)).abs() < 1e-9);
+        assert!(validate_elo_overrides(&world, &o).is_ok());
+        // The API's own overrides are still refused outside the bound.
+        let below = HashMap::from([("Galatasaray".to_string(), MIN_ELO - 8.0)]);
+        assert!(validate_elo_overrides(&world, &below).is_err());
+    }
+
+    fn pin(home: &str, away: &str, outcome: &str) -> crate::models::WhatIf {
+        crate::models::WhatIf {
+            home: home.to_string(),
+            away: away.to_string(),
+            outcome: outcome.to_string(),
+        }
+    }
+
+    /// One pin per fixture: a second one is refused whether it contradicts
+    /// the first or repeats it.
+    #[test]
+    fn a_fixture_pinned_twice_is_refused() {
+        let world = World::with_played(0);
+        let named = |i: usize| {
+            let f = world.fixtures[i];
+            (world.teams[f.home].as_str(), world.teams[f.away].as_str())
+        };
+        let ((h, a), (h2, a2)) = (named(0), named(1));
+        let once = [pin(h, a, "home"), pin(h2, a2, "draw")];
+        let forced = validate_what_if(&world, &once).expect("two fixtures, one pin each");
+        assert_eq!(forced.len(), 2);
+
+        for second in ["away", "home"] {
+            let twice = [pin(h, a, "home"), pin(h2, a2, "draw"), pin(h, a, second)];
+            assert_eq!(
+                validate_what_if(&world, &twice),
+                Err(format!("{h} v {a} is pinned twice")),
+                "a second {second} pin"
+            );
+        }
+        // The reverse fixture is another match, not the same one twice.
+        let both_legs = [pin(h, a, "home"), pin(a, h, "home")];
+        assert_eq!(validate_what_if(&world, &both_legs).map(|f| f.len()), Ok(2));
     }
 
     #[test]

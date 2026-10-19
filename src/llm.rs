@@ -14,7 +14,7 @@ const MAX_LOGGED_CHARS: usize = 2000;
 
 const SYSTEM_PROMPT: &str = r#"You are a football analyst for a Monte Carlo simulation of the 2026-27 Trendyol Süper Lig (Turkish top flight).
 
-The simulation models club strength with Elo-style ratings computed from match results. A 50-point swing changes a club's expected points over a season by roughly 4-6.
+The simulation models club strength with Elo-style ratings computed from match results. A 50-point swing changes a club's expected points over a full season by roughly 5.5 (proportionally less once part of the season is played).
 
 When the user describes a scenario (injury, suspension, transfer, manager change, European fixture congestion, etc.), assess its impact on the affected club(s) and return a JSON object of rating changes.
 

@@ -14,20 +14,23 @@ pub const HOME_ADV: f64 = 80.0;
 /// Distinct from `D_DIV`, which maps a rating gap to a *scoring-rate* ratio.
 pub const ELO_DIV: f64 = 400.0;
 
-/// One-sigma uncertainty in a club's true strength, in Elo points, resampled
-/// per simulated season. Ratings are estimates, not facts: squads change, form
-/// is unobserved, and the ratings themselves carry error. Treating them as exact
-/// makes favourites' title odds run hot and the tails too thin.
+/// One-sigma uncertainty in a club's true strength, in Elo points, drawn
+/// per simulated season and held for all of it. Ratings are estimates, not
+/// facts: squads change, form is unobserved, and the ratings themselves
+/// carry error. Treating them as exact makes favourites' title odds run hot
+/// and the tails too thin.
 ///
-/// Calibrated in `examples/arena.rs` against the spread of real final tables:
-/// replaying held-out seasons from the model's own match probabilities, this
-/// sigma (a row of the arena's sweep) raises the played-match table spread
-/// from 13.4 to 15.0 against 17.3 observed on 2024-25, and from 13.0 to 14.4
-/// against 15.2 on 2025-26. Costs nothing per analytic match forecast; only
-/// season simulation draws it.
-///
-/// Known residual: it remains under-dispersed on 2024-25; Galatasaray's 92
-/// points from played fixtures remain only about a 7% replay event (6.7%).
+/// The shock is added to the Elo ratings (`sim::ShockOn::Elo`). 75 was
+/// chosen in `examples/arena.rs` against the spread of real final tables (a
+/// row of its sweep). Its replay tilts each match's win/loss log-odds by
+/// ln 10 / 400 per Elo point of the drawn gap, draws held: a different
+/// mechanism, slightly weaker per Elo point than a shock on the whole
+/// model's λs. `examples/season_eval.rs` finds the development seasons'
+/// forecasts over-confident under this shock; the same 75 on the whole
+/// model (`sim::ShockOn::Blend`) fixed them there but failed the holdout
+/// check (a rule written down before the holdout run, committed after it),
+/// so production keeps this one (CLAUDE.md, "Season-level evaluation"). Costs nothing per analytic match
+/// forecast; only season simulation draws it.
 pub const RATING_SIGMA: f64 = 75.0;
 
 /// In-season Elo update rate for one league match, before the goal-difference
