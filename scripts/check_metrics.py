@@ -4,7 +4,10 @@ them, must agree with what the code produces.
 
 data/metrics/backtest.json is the walk-forward backtest's summary
 (examples/backtest.rs with EVAL_METRICS=<path>): one JSON object of
-metric name to number, rounded to the precision the backtest prints.
+metric name to number, rounded to the precision the backtest prints.  A
+figure the backtest could not compute (a calibration fit that did not
+converge prints NaN) is null: it matches only another null, and no doc may
+quote it.
 
 Usage:
   python3 scripts/check_metrics.py diff FRESH [COMMITTED]
@@ -14,7 +17,8 @@ Usage:
       metric the other lacks.
   python3 scripts/check_metrics.py docs [--metrics PATH] [FILE ...]
       Every metric marker in FILE (default README.md, README.tr.md and
-      CLAUDE.md) must show the committed value.
+      CLAUDE.md) must show the committed value, and there must be at least
+      one: a check that finds nothing to check fails.
 
 A marker wraps the figure it guards, on one line, invisible once rendered:
   <!-- metric:KEY -->VALUE<!-- /metric -->
@@ -52,6 +56,8 @@ REGENERATE = (
 )
 
 Number = Union[int, Decimal]
+# None is a metric the backtest wrote as null.
+Value = Union[Number, None]
 
 OPEN = re.compile(r"<!--\s*metric:")
 CODE_SPAN = re.compile(r"(`+).+?\1")
@@ -76,10 +82,10 @@ def shown(path: Path) -> str:
         return str(path)
 
 
-def load_metrics(path: Path, missing: str | None = None) -> dict[str, Number]:
-    """Metric name to number.  Decimals keep the digits exactly as written,
-    so a comparison is of the printed figures, not of binary floats.
-    `missing` explains a file that does not exist."""
+def load_metrics(path: Path, missing: str | None = None) -> dict[str, Value]:
+    """Metric name to number, or None for a null.  Decimals keep the digits
+    exactly as written, so a comparison is of the printed figures, not of
+    binary floats.  `missing` explains a file that does not exist."""
     if not path.is_file():
         hint = missing or f"the backtest writes it with\n  {REGENERATE}"
         raise MetricsError(f"{shown(path)} does not exist; {hint}")
@@ -98,24 +104,34 @@ def load_metrics(path: Path, missing: str | None = None) -> dict[str, Number]:
     if not isinstance(data, dict) or not data:
         raise MetricsError(f"{shown(path)} must be a non-empty JSON object of metrics")
     for key, value in data.items():
-        if isinstance(value, bool) or not isinstance(value, (int, Decimal)):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, (int, Decimal))
+        ):
             raise MetricsError(f"{shown(path)}: {key} is {value!r}, not a number")
     return data
 
 
+def cell(value: Value) -> str:
+    return "null" if value is None else str(value)
+
+
 def diff_metrics(
-    fresh: dict[str, Number], committed: dict[str, Number]
+    fresh: dict[str, Value], committed: dict[str, Value]
 ) -> list[tuple[str, str, str, str]]:
     """(metric, committed, fresh, change) for every metric that differs."""
     rows = []
     for key in sorted(set(fresh) | set(committed)):
-        old, new = committed.get(key), fresh.get(key)
-        if old is None:
-            rows.append((key, "-", str(new), "new"))
-        elif new is None:
-            rows.append((key, str(old), "-", "missing"))
-        elif old != new:
-            rows.append((key, str(old), str(new), f"{Decimal(new) - Decimal(old):+f}"))
+        if key not in committed:
+            rows.append((key, "-", cell(fresh[key]), "new"))
+        elif key not in fresh:
+            rows.append((key, cell(committed[key]), "-", "missing"))
+        else:
+            old, new = committed[key], fresh[key]
+            if old is None or new is None:
+                if old is not new:
+                    rows.append((key, cell(old), cell(new), "null"))
+            elif old != new:
+                rows.append((key, str(old), str(new), f"{Decimal(new) - Decimal(old):+f}"))
     return rows
 
 
@@ -134,6 +150,12 @@ TR_SEPARATORS = str.maketrans(".,", ",.")
 
 def format_value(value: Number, spec: str | None, locale: str | None) -> str:
     """How a marker with `spec` and `locale` shows `value`."""
+    if spec and spec[-1:] == "d" and isinstance(value, Decimal):
+        # Decimal has no integer presentation; a count written as 647.0 is
+        # still 647, but 0.5 is not a count.
+        if value != value.to_integral_value():
+            raise ValueError(f"{value} is not a whole number")
+        value = int(value)
     if not spec:
         text = str(value)
     else:
@@ -200,9 +222,9 @@ def find_markers(path: Path) -> list[Marker | str]:
     return found
 
 
-def check_docs(paths: Sequence[Path], metrics: dict[str, Number]) -> tuple[int, list[str]]:
+def check_docs(paths: Sequence[Path], metrics: dict[str, Value]) -> tuple[int, list[str]]:
     """How many markers were checked, and one error per marker that is
-    malformed, names an unknown metric or shows the wrong figure."""
+    malformed, names an unknown or null metric or shows the wrong figure."""
     checked, errors = 0, []
     for path in paths:
         if not path.is_file():
@@ -218,6 +240,9 @@ def check_docs(paths: Sequence[Path], metrics: dict[str, Number]) -> tuple[int, 
                 errors.append(f"{where}: {mk.key} is not a committed metric")
                 continue
             value = metrics[mk.key]
+            if value is None:
+                errors.append(f"{where}: {mk.key} is null in the committed metrics")
+                continue
             try:
                 expected = format_value(value, mk.spec, mk.locale)
             except ValueError as e:
@@ -265,6 +290,12 @@ def run_docs(paths: Sequence[Path], metrics_path: Path) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 1
     checked, errors = check_docs(paths, metrics)
+    if not checked:
+        errors.append(
+            f"no metric markers in {', '.join(shown(p) for p in paths)}; wrap each "
+            "figure the docs quote from the backtest as "
+            "<!-- metric:KEY[:SPEC[:tr]] -->VALUE<!-- /metric -->"
+        )
     if errors:
         print(
             "\n".join(errors)

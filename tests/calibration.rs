@@ -21,8 +21,11 @@
 //!   standard errors of the history (0.65). The missing draws turn up as
 //!   away wins, 30.4% against 28.8%;
 //! - goals are over-predicted: 2.88 expected a match per fixture and 2.91
-//!   in simulated seasons against 2.79 scored, about four and five standard
-//!   errors of the history (0.025) apart.
+//!   in simulated seasons against 2.79 scored, about three and four standard
+//!   errors of the history apart. That error is 0.033 goals, not the 0.025
+//!   independent matches would give: scoring moves from season to season
+//!   (2.64 to 3.05 a match), so the seasons, not the matches, are the
+//!   independent draws.
 //!
 //! Two guards, kept separate:
 //!
@@ -35,8 +38,8 @@
 //! 2. `calibration_stays_within_its_band_of_the_history`: the gaps above may
 //!    not grow past each figure's band. Home wins may sit 1.5 points either
 //!    side of the history; the draw and goal bands end about half a point
-//!    (0.06 goals) beyond where those gaps stand now, because they are known
-//!    errors, not slack to spend.
+//!    (0.06-0.07 goals) beyond where those gaps stand now, because they are
+//!    known errors, not slack to spend.
 //!
 //! Mean points per club follow from the draw rate alone (each decisive match
 //! hands out 3 points, a draw 2), so they are reported and checked against
@@ -170,39 +173,55 @@ fn measured() -> &'static Measured {
     MEASURED.get_or_init(measure)
 }
 
+/// A per-match quantity's mean over the history and its standard error: the
+/// larger of the independent-match error and the error clustered by season.
+/// The matches of one season share its clubs and its scoring, so they are
+/// not independent draws; for goals that matters, the seasons' means scatter
+/// enough to make the clustered error a third larger (0.033 against 0.025).
+/// With only 14 seasons the clustered error is itself rough, and for the
+/// outcome rates it comes out a little smaller, so the larger one is kept.
+fn history_mean(
+    seasons: &BTreeMap<i32, Vec<&HistoricalMatch>>,
+    x: impl Fn(&HistoricalMatch) -> f64,
+) -> (f64, f64) {
+    let all: Vec<f64> = seasons.values().flatten().map(|m| x(m)).collect();
+    let (n, mu) = (all.len() as f64, mean(&all));
+    let k = seasons.len() as f64;
+    let spread: f64 = seasons
+        .values()
+        .map(|s| s.iter().map(|m| x(m) - mu).sum::<f64>().powi(2))
+        .sum();
+    let clustered = (k / (k - 1.0) * spread).sqrt() / n;
+    (mu, standard_error(&all).max(clustered))
+}
+
 fn measure() -> Measured {
     let ms = history::load_history();
     assert!(!ms.is_empty());
-    let n = ms.len() as f64;
-    let pct =
-        |hit: fn(&HistoricalMatch) -> bool| ms.iter().filter(|m| hit(m)).count() as f64 / n * 100.0;
-    // Binomial sampling error. It is not flattering: the seasons' own draw
-    // rates scatter 2.4 points, as much as 300-odd independent matches would.
-    let pct_se = |p: f64| (p * (100.0 - p) / n).sqrt();
-    let goals: Vec<f64> = ms
-        .iter()
-        .map(|m| f64::from(m.home_score + m.away_score))
-        .collect();
-    let goal_mean = |side: fn(&HistoricalMatch) -> u16| {
-        let g: Vec<f64> = ms.iter().map(|m| f64::from(side(m))).collect();
-        (mean(&g), standard_error(&g))
-    };
-    let h_home = pct(|m| m.home_score > m.away_score);
-    let h_draw = pct(|m| m.home_score == m.away_score);
-    let h_away = pct(|m| m.home_score < m.away_score);
-    let (h_home_goals, h_home_goals_se) = goal_mean(|m| m.home_score);
-    let (h_away_goals, h_away_goals_se) = goal_mean(|m| m.away_score);
-    let (h_goals, h_goals_se) = (mean(&goals), standard_error(&goals));
-
-    let mut seasons: BTreeMap<i32, (usize, usize)> = BTreeMap::new();
+    let mut seasons: BTreeMap<i32, Vec<&HistoricalMatch>> = BTreeMap::new();
     for m in &ms {
-        let s = seasons.entry(season_of(m)).or_default();
-        s.0 += 1;
-        s.1 += usize::from(m.home_score == m.away_score);
+        seasons.entry(season_of(m)).or_default().push(m);
     }
+    let pct = |hit: fn(&HistoricalMatch) -> bool| {
+        history_mean(&seasons, |m| if hit(m) { 100.0 } else { 0.0 })
+    };
+    let goals = |side: fn(&HistoricalMatch) -> u16| history_mean(&seasons, |m| f64::from(side(m)));
+    let (h_home, h_home_se) = pct(|m| m.home_score > m.away_score);
+    let (h_draw, h_draw_se) = pct(|m| m.home_score == m.away_score);
+    let (h_away, h_away_se) = pct(|m| m.home_score < m.away_score);
+    let (h_home_goals, h_home_goals_se) = goals(|m| m.home_score);
+    let (h_away_goals, h_away_goals_se) = goals(|m| m.away_score);
+    let (h_goals, h_goals_se) = goals(|m| m.home_score + m.away_score);
+
     let draw_rates: Vec<(i32, f64)> = seasons
         .iter()
-        .map(|(&s, &(games, draws))| (s, draws as f64 / games as f64 * 100.0))
+        .map(|(&s, games)| {
+            let draws = games
+                .iter()
+                .filter(|m| m.home_score == m.away_score)
+                .count();
+            (s, draws as f64 / games.len() as f64 * 100.0)
+        })
         .collect();
     let low = draw_rates.iter().min_by(|a, b| a.1.total_cmp(&b.1));
     let high = draw_rates.iter().max_by(|a, b| a.1.total_cmp(&b.1));
@@ -212,7 +231,7 @@ fn measure() -> Measured {
     let label = |s: i32| format!("{s}-{:02}", (s + 1) % 100);
     let mut report = vec![format!(
         "history: {} played matches over {} seasons, {}..{}; season draw rates \
-         {low:.1}% ({}) to {high:.1}% ({})",
+         {low:.1}% ({}) to {high:.1}% ({}); history se: the larger of per-match and per-season",
         ms.len(),
         seasons.len(),
         label(*seasons.keys().next().expect("seasons")),
@@ -263,21 +282,21 @@ fn measure() -> Measured {
             model: home,
             model_se: 0.0,
             history: h_home,
-            history_se: pct_se(h_home),
+            history_se: h_home_se,
         },
         Figure {
             name: "fixture draws %",
             model: draw,
             model_se: 0.0,
             history: h_draw,
-            history_se: pct_se(h_draw),
+            history_se: h_draw_se,
         },
         Figure {
             name: "fixture away wins %",
             model: away,
             model_se: 0.0,
             history: h_away,
-            history_se: pct_se(h_away),
+            history_se: h_away_se,
         },
         Figure {
             name: "fixture home goals",
@@ -305,7 +324,7 @@ fn measure() -> Measured {
             model: mean(&draws),
             model_se: standard_error(&draws),
             history: h_draw,
-            history_se: pct_se(h_draw),
+            history_se: h_draw_se,
         },
         Figure {
             name: "season goals",
@@ -319,7 +338,7 @@ fn measure() -> Measured {
             model: mean(&points),
             model_se: standard_error(&points),
             history: per_club(h_draw),
-            history_se: 17.0 * pct_se(h_draw) / 100.0,
+            history_se: 17.0 * h_draw_se / 100.0,
         },
     ];
 

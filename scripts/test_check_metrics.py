@@ -66,13 +66,19 @@ class LoadMetrics(TempDir):
             "{}",
             '{"a": "0.5"}',
             '{"a": true}',
-            '{"a": null}',
+            '{"a": [0.5]}',
             '{"a": NaN}',
             '{"a": Infinity}',
             '{"a": 0.5',
         ):
             with self.subTest(raw=raw), self.assertRaises(cm.MetricsError):
                 cm.load_metrics(self.metrics_file(raw=raw))
+
+    def test_null_is_a_figure_the_backtest_could_not_compute(self):
+        # examples/backtest.rs writes a calibration fit that did not
+        # converge (printed NaN) as null.
+        path = self.metrics_file(raw='{"a_slope": null, "a_n": 647}')
+        self.assertEqual(cm.load_metrics(path), {"a_slope": None, "a_n": 647})
 
 
 class Diff(TempDir):
@@ -92,6 +98,18 @@ class Diff(TempDir):
         self.assertEqual(
             rows, [("a", "0.99914", "0.99915", "+0.00001"), ("n", "647", "650", "+3")]
         )
+
+    def test_null_matches_only_null(self):
+        self.assertEqual(cm.diff_metrics({"s": None}, {"s": None}), [])
+        self.assertEqual(
+            cm.diff_metrics({"s": None}, {"s": Decimal("0.981")}),
+            [("s", "0.981", "null", "null")],
+        )
+        self.assertEqual(
+            cm.diff_metrics({"s": Decimal("0.981")}, {"s": None}),
+            [("s", "null", "0.981", "null")],
+        )
+        self.assertEqual(cm.diff_metrics({"s": None}, {}), [("s", "-", "null", "new")])
 
     def test_added_and_dropped_metrics_differ(self):
         rows = cm.diff_metrics({"a": 1, "new": Decimal("0.5")}, {"a": 1, "old": 2})
@@ -139,6 +157,12 @@ class Format(unittest.TestCase):
     def test_percent_and_thousands(self):
         self.assertEqual(cm.format_value(Decimal("0.5234"), ".1%", None), "52.3%")
         self.assertEqual(cm.format_value(4588, ",d", None), "4,588")
+
+    def test_a_count_written_with_a_point_is_still_a_count(self):
+        self.assertEqual(cm.format_value(Decimal("4588.0"), ",d", None), "4,588")
+        self.assertEqual(cm.format_value(Decimal("647"), "d", "tr"), "647")
+        with self.assertRaises(ValueError):
+            cm.format_value(Decimal("0.5"), "d", None)
 
     def test_turkish_notation(self):
         self.assertEqual(cm.format_value(Decimal("0.97564"), ".4f", "tr"), "0,9756")
@@ -196,6 +220,12 @@ class Docs(TempDir):
         self.assertIn("format spec", errors[1])
         self.assertIn("unknown marker locale", errors[2])
 
+    def test_a_null_metric_cannot_be_quoted(self):
+        metrics = cm.load_metrics(self.metrics_file(raw='{"hold_slope": null}'))
+        _, errors = self.check("<!-- metric:hold_slope -->0.98<!-- /metric -->\n", metrics)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("hold_slope is null", errors[0])
+
     def test_a_marker_that_is_not_closed_on_its_line_fails(self):
         _, errors = self.check("<!-- metric:hold_n -->647\n<!-- /metric -->\n")
         self.assertEqual(len(errors), 1)
@@ -222,6 +252,14 @@ class Docs(TempDir):
         self.assertIn("b.md:1", err)
         self.assertIn("1 problem(s) in 2 metric marker(s)", err)
         self.assertIn(cm.REGENERATE, err)
+
+    def test_main_fails_when_there_is_nothing_to_check(self):
+        # Markers deleted or never added would otherwise pass in silence.
+        metrics = self.metrics_file()
+        doc = self.write("a.md", "holdout 0.9756, `<!-- metric:hold_n -->647<!-- /metric -->`\n")
+        code, _, err = self.run_main(["docs", "--metrics", metrics, doc])
+        self.assertEqual(code, 1)
+        self.assertIn("no metric markers in", err)
 
     def test_main_fails_clearly_before_the_metrics_exist(self):
         doc = self.write("a.md", "no markers yet\n")
