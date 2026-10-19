@@ -37,8 +37,8 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 The pure-Elo component converts rating difference and home advantage into expected goals:
 
 ```text
-lambda_home = 1.35 × 10^(( Elo_home - Elo_away + 80) / 1600)
-lambda_away = 1.35 × 10^((-Elo_home + Elo_away - 80) / 1600)
+lambda_home = 1.35 × 10^(( Elo_home - Elo_away + 80) / 1200)
+lambda_away = 1.35 × 10^((-Elo_home + Elo_away - 80) / 1200)
 ```
 
 Home advantage is a property of the **fixture**, not of the club: every club gets the boost at its own ground, in both halves of the double round-robin.
@@ -50,6 +50,8 @@ By default those rates are blended with two models trained on real Süper Lig hi
 - **Pi-ratings (0.2):** sequential home/away strength updates from the same history.
 
 Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. When the Dixon–Coles weight is active, scorelines are drawn from its joint distribution.
+
+After blending, an expected-goals rate below 0.9 is lifted 70% of the way back to 0.9, and the favourite's rate rises by half of that relative lift: heavy underdogs score more often than the rating gap implies. In the backtest this improves the both-teams-score forecast and nothing else (see [Backtest results](#backtest-results)).
 
 Clubs promoted from the 1. Lig (Amedspor and Çorum for 2026-27) have no top-flight record, so the Dixon–Coles and pi-rating components give them league-average profiles; their Elo rating still distinguishes them.
 
@@ -90,16 +92,59 @@ The dashboard reports exact finishing bands—top two, third, fourth, and top fo
 
 ### Calibration
 
-The Elo constants are verified against the real league rather than inherited:
+The model that ships (the default blend, at preseason, nothing played) is checked against every played Süper Lig match since 2012-13:
 
-| | Empirical (14 seasons) | Simulated |
+| | History (4,588 matches) | Model, per fixture | Model, simulated seasons |
+|---|---:|---:|---:|
+| Home wins | 45.4% | 44.9% | — |
+| Draws | 25.9% | 24.8% | 24.4% |
+| Away wins | 28.8% | 30.4% | — |
+| Goals per match | 2.79 | 2.88 | 2.91 |
+| Home goals per match | 1.57 | 1.63 | — |
+| Away goals per match | 1.22 | 1.25 | — |
+
+Home wins agree within the history's own sampling error. Draws are under-predicted by about one point (1.4 in simulated seasons, which also draw each season's strengths), and the missing draws turn up as away wins; goals are over-predicted by about 0.1 a match. These are known gaps, not fixed yet. `tests/calibration.rs` pins today's figures and fails the build if one moves (a rate by more than a point, goals by more than 0.05 a match) or if a gap grows past its stated band.
+
+### Backtest results
+
+`examples/backtest.rs` replays every season since 2016-17 match day by match day, pricing each match only with what was known before its date, under the production rules. The development seasons were used to build and tune the model. The two holdout seasons were kept out of that, except that they informed two decisions in the October 2026 tuning, so they are lightly used rather than untouched. Shipped model:
+
+| | Development, 2016-17 to 2023-24 | Holdout, 2024-25 and 2025-26 |
 |---|---:|---:|
-| Home goals per match | 1.566 | — |
-| Away goals per match | 1.222 | — |
-| Home wins | 45.3% | 44.7% |
-| Draws | 25.8% | 24.5% |
+| Matches | <!-- metric:dev_n:,d -->2,717<!-- /metric --> | <!-- metric:hold_n:,d -->647<!-- /metric --> |
+| Result (home/draw/away) log-loss | <!-- metric:dev_1x2_ll:.4f -->0.9991<!-- /metric --> | <!-- metric:hold_1x2_ll:.4f -->0.9756<!-- /metric --> |
+| Base-rate forecast's log-loss | <!-- metric:dev_1x2_ll_base:.4f -->1.0678<!-- /metric --> | <!-- metric:hold_1x2_ll_base:.4f -->1.0669<!-- /metric --> |
+| Skill over base rates: result log-loss | <!-- metric:dev_1x2_skill:.1% -->6.4%<!-- /metric --> | <!-- metric:hold_1x2_skill:.1% -->8.6%<!-- /metric --> |
+| Skill: ranked probability score | <!-- metric:dev_rpss:.1% -->10.2%<!-- /metric --> | <!-- metric:hold_rpss:.1% -->13.8%<!-- /metric --> |
+| Skill: 3+ goals | <!-- metric:dev_ou25_skill:.1% -->1.4%<!-- /metric --> | <!-- metric:hold_ou25_skill:.1% -->2.4%<!-- /metric --> |
+| Skill: both teams score | <!-- metric:dev_btts_skill:.2% -->0.06%<!-- /metric --> | <!-- metric:hold_btts_skill:.2% -->-0.12%<!-- /metric --> |
+| Draws: forecast / happened | <!-- metric:dev_cal_draw_pred:.1% -->24.6%<!-- /metric --> / <!-- metric:dev_cal_draw_obs:.1% -->25.4%<!-- /metric --> | <!-- metric:hold_cal_draw_pred:.1% -->23.6%<!-- /metric --> / <!-- metric:hold_cal_draw_obs:.1% -->26.1%<!-- /metric --> |
 
-`tests/calibration.rs` fails the build if these drift apart.
+Lower log-loss is better. Skill is the share of the base-rate forecast's loss that the model removes; the base rates come only from seasons before the one scored. The model clearly beats them on results and on goal totals, but its both-teams-score forecast is no better than the base rate. Draws come out slightly too rare in both periods, as in the calibration check above.
+
+The October 2026 tuning (faster in-season rating updates and the underdog lift), compared match by match with the model before it (`examples/compare.rs`; 95% intervals from resampling whole match days):
+
+| Change in loss, tuned minus before | Development | Holdout |
+|---|---:|---:|
+| Result log-loss | −0.0077 [−0.0122, −0.0031] | −0.0066 [−0.0170, +0.0043] |
+| Ranked probability score | −0.0023 [−0.0037, −0.0009] | −0.0026 [−0.0056, +0.0005] |
+| Both teams score log-loss | −0.0016 [−0.0026, −0.0006] | −0.0044 [−0.0081, −0.0008] |
+
+On the development seasons the gain is statistically significant for results, RPS, both-teams-score and exact scores. On the holdout seasons only both-teams-score is; the result gain there is the same size but within the noise of <!-- metric:hold_n:,d -->647<!-- /metric --> matches. The faster rating updates are what improve results; the underdog lift improves only both-teams-score. The development seasons were used to choose the tuning, so their intervals are optimistic. The live 2026-27 season is the clean test.
+
+### Season-level evaluation
+
+`examples/season_eval.rs` scores the season forecasts themselves (finishing positions, title, top four, relegation and final points) by replaying each past season from three points: before it starts, a third of the way in and two thirds in, each time with only the information available then. Over the <!-- metric:season:dev_n_seasons -->8<!-- /metric --> development seasons:
+
+| | Preseason | A third played | Two thirds played |
+|---|---:|---:|---:|
+| Finishing-position RPS (lower is better) | <!-- metric:season:dev_s0_pos_rps:.4f -->0.1322<!-- /metric --> | <!-- metric:season:dev_s33_pos_rps:.4f -->0.1121<!-- /metric --> | <!-- metric:season:dev_s67_pos_rps:.4f -->0.0646<!-- /metric --> |
+| Title, Brier skill over base rate | <!-- metric:season:dev_s0_title_bss:.3f -->0.052<!-- /metric --> | <!-- metric:season:dev_s33_title_bss:.3f -->0.307<!-- /metric --> | <!-- metric:season:dev_s67_title_bss:.3f -->0.500<!-- /metric --> |
+| Top four, Brier skill | <!-- metric:season:dev_s0_top4_bss:.3f -->0.430<!-- /metric --> | <!-- metric:season:dev_s33_top4_bss:.3f -->0.584<!-- /metric --> | <!-- metric:season:dev_s67_top4_bss:.3f -->0.813<!-- /metric --> |
+| Relegation, Brier skill | <!-- metric:season:dev_s0_rel_bss:.3f -->0.145<!-- /metric --> | <!-- metric:season:dev_s33_rel_bss:.3f -->0.319<!-- /metric --> | <!-- metric:season:dev_s67_rel_bss:.3f -->0.590<!-- /metric --> |
+| Final points inside the 80% range | <!-- metric:season:dev_s0_cov80_pct:.1f -->70.4<!-- /metric -->% | <!-- metric:season:dev_s33_cov80_pct:.1f -->67.8<!-- /metric -->% | <!-- metric:season:dev_s67_cov80_pct:.1f -->73.0<!-- /metric -->% |
+
+The forecasts improve as the season goes on, but they are over-confident: final-points ranges that should contain 80% of clubs contained about 70%, and simulated tables are less spread out than real ones (<!-- metric:season:dev_s0_table_sd_sim:.1f -->13.6<!-- /metric -->–<!-- metric:season:dev_s67_table_sd_sim:.1f -->14.4<!-- /metric --> points standard deviation against <!-- metric:season:dev_s0_table_sd_actual:.1f -->15.1<!-- /metric -->). The preseason title forecast is not distinguishable from simply using base rates (95% interval for its skill: −0.099 to 0.209, eight seasons). Treat the dashboard's ranges as somewhat too narrow. The two holdout seasons point both ways and settle nothing; their spread is also what `RATING_SIGMA` was tuned on (see above), so they are no independent test of it.
 
 ### Model selection
 
@@ -116,7 +161,7 @@ The blend was chosen by backtest, not by fiat. `cargo run --release --example ar
 | Elo–Poisson | 1.0122 | 0.1988 |
 | home-advantage baseline | 1.0866 | 0.2250 |
 
-Every fitted model clears the baselines by a wide margin. The production blend is 0.0017 log-loss behind the test winner, and 0.0150 ahead of it on validation (0.9828 against 0.9978). Weights fitted only to validation (0.4/0/0.6) win that season but fall behind on test, so the broader 0.5/0.3/0.2 blend stays.
+The arena prints twelve rows per season, nine fitted models and three baselines; the table shows a selection. Every fitted model clears the baselines by a wide margin. The production blend is 0.0017 log-loss behind the test winner, and 0.0150 ahead of it on validation (0.9828 against 0.9978). Weights fitted only to validation (0.4/0/0.6) win that season but fall behind on test, so the broader 0.5/0.3/0.2 blend stays.
 
 The arena also builds a leak-free walk-forward multinomial logistic stack whose features are fitted only on earlier seasons. It scores 1.0003 on the test season, 0.0008 ahead of the ensemble, but 0.9978 on validation, 0.0150 behind it. An edge that small on one season does not justify replacing the simpler model with results-only features; richer inputs such as xG and lineups are not available here.
 
@@ -186,7 +231,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 ## Use the dashboard
 
 1. The page opens on the server's default forecast (50,000 seasons, seed 12345). To change it, choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Once matches have been scored, open **Forecast history** under **Forecast accuracy** on **Overview** to see every scored match's frozen forecast next to its result, matchday by matchday, with a chart of the log-loss so far against the base rates.
+2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Once matches have been scored, **Forecast accuracy** on **Overview** shows the hit rate, the log-loss and its difference from the base rates with a 95% interval and the number of matches, and the same for each model version separately (forecasts made by an earlier version of the model are scored apart from the current one's). Open **Forecast history** there to see every scored match's frozen forecast next to its result and the model that made it, matchday by matchday, with a chart of the log-loss so far against the base rates.
 3. On **Fixtures**, pick results to assume (at most 20, the API's limit) and select **Recalculate**.
 4. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view. Results you assumed for matches that have since been played are dropped, with a notice.
 5. Natural-language scenarios are not part of the dashboard. They are an optional API endpoint (`/api/scenario`, below) that is off unless the server sets `SCENARIO_ENABLED=1` and `KIMI_API_KEY`.
@@ -197,13 +242,13 @@ When the simulation queue is full (503), the page waits as long as the server as
 
 | Endpoint | Method | Limit per IP | Description |
 |---|---|---:|---|
-| `/api/health` | `GET` | — | Service version, model configuration, last live refresh, `world_version`, and whether the default forecast is cached (`forecast_cached`). |
+| `/api/health` | `GET` | — | Service version, model configuration and `model_version`, last live refresh, `world_version`, and whether the default forecast is cached (`forecast_cached`). |
 | `/api/forecast` | `GET` | 60/min | The default forecast (50,000 seasons, seed 12345, no overrides): the same JSON as `POST /api/simulate {}`, computed once per state of the league. |
 | `/api/simulate` | `POST` | 30/min | Run a simulation with optional Elo overrides and pinned outcomes. Repeated identical requests are answered from a cache until the results or ratings change. |
 | `/api/scenario` | `POST` | 10/min | Analyze a prompt with Kimi and rerun with its Elo overrides. Returns 404 unless `SCENARIO_ENABLED=1`. |
 | `/api/refresh` | `POST` | 5/min | Fetch and apply the current TFF results. |
 | `/api/live` | `GET` | — | Return the most recently cached live-data snapshot. |
-| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline, and calibration bands, plus every scored match with its frozen forecast and its own log-loss. |
+| `/api/accuracy` | `GET` | 30/min | How the model has scored against predictions frozen before kick-off: hit rate, log-loss vs the base-rate baseline with a 95% interval for the difference, and calibration bands, pooled and for each model version (`by_model`), plus every scored match with its frozen forecast, the model that made it, and its own log-loss. |
 | `/api/upcoming` | `GET` | 30/min | Home/draw/away forecasts for the next matchday's unplayed fixtures. |
 | `/api/matches` | `GET` | 30/min | The full 306-fixture calendar: real scores for played games, 1X2 / over-under 2.5 / both-teams-to-score probabilities and fair odds for the rest. |
 
@@ -298,9 +343,20 @@ npm run build
 npm test            # needs Node.js 22.6+ (--experimental-strip-types)
 cd ..
 
-# Offline tests for the fixture and history fetch scripts (no network).
+# The committed evaluation figures, which this README quotes, must still be
+# what the code produces.
+EVAL_HOLDOUT=1 EVAL_METRICS=/tmp/backtest.json cargo run --release --example backtest
+python3 scripts/check_metrics.py diff /tmp/backtest.json data/metrics/backtest.json
+EVAL_HOLDOUT=1 SEASON_METRICS=/tmp/season.json cargo run --release --example season_eval
+python3 scripts/check_metrics.py diff /tmp/season.json data/metrics/season.json
+
+# Offline tests for the fetch scripts and the metrics checker (no network),
+# and every quoted figure in the READMEs and CLAUDE.md against data/metrics/.
 python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/check_metrics.py docs
 ```
+
+The shipped model's figures in [Backtest results](#backtest-results) and [Season-level evaluation](#season-level-evaluation) are checked this way; the tuning comparison and the season intervals are not, since `examples/compare.rs` and the printed intervals write no metrics file. If a change moves them, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
 
 ## Refresh the data
 
@@ -362,14 +418,18 @@ Data-source details worth knowing about:
 │   ├── handlers.rs       # API handlers and the simulation queue
 │   ├── forecast_cache.rs # Simulation responses cached per league state
 │   ├── llm.rs            # Kimi scenario analysis
+│   ├── accuracy.rs       # Scoring the frozen forecast log, per model version
+│   ├── model_version.rs  # Which model made a forecast, and its fingerprint
+│   ├── odds.rs           # Fair odds (1 / p) for the API
 │   ├── models.rs         # API request and response types
 │   ├── validation.rs     # Request validation
 │   └── rate_limit.rs     # Per-IP rate limiting
-├── data/                 # Fixture calendar, historical results, fitted params
+├── data/                 # Fixture calendar, historical results, fitted params, forecast log
+│   └── metrics/          # Committed backtest and season-evaluation figures
 ├── frontend/             # React and TypeScript dashboard
-├── examples/             # Model fitting utility
-├── scripts/              # Data-acquisition scripts and their offline tests
-├── tests/calibration.rs  # Guards the Elo constants against the real league
+├── examples/             # Model fitting, backtest, season evaluation, comparison, forecast logging
+├── scripts/              # Data-acquisition scripts, the metrics checker, their offline tests
+├── tests/calibration.rs  # Checks the shipped blend against the real league
 ├── .github/workflows/    # CI and the scheduled data refresh
 └── Dockerfile            # Production multi-stage image
 ```
@@ -381,4 +441,6 @@ Data-source details worth knowing about:
 - Promoted clubs are the least well-modelled: they have no top-flight history for the Dixon–Coles and pi-rating components, so their forecasts lean entirely on their Elo rating.
 - The head-to-head-once rule (see above) is a stated assumption, not a published one.
 - Scenario ratings are model-generated assumptions. Read the returned explanation and treat the output as exploratory.
+- Season-level ranges are too narrow: in backtests, final-points ranges meant to contain 80% of clubs contained about 70% (see [Season-level evaluation](#season-level-evaluation)).
+- Draws are forecast slightly too rarely and goals slightly too often (see [Calibration](#calibration)).
 - Forecast quality depends on ratings, historical-data coverage, model assumptions, and the number of trials.

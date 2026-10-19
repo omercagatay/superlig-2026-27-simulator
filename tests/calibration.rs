@@ -17,7 +17,7 @@
 //! - home wins: 44.9% per fixture against 45.4% in the history, inside the
 //!   history's own sampling error (0.7 points);
 //! - draws are under-predicted: 24.8% per fixture and 24.4% in simulated
-//!   seasons against 25.9%. The season shortfall, 1.5 points, is about two
+//!   seasons against 25.9%. The season shortfall, 1.4 points, is about two
 //!   standard errors of the history (0.65). The missing draws turn up as
 //!   away wins, 30.4% against 28.8%;
 //! - goals are over-predicted: 2.88 expected a match per fixture and 2.91
