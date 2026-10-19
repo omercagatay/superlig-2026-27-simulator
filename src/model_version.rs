@@ -19,9 +19,10 @@
 //! The log's entries before labels existed were labelled from their
 //! `logged_at` and the commit each weekly run was made on: the 2026-10-12 run
 //! (23:16 UTC) ran on a tree that already had the October tuning commits.
-//! `2026-08` covers two code states: between its two runs the history was
-//! rebuilt and Dixon-Coles refit (27 August), while the Elo side, half the
-//! blend, stayed the same.
+//! `2026-08` covers two code states: between its two runs (27 August) the
+//! history was rebuilt, Dixon-Coles refit and the pi-rating pass changed to
+//! update a whole match day at once, while the Elo side, half the blend,
+//! stayed the same.
 //!
 //! `fingerprint()` hashes every input that moves a 1X2 forecast, and a test
 //! pins it to `FINGERPRINT`, so a model change cannot ship under the old

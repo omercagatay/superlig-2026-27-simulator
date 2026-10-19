@@ -618,7 +618,8 @@ mod tests {
     /// labels were introduced follow the weekly runs that wrote them: the
     /// August runs on the August model, the 2026-10-12 and 2026-10-16 runs on
     /// the October tuning before the history was corrected. Later entries
-    /// carry the label of their run, so labels never go backwards in time.
+    /// were written by a labelling run, so they name the model labels came
+    /// in with or a newer one, and labels never go backwards in time.
     #[test]
     fn every_logged_forecast_names_the_model_that_made_it() {
         use crate::model_version::LABELS;
@@ -639,6 +640,11 @@ mod tests {
                 "2026-10-12" | "2026-10-16" => Some("2026-10a"),
                 day => {
                     assert!(day >= "2026-10-19", "{at}: no weekly run logged that day");
+                    // Labels sort in the order they shipped.
+                    assert!(
+                        v >= "2026-10b",
+                        "{at}: written since labels came in, as {v:?}"
+                    );
                     None
                 }
             };
