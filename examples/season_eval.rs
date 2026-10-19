@@ -109,7 +109,14 @@
 //!                           as an Elo gap acts on the Elo component,
 //!                           mean-preserving [elo]
 //!   SEASON_HOT_K=0          hot simulation: K of the Elo update after every
-//!                           simulated result (production's rule; 0 is cold)
+//!                           result, simulated or pinned (production's
+//!                           update formula, `elo_delta_k`, with this K; 0 is
+//!                           cold). The win expectancy is taken from rating
+//!                           plus offset, so the update does not compound the
+//!                           shock, but under SEASON_SHOCK=elo it still pulls
+//!                           the trial's Elo towards the blend's view: a
+//!                           shift of the mean forecast (CLAUDE.md,
+//!                           "Season-level evaluation")
 //!   SEASON_DRIFT=0          SD, in Elo points, of each club's random-walk
 //!                           step before every round still to be played
 //!

@@ -42,10 +42,19 @@
 //! and normal tails. Negative B − A means B scores better. The dump keeps
 //! five decimals of each probability and score.
 //!
-//! Output: the columns before the season t interval are as they were; the t
-//! interval (and, in season mode, the season count) is appended to each
-//! aspect line and its header, the match-mode set line gains `, G seasons`
-//! at its end, and one line after the bootstrap line names the t interval.
+//! Output: the two files (`A = `, `B = `), the bootstrap line (resamples and
+//! seed), a line defining the season t interval (in season mode, and B
+//! better), then each set present, `dev` and `hold`.
+//!   - Match mode: a set line, e.g. `dev seasons 2016-17..2023-24: N matches
+//!     on D dates, G seasons`, a column header and one line per aspect:
+//!     aspect, mean A, mean B, B − A, the 95% date-block bootstrap interval,
+//!     the DM t and, last, the 95% season t interval.
+//!   - Season mode: a set line, e.g. `dev seasons 2016-17..2023-24: G
+//!     seasons, S snapshots, N club rows`, then each snapshot in dump order
+//!     and `pooled`, each headed `label (n rows)` and a column header, with
+//!     one line per aspect: aspect, mean A, mean B, B − A, the 95%
+//!     season-cluster bootstrap interval, the 95% season t interval and,
+//!     last, B better as `k/G`.
 //!
 //! Run: cargo run --release --example compare -- A.csv B.csv [--resamples 10000] [--seed 12345]
 //!      cargo run --release --example compare -- --season A.csv B.csv [--resamples 10000] [--seed 12345]
