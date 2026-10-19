@@ -65,7 +65,17 @@
 //!                           keys sorted, values at their printed precision
 //!   EVAL_SEASON_SIM=2000    also replay each scored season from its start
 //!                           with the production season simulator and
-//!                           compare the spread of final points to reality
+//!                           compare the spread of final points to reality.
+//!                           Its `World` takes the season-start ratings and
+//!                           ensemble, so EVAL_W, EVAL_HL, EVAL_K_PRE,
+//!                           EVAL_PROMO, EVAL_PROMO_REL and EVAL_REGRESS act
+//!                           on it (EVAL_K cannot: nothing is revealed in a
+//!                           replay from the start), but it prices every
+//!                           match with production's `elo_lambdas`,
+//!                           `blend_lambdas` and `score_rho`, so it refuses
+//!                           to run with a λ knob set: EVAL_HA, EVAL_DDIV,
+//!                           EVAL_BASE, EVAL_GOALS, EVAL_RHO, EVAL_PIVOT,
+//!                           EVAL_LIFT or EVAL_FOLLOW
 //!
 //! The model as it was before the October 2026 tuning is
 //! `EVAL_K=20 EVAL_DDIV=1600 EVAL_LIFT=0`; its preseason track already ran at
@@ -108,6 +118,19 @@ use superlig_sim::sim::{self, Ensemble, FixtureDate, LeagueFixture, World};
 const DEV: std::ops::RangeInclusive<i32> = 2017..=2024;
 const HOLDOUT: [i32; 2] = [2025, 2026];
 
+/// The knobs that move a match's λs or score table, which `EVAL_SEASON_SIM`
+/// cannot honour: its `World` prices with production's rules.
+const SEASON_SIM_IGNORES: [&str; 8] = [
+    "EVAL_HA",
+    "EVAL_DDIV",
+    "EVAL_BASE",
+    "EVAL_GOALS",
+    "EVAL_RHO",
+    "EVAL_PIVOT",
+    "EVAL_LIFT",
+    "EVAL_FOLLOW",
+];
+
 /// A knob's value from `var`, or `default` when it is not set.
 fn env_f(var: &impl Fn(&str) -> Option<String>, key: &str, default: f64) -> f64 {
     var(key)
@@ -116,6 +139,14 @@ fn env_f(var: &impl Fn(&str) -> Option<String>, key: &str, default: f64) -> f64 
                 .unwrap_or_else(|_| panic!("{key}={v} is not a number"))
         })
         .unwrap_or(default)
+}
+
+/// The λ knobs `var` sets, which `EVAL_SEASON_SIM` would ignore.
+fn season_sim_conflicts(var: &impl Fn(&str) -> Option<String>) -> Vec<&'static str> {
+    SEASON_SIM_IGNORES
+        .into_iter()
+        .filter(|k| var(k).is_some())
+        .collect()
 }
 
 struct Cfg {
@@ -136,6 +167,8 @@ struct Cfg {
     /// True when every Elo knob is at its production value, so the shared
     /// production functions are called rather than the local variants.
     production_elo: bool,
+    /// `EVAL_SEASON_SIM`: simulated seasons per scored season, if any.
+    season_sim: Option<usize>,
 }
 
 /// What `sim::blend_lambdas` does after blending: the underdog lift, then
@@ -282,6 +315,15 @@ impl Cfg {
             refit == "season" || refit == "week",
             "EVAL_REFIT must be season|week"
         );
+        let season_sim = var("EVAL_SEASON_SIM").map(|n| n.parse().expect("EVAL_SEASON_SIM"));
+        let ignored = season_sim_conflicts(&var);
+        assert!(
+            season_sim.is_none() || ignored.is_empty(),
+            "EVAL_SEASON_SIM prices matches with production's own λ rules, which ignore {}; \
+             unset {} or EVAL_SEASON_SIM",
+            ignored.join(", "),
+            if ignored.len() == 1 { "it" } else { "them" },
+        );
         let (k, home_adv, d_div, base) = (
             env_f(&var, "EVAL_K", data::ELO_K),
             env_f(&var, "EVAL_HA", data::HOME_ADV),
@@ -312,6 +354,7 @@ impl Cfg {
                 && home_adv == data::HOME_ADV
                 && d_div == data::D_DIV
                 && base == data::BASE,
+            season_sim,
         }
     }
 
@@ -565,6 +608,83 @@ impl Acc {
     }
 }
 
+/// One match as the backtest prices it: the λs and forecasts the dump
+/// writes, and the record `Acc` sums for it.
+struct Priced {
+    lam: (f64, f64),
+    p3: [f64; 3],
+    /// P(3+ goals) and P(both score).
+    p_over: f64,
+    p_both: f64,
+    /// Probability of the exact final score.
+    p_score: f64,
+    acc: Acc,
+}
+
+/// Price a match under `cfg`, home and away rated `(rh, ra)` on Elo and at
+/// `(h, a)` in the ensemble's index, then score it against its final score
+/// and the base rates.
+fn price(
+    cfg: &Cfg,
+    e: &Ensemble,
+    base: &BaseRates,
+    (rh, ra): (f64, f64),
+    (h, a): (usize, usize),
+    (home_score, away_score): (u16, u16),
+) -> Priced {
+    let (lh, la) = cfg.lift.blend(cfg.elo_lambdas(rh, ra), e, h, a);
+    let rho = cfg.rho.value(e);
+    let p = sim::probs_from_lambdas(lh, la, rho);
+    let p3 = [
+        p.home_win_pct / 100.0,
+        p.draw_pct / 100.0,
+        p.away_win_pct / 100.0,
+    ];
+    let o = outcome(home_score, away_score);
+    let table = dixoncoles::score_table(lh, la, rho);
+    let total: f64 = table.iter().flatten().sum();
+    let (hs, as_) = (home_score as usize, away_score as usize);
+    let pscore = if hs <= MAX_GOALS && as_ <= MAX_GOALS {
+        table[hs][as_] / total
+    } else {
+        1e-6
+    };
+    let pov = p.over25_pct / 100.0;
+    let pbtts = p.btts_pct / 100.0;
+    let over = hs + as_ >= 3;
+    let both = hs >= 1 && as_ >= 1;
+    let pick = (0..3)
+        .max_by(|&x, &y| p3[x].total_cmp(&p3[y]))
+        .expect("three");
+    Priced {
+        lam: (lh, la),
+        p3,
+        p_over: pov,
+        p_both: pbtts,
+        p_score: pscore,
+        acc: Acc {
+            n: 1,
+            ll: nll(p3[o]),
+            rps: rps(p3, o),
+            ou: nll(if over { pov } else { 1.0 - pov }),
+            btts: nll(if both { pbtts } else { 1.0 - pbtts }),
+            score: nll(pscore),
+            hits: usize::from(pick == o),
+            base_ll: nll(base.p3[o]),
+            base_rps: rps(base.p3, o),
+            base_ou: nll(if over { base.over } else { 1.0 - base.over }),
+            base_btts: nll(if both { base.btts } else { 1.0 - base.btts }),
+            outcomes: vec![(p3, o)],
+            lam: lh + la,
+            goals: hs + as_,
+            p_over: pov,
+            over: usize::from(over),
+            p_both: pbtts,
+            both: usize::from(both),
+        },
+    }
+}
+
 /// Logistic recalibration `logit P(event) = a + b · logit(p)` over
 /// `(forecast p, happened)` pairs, by Newton's method from the calibrated
 /// a = 0, b = 1. Returns `b` and its standard error (from the inverse
@@ -778,15 +898,8 @@ fn main() {
         let mut ens = scored.then(|| fit_ensemble(&cfg, &before_season, &idx, season_start));
         let season_rho = ens.as_ref().map_or(f64::NAN, |e| e.dc.rho);
         let base = scored.then(|| BaseRates::from_matches(&before_season));
-        if let (Some(e), Ok(n)) = (ens.as_ref(), std::env::var("EVAL_SEASON_SIM")) {
-            season_sim(
-                year,
-                &season,
-                &idx,
-                &elo_in,
-                e,
-                n.parse().expect("EVAL_SEASON_SIM"),
-            );
+        if let (Some(e), Some(n)) = (ens.as_ref(), cfg.season_sim) {
+            season_sim(year, &season, &idx, &elo_in, e, n);
         }
         let mut last_fit = season_start;
         let mut games: HashMap<&str, u32> = HashMap::new();
@@ -808,52 +921,11 @@ fn main() {
             // Price every match of the day before revealing any result.
             if let (Some(e), Some(base)) = (ens.as_ref(), base.as_ref()) {
                 for m in &season[i..j] {
-                    let (h, a) = (idx.canonical(&m.home_team), idx.canonical(&m.away_team));
+                    let clubs = (idx.canonical(&m.home_team), idx.canonical(&m.away_team));
                     let (rh, ra) = (elo_in[&m.home_team], elo_in[&m.away_team]);
-                    let (lh, la) = cfg.lift.blend(cfg.elo_lambdas(rh, ra), e, h, a);
-                    let rho = cfg.rho.value(e);
-                    let p = sim::probs_from_lambdas(lh, la, rho);
-                    let p3 = [
-                        p.home_win_pct / 100.0,
-                        p.draw_pct / 100.0,
-                        p.away_win_pct / 100.0,
-                    ];
-                    let o = outcome(m.home_score, m.away_score);
-                    let table = dixoncoles::score_table(lh, la, rho);
-                    let total: f64 = table.iter().flatten().sum();
-                    let (hs, as_) = (m.home_score as usize, m.away_score as usize);
-                    let pscore = if hs <= MAX_GOALS && as_ <= MAX_GOALS {
-                        table[hs][as_] / total
-                    } else {
-                        1e-6
-                    };
-                    let pov = p.over25_pct / 100.0;
-                    let pbtts = p.btts_pct / 100.0;
-                    let over = hs + as_ >= 3;
-                    let both = hs >= 1 && as_ >= 1;
-                    let pick = (0..3)
-                        .max_by(|&x, &y| p3[x].total_cmp(&p3[y]))
-                        .expect("three");
-                    acc.add(&Acc {
-                        n: 1,
-                        ll: nll(p3[o]),
-                        rps: rps(p3, o),
-                        ou: nll(if over { pov } else { 1.0 - pov }),
-                        btts: nll(if both { pbtts } else { 1.0 - pbtts }),
-                        score: nll(pscore),
-                        hits: usize::from(pick == o),
-                        base_ll: nll(base.p3[o]),
-                        base_rps: rps(base.p3, o),
-                        base_ou: nll(if over { base.over } else { 1.0 - base.over }),
-                        base_btts: nll(if both { base.btts } else { 1.0 - base.btts }),
-                        outcomes: vec![(p3, o)],
-                        lam: lh + la,
-                        goals: hs + as_,
-                        p_over: pov,
-                        over: usize::from(over),
-                        p_both: pbtts,
-                        both: usize::from(both),
-                    });
+                    let score = (m.home_score, m.away_score);
+                    let priced = price(&cfg, e, base, (rh, ra), clubs, score);
+                    acc.add(&priced.acc);
                     if let Some((_, s)) = dump.as_mut() {
                         let gh = games.get(m.home_team.as_str()).copied().unwrap_or(0);
                         let ga = games.get(m.away_team.as_str()).copied().unwrap_or(0);
@@ -864,14 +936,14 @@ fn main() {
                             m.away_team,
                             m.home_score,
                             m.away_score,
-                            p3[0],
-                            p3[1],
-                            p3[2],
-                            pov,
-                            pbtts,
-                            pscore,
-                            lh,
-                            la,
+                            priced.p3[0],
+                            priced.p3[1],
+                            priced.p3[2],
+                            priced.p_over,
+                            priced.p_both,
+                            priced.p_score,
+                            priced.lam.0,
+                            priced.lam.1,
                             rh,
                             ra,
                             u8::from(!prev_clubs.is_empty() && !prev_clubs.contains(&m.home_team)),
@@ -1090,6 +1162,231 @@ mod tests {
     #[should_panic(expected = "neither a number nor `fit`")]
     fn a_rho_that_is_not_a_number_is_refused() {
         Rho::parse(Some("dc"));
+    }
+
+    /// The configuration these variables, and no others, describe.
+    fn cfg_of(vars: &[(&str, &str)]) -> Cfg {
+        let vars: Vec<(String, String)> = vars
+            .iter()
+            .map(|&(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+        Cfg::from_vars(move |key| vars.iter().find(|(k, _)| k == key).map(|(_, v)| v.clone()))
+    }
+
+    fn shipped() -> Ensemble {
+        Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("embedded ensemble")
+    }
+
+    /// Base rates whose 3+, both-score and complementary rates all differ,
+    /// so a loss taken from the wrong one shows.
+    const RATES: BaseRates = BaseRates {
+        p3: [0.45, 0.26, 0.29],
+        over: 0.47,
+        btts: 0.55,
+    };
+
+    /// Each knob reaches its own field and leaves the others at production.
+    #[test]
+    fn knobs_reach_the_configuration() {
+        let goals = cfg_of(&[("EVAL_GOALS", "0.9")]);
+        assert!(
+            goals.lift
+                == Lift {
+                    goals: 0.9,
+                    ..Lift::PRODUCTION
+                }
+        );
+        assert_eq!(goals.rho, Rho::Production);
+        assert!(goals.production_elo);
+
+        let fixed = cfg_of(&[("EVAL_RHO", "-0.1")]);
+        assert_eq!(fixed.rho, Rho::Fixed(-0.1));
+        assert!(fixed.lift == Lift::PRODUCTION && fixed.production_elo);
+        assert_eq!(cfg_of(&[("EVAL_RHO", "fit")]).rho, Rho::Fitted);
+
+        // A Dixon-Coles weight of 0 leaves ρ at 0, as production does,
+        // unless EVAL_RHO asks for the fitted one.
+        let no_dc = cfg_of(&[("EVAL_W", "0.7,0,0.3")]);
+        assert_eq!(no_dc.w, (0.7, 0.0, 0.3));
+        assert_eq!(no_dc.rho, Rho::Production);
+        let e = Ensemble::from_embedded_data(no_dc.w.0, no_dc.w.1, no_dc.w.2)
+            .expect("embedded ensemble");
+        assert_ne!(e.dc.rho, 0.0);
+        assert_eq!(no_dc.rho.value(&e), 0.0);
+        let fitted = cfg_of(&[("EVAL_W", "0.7,0,0.3"), ("EVAL_RHO", "fit")]);
+        assert_eq!(fitted.rho.value(&e), e.dc.rho);
+
+        // EVAL_BASE scales the Elo component's λs before the blend: with
+        // the lift off, each blended λ moves by w_elo / Σw = 0.5 of the
+        // Elo λ's change, and Dixon-Coles and pi's share stays put.
+        let base = cfg_of(&[("EVAL_BASE", "1.2"), ("EVAL_LIFT", "0")]);
+        let unscaled = cfg_of(&[("EVAL_LIFT", "0")]);
+        assert_eq!(base.base, 1.2);
+        assert!(!base.production_elo && unscaled.production_elo);
+        assert!(base.lift == unscaled.lift && base.rho == Rho::Production);
+        let e = shipped();
+        for (rh, ra) in [(1500.0, 1500.0), (1700.0, 1400.0), (1350.0, 1820.5)] {
+            let (eh, ea) = sim::elo_lambdas(rh, ra);
+            let (sh, sa) = base.lift.blend(base.elo_lambdas(rh, ra), &e, 3, 17);
+            let (ph, pa) = unscaled.lift.blend(unscaled.elo_lambdas(rh, ra), &e, 3, 17);
+            let change = 1.2 / data::BASE - 1.0;
+            assert!((sh - ph - 0.5 * eh * change).abs() < 1e-12, "{rh} v {ra}");
+            assert!((sa - pa - 0.5 * ea * change).abs() < 1e-12, "{rh} v {ra}");
+        }
+    }
+
+    /// A hand-built match priced as `main` prices it: production's λs, the
+    /// 3+ and both-score forecasts of `probs_from_lambdas` (and of the score
+    /// table itself), and each loss in its own accumulator.
+    #[test]
+    fn a_match_is_priced_and_scored_by_hand() {
+        let cfg = Cfg::from_vars(|_| None);
+        let e = shipped();
+        let (elo, clubs) = ((1750.0, 1400.0), (3, 17));
+        let (lh, la) = sim::blend_lambdas(sim::elo_lambdas(elo.0, elo.1), Some(&e), 3, 17);
+        let p = sim::probs_from_lambdas(lh, la, e.dc.rho);
+        let table = dixoncoles::score_table(lh, la, e.dc.rho);
+        let total: f64 = table.iter().flatten().sum();
+        let mass = |event: fn(usize, usize) -> bool| {
+            let mut sum = 0.0;
+            for (x, row) in table.iter().enumerate() {
+                for (y, &q) in row.iter().enumerate() {
+                    if event(x, y) {
+                        sum += q;
+                    }
+                }
+            }
+            sum / total
+        };
+
+        // 3-0: three goals, one side scoring, the favourite winning.
+        let won = price(&cfg, &e, &RATES, elo, clubs, (3, 0));
+        assert_eq!(won.lam, (lh, la));
+        assert_eq!(
+            won.p3,
+            [
+                p.home_win_pct / 100.0,
+                p.draw_pct / 100.0,
+                p.away_win_pct / 100.0
+            ]
+        );
+        assert_eq!(
+            (won.p_over, won.p_both),
+            (p.over25_pct / 100.0, p.btts_pct / 100.0)
+        );
+        assert!((won.p_over - mass(|x, y| x + y >= 3)).abs() < 1e-12);
+        assert!((won.p_both - mass(|x, y| x >= 1 && y >= 1)).abs() < 1e-12);
+        assert!(
+            (won.p_over - won.p_both).abs() > 0.05,
+            "3+ {} and both score {} must differ for a swap to show",
+            won.p_over,
+            won.p_both
+        );
+        assert_eq!(won.p_score, table[3][0] / total);
+        let a = &won.acc;
+        assert_eq!((a.n, a.goals, a.over, a.both, a.hits), (1, 3, 1, 0, 1));
+        assert_eq!(a.lam, lh + la);
+        assert_eq!((a.p_over, a.p_both), (won.p_over, won.p_both));
+        assert_eq!(a.ou, nll(won.p_over));
+        assert_eq!(a.btts, nll(1.0 - won.p_both));
+        assert_eq!(a.base_ou, nll(RATES.over));
+        assert_eq!(a.base_btts, nll(1.0 - RATES.btts));
+        assert_eq!((a.ll, a.rps), (nll(won.p3[0]), rps(won.p3, 0)));
+        assert_eq!((a.base_ll, a.base_rps), (nll(0.45), rps(RATES.p3, 0)));
+        assert_eq!(a.score, nll(won.p_score));
+        assert_eq!(a.outcomes, vec![(won.p3, 0)]);
+
+        // 1-1: two goals, both scoring, a draw the favourite's pick missed.
+        let drawn = price(&cfg, &e, &RATES, elo, clubs, (1, 1));
+        assert_eq!((drawn.p_over, drawn.p_both), (won.p_over, won.p_both));
+        let d = &drawn.acc;
+        assert_eq!((d.goals, d.over, d.both, d.hits), (2, 0, 1, 0));
+        assert_eq!(d.ou, nll(1.0 - won.p_over));
+        assert_eq!(d.btts, nll(won.p_both));
+        assert_eq!(d.base_ou, nll(1.0 - RATES.over));
+        assert_eq!(d.base_btts, nll(RATES.btts));
+        assert_eq!(d.ll, nll(won.p3[1]));
+        assert_eq!(drawn.p_score, table[1][1] / total);
+
+        // A score past the table's edge, and the goal scale's reach.
+        assert_eq!(price(&cfg, &e, &RATES, elo, clubs, (11, 0)).p_score, 1e-6);
+        let scaled = price(
+            &cfg_of(&[("EVAL_GOALS", "0.9")]),
+            &e,
+            &RATES,
+            elo,
+            clubs,
+            (3, 0),
+        );
+        assert_eq!(scaled.lam, (lh * 0.9, la * 0.9));
+    }
+
+    /// EVAL_RHO=-0.1 prices with that ρ, at any Dixon-Coles weight, and
+    /// moves the score table, not the λs.
+    #[test]
+    fn a_fixed_rho_reaches_the_score_table() {
+        let (elo, clubs) = ((1600.0, 1550.0), (3, 17));
+        for (weights, w) in [
+            ("0.5,0.3,0.2", (0.5, 0.3, 0.2)),
+            ("0.7,0,0.3", (0.7, 0.0, 0.3)),
+        ] {
+            let e = Ensemble::from_embedded_data(w.0, w.1, w.2).expect("embedded ensemble");
+            assert_ne!(e.dc.rho, -0.1);
+            let fixed = cfg_of(&[("EVAL_W", weights), ("EVAL_RHO", "-0.1")]);
+            let default = cfg_of(&[("EVAL_W", weights)]);
+            let p = price(&fixed, &e, &RATES, elo, clubs, (1, 1));
+            let q = price(&default, &e, &RATES, elo, clubs, (1, 1));
+            assert_eq!(p.lam, q.lam);
+            let (lh, la) = p.lam;
+            let table = dixoncoles::score_table(lh, la, -0.1);
+            let total: f64 = table.iter().flatten().sum();
+            assert_eq!(p.p_score, table[1][1] / total);
+            assert_ne!(p.p_score, q.p_score);
+            let probs = sim::probs_from_lambdas(lh, la, -0.1);
+            assert_eq!(p.p3[1], probs.draw_pct / 100.0);
+            assert_eq!(p.p_both, probs.btts_pct / 100.0);
+            // Unset, ρ is the fitted one while Dixon-Coles has weight, else 0.
+            let rho = if w.1 > 0.0 { e.dc.rho } else { 0.0 };
+            let unset = dixoncoles::score_table(lh, la, rho);
+            assert_eq!(q.p_score, unset[1][1] / unset.iter().flatten().sum::<f64>());
+        }
+    }
+
+    #[test]
+    fn the_season_sim_takes_the_knobs_it_honours() {
+        assert_eq!(Cfg::from_vars(|_| None).season_sim, None);
+        let cfg = cfg_of(&[
+            ("EVAL_SEASON_SIM", "200"),
+            ("EVAL_W", "0.6,0.2,0.2"),
+            ("EVAL_HL", "1000"),
+            ("EVAL_K", "40"),
+            ("EVAL_K_PRE", "30"),
+            ("EVAL_PROMO", "1420"),
+            ("EVAL_PROMO_REL", "-60"),
+            ("EVAL_REGRESS", "0.1"),
+            ("EVAL_REFIT", "week"),
+        ]);
+        assert_eq!(cfg.season_sim, Some(200));
+        // Every λ knob is caught by being set, whatever its value.
+        for knob in SEASON_SIM_IGNORES {
+            let set = |k: &str| (k == knob).then(|| "1".to_string());
+            assert_eq!(season_sim_conflicts(&set), vec![knob]);
+        }
+        // Without EVAL_SEASON_SIM they are knobs like any other.
+        let lambda = cfg_of(&[("EVAL_GOALS", "0.9"), ("EVAL_RHO", "fit")]);
+        assert_eq!(lambda.season_sim, None);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "EVAL_SEASON_SIM prices matches with production's own λ rules, which ignore EVAL_GOALS, EVAL_RHO; unset them or EVAL_SEASON_SIM"
+    )]
+    fn the_season_sim_refuses_lambda_knobs() {
+        cfg_of(&[
+            ("EVAL_RHO", "-0.1"),
+            ("EVAL_SEASON_SIM", "200"),
+            ("EVAL_GOALS", "0.9"),
+        ]);
     }
 
     /// Mean forecast against mean outcome, summed across `add`.
