@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Numbers gate: the committed backtest metrics, and the docs that quote
+"""Numbers gate: the committed evaluation metrics, and the docs that quote
 them, must agree with what the code produces.
 
 data/metrics/backtest.json is the walk-forward backtest's summary
@@ -7,18 +7,22 @@ data/metrics/backtest.json is the walk-forward backtest's summary
 metric name to number, rounded to the precision the backtest prints.  A
 figure the backtest could not compute (a calibration fit that did not
 converge prints NaN) is null: it matches only another null, and no doc may
-quote it.
+quote it.  data/metrics/season.json is the season evaluation's, in the same
+format (examples/season_eval.rs with SEASON_METRICS=<path>).
 
 Usage:
   python3 scripts/check_metrics.py diff FRESH [COMMITTED]
-      FRESH was just written by the backtest; COMMITTED defaults to
-      data/metrics/backtest.json.  Every metric must match exactly (both
-      are rounded at the printed precision), and neither file may have a
-      metric the other lacks.
-  python3 scripts/check_metrics.py docs [--metrics PATH] [FILE ...]
+      FRESH was just written by the backtest (or the season evaluation);
+      COMMITTED defaults to data/metrics/backtest.json (pass
+      data/metrics/season.json for the season evaluation's).  Every metric
+      must match exactly (both are rounded at the printed precision), and
+      neither file may have a metric the other lacks.
+  python3 scripts/check_metrics.py docs [--metrics PATH] [--season-metrics PATH] [FILE ...]
       Every metric marker in FILE (default README.md, README.tr.md and
       CLAUDE.md) must show the committed value, and there must be at least
-      one: a check that finds nothing to check fails.
+      one: a check that finds nothing to check fails.  --metrics defaults to
+      data/metrics/backtest.json, --season-metrics to
+      data/metrics/season.json, which is read only when a marker quotes it.
 
 A marker wraps the figure it guards, on one line, invisible once rendered:
   <!-- metric:KEY -->VALUE<!-- /metric -->
@@ -30,6 +34,8 @@ A marker wraps the figure it guards, on one line, invisible once rendered:
   <!-- metric:KEY:SPEC:tr -->VALUE<!-- /metric -->
       The same in Turkish notation, as README.tr.md writes numbers:
       decimal comma, thousands point, leading percent sign (0,9756, %52,3).
+  <!-- metric:season:KEY[:SPEC[:tr]] -->VALUE<!-- /metric -->
+      KEY from the season metrics instead of the backtest's.
 Markers inside code (backtick spans or fenced blocks) are text, not markers,
 so the syntax can be documented.
 
@@ -49,11 +55,19 @@ from typing import NamedTuple, Sequence, Union
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMITTED = ROOT / "data" / "metrics" / "backtest.json"
+SEASON_COMMITTED = ROOT / "data" / "metrics" / "season.json"
 DOCS = [ROOT / "README.md", ROOT / "README.tr.md", ROOT / "CLAUDE.md"]
 REGENERATE = (
     "EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json "
     "cargo run --release --example backtest"
 )
+SEASON_REGENERATE = (
+    "EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json "
+    "cargo run --release --example season_eval"
+)
+# A marker key in this namespace (metric:season:KEY) names KEY in the season
+# metrics; a key without one names a backtest metric.
+SEASON = "season"
 
 Number = Union[int, Decimal]
 # None is a metric the backtest wrote as null.
@@ -63,7 +77,7 @@ OPEN = re.compile(r"<!--\s*metric:")
 CODE_SPAN = re.compile(r"(`+).+?\1")
 FENCE = re.compile(r"^\s*(```|~~~)")
 MARKER = re.compile(
-    r"<!--\s*metric:(?P<key>[A-Za-z0-9_]+)"
+    rf"<!--\s*metric:(?P<key>(?:{SEASON}:)?[A-Za-z0-9_]+)"
     r"(?::(?P<spec>[^:>\s]*))?(?::(?P<locale>[A-Za-z]+))?\s*-->"
     r"(?P<value>.*?)<!--\s*/metric\s*-->"
 )
@@ -72,6 +86,14 @@ LOCALES = ("tr",)
 
 class MetricsError(Exception):
     """A metrics file that is missing or not in the backtest's format."""
+
+
+def writer_of(committed: Path) -> tuple[str, str]:
+    """What writes `committed`, and the command that regenerates it: the
+    season evaluation for a file named season.json, the backtest otherwise."""
+    if committed.name == SEASON_COMMITTED.name:
+        return "the season evaluation with SEASON_METRICS", SEASON_REGENERATE
+    return "the backtest with EVAL_METRICS", REGENERATE
 
 
 def shown(path: Path) -> str:
@@ -258,11 +280,10 @@ def check_docs(paths: Sequence[Path], metrics: dict[str, Value]) -> tuple[int, l
 
 
 def run_diff(fresh_path: Path, committed_path: Path) -> int:
+    writer, command = writer_of(committed_path)
     try:
-        fresh = load_metrics(
-            fresh_path, f"run the backtest with EVAL_METRICS={fresh_path} first"
-        )
-        committed = load_metrics(committed_path)
+        fresh = load_metrics(fresh_path, f"run {writer}={fresh_path} first")
+        committed = load_metrics(committed_path, f"it is written with\n  {command}")
     except MetricsError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -275,7 +296,7 @@ def run_diff(fresh_path: Path, committed_path: Path) -> int:
         f"{shown(committed_path)}:\n"
         + table(("metric", "committed", "fresh", "change"), rows)
         + "\n\nIf the change is intended, regenerate the committed file with\n"
-        f"  {REGENERATE}\n"
+        f"  {command}\n"
         "and update every figure the docs quote from it "
         "(python3 scripts/check_metrics.py docs lists the stale ones).",
         file=sys.stderr,
@@ -283,9 +304,24 @@ def run_diff(fresh_path: Path, committed_path: Path) -> int:
     return 1
 
 
-def run_docs(paths: Sequence[Path], metrics_path: Path) -> int:
+def quotes_season(paths: Sequence[Path]) -> bool:
+    """Whether a marker in `paths` quotes the season metrics."""
+    return any(
+        isinstance(mk, Marker) and mk.key.startswith(f"{SEASON}:")
+        for path in paths
+        if path.is_file()
+        for mk in find_markers(path)
+    )
+
+
+def run_docs(paths: Sequence[Path], metrics_path: Path, season_path: Path) -> int:
+    sources = [metrics_path]
     try:
         metrics = load_metrics(metrics_path)
+        if quotes_season(paths):
+            sources.append(season_path)
+            season = load_metrics(season_path, f"it is written with\n  {SEASON_REGENERATE}")
+            metrics.update({f"{SEASON}:{key}": value for key, value in season.items()})
     except MetricsError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -300,14 +336,15 @@ def run_docs(paths: Sequence[Path], metrics_path: Path) -> int:
         print(
             "\n".join(errors)
             + f"\n\n{len(errors)} problem(s) in {checked} metric marker(s).  Quote the "
-            f"figures in {shown(metrics_path)}; if those are stale, regenerate "
-            f"them first with\n  {REGENERATE}",
+            f"figures in {shown(metrics_path)} ({SEASON}: markers: "
+            f"{shown(season_path)}); if those are stale, regenerate them first with\n"
+            f"  {REGENERATE}\n  {SEASON_REGENERATE}",
             file=sys.stderr,
         )
         return 1
     print(
         f"{checked} metric marker(s) in {', '.join(shown(p) for p in paths)} "
-        f"match {shown(metrics_path)}"
+        f"match {' and '.join(shown(p) for p in sources)}"
     )
     return 0
 
@@ -315,16 +352,17 @@ def run_docs(paths: Sequence[Path], metrics_path: Path) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="mode", required=True)
-    diff = sub.add_parser("diff", help="compare fresh backtest metrics with the committed ones")
+    diff = sub.add_parser("diff", help="compare fresh metrics with the committed ones")
     diff.add_argument("fresh", type=Path)
     diff.add_argument("committed", type=Path, nargs="?", default=COMMITTED)
     docs = sub.add_parser("docs", help="check the figures the docs quote")
     docs.add_argument("--metrics", type=Path, default=COMMITTED)
+    docs.add_argument("--season-metrics", type=Path, default=SEASON_COMMITTED)
     docs.add_argument("files", type=Path, nargs="*", default=DOCS)
     args = parser.parse_args(argv)
     if args.mode == "diff":
         return run_diff(args.fresh, args.committed)
-    return run_docs(args.files, args.metrics)
+    return run_docs(args.files, args.metrics, args.season_metrics)
 
 
 if __name__ == "__main__":

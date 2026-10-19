@@ -276,11 +276,113 @@ class Docs(TempDir):
 
     def test_defaults_are_the_committed_file_and_the_three_docs(self):
         self.assertEqual(cm.COMMITTED, cm.ROOT / "data" / "metrics" / "backtest.json")
+        self.assertEqual(cm.SEASON_COMMITTED, cm.ROOT / "data" / "metrics" / "season.json")
         self.assertEqual(
             [p.name for p in cm.DOCS], ["README.md", "README.tr.md", "CLAUDE.md"]
         )
         for doc in cm.DOCS:
             self.assertTrue(doc.is_file(), doc)
+
+
+# examples/season_eval.rs's SEASON_METRICS shape: {set}_{snapshot}_{metric}.
+SEASON_METRICS = {
+    "dev_s0_cov80_pct": 70.4,
+    "dev_s0_pos_rps": 0.1322,
+    "dev_n_seasons": 8,
+    "n_sims": 2000,
+}
+
+
+class SeasonMetrics(TempDir):
+    """metric:season:KEY quotes data/metrics/season.json; a bare KEY the
+    backtest's file, as before."""
+
+    def files(self, text):
+        backtest = self.metrics_file("backtest.json")
+        season = self.metrics_file("season.json", SEASON_METRICS)
+        return backtest, season, self.write("README.md", text)
+
+    def test_the_namespace_is_part_of_the_key(self):
+        doc = self.write(
+            "a.md",
+            "<!-- metric:season:dev_s0_cov80_pct:.1f:tr -->70,4<!-- /metric --> "
+            "<!-- metric:season_x:d -->1<!-- /metric --> "
+            "<!-- metric:hold_n -->647<!-- /metric -->\n",
+        )
+        got = [(m.key, m.spec, m.locale) for m in cm.find_markers(doc)]
+        self.assertEqual(
+            got,
+            [
+                ("season:dev_s0_cov80_pct", ".1f", "tr"),
+                ("season_x", "d", None),
+                ("hold_n", None, None),
+            ],
+        )
+
+    def test_both_files_are_checked(self):
+        backtest, season, doc = self.files(
+            "cov <!-- metric:season:dev_s0_cov80_pct:.1f -->70.4<!-- /metric -->, "
+            "<!-- metric:season:n_sims:,d -->2,000<!-- /metric --> seasons; "
+            "holdout <!-- metric:hold_1x2_ll:.4f -->0.9756<!-- /metric -->\n"
+        )
+        code, out, err = self.run_main(
+            ["docs", "--metrics", backtest, "--season-metrics", season, doc]
+        )
+        self.assertEqual(code, 0, err)
+        self.assertIn("3 metric marker(s)", out)
+        self.assertIn("season.json", out)
+
+    def test_a_stale_season_figure_fails_and_names_its_command(self):
+        backtest, season, doc = self.files(
+            "<!-- metric:season:dev_s0_pos_rps:.3f -->0.133<!-- /metric -->\n"
+        )
+        code, _, err = self.run_main(
+            ["docs", "--metrics", backtest, "--season-metrics", season, doc]
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("season:dev_s0_pos_rps shows '0.133'", err)
+        self.assertIn("'0.132'", err)
+        self.assertIn(cm.SEASON_REGENERATE, err)
+
+    def test_the_two_files_do_not_share_keys(self):
+        backtest, season, doc = self.files(
+            "<!-- metric:season:hold_n -->647<!-- /metric -->\n"
+            "<!-- metric:dev_s0_pos_rps -->0.1322<!-- /metric -->\n"
+        )
+        metrics = cm.load_metrics(backtest)
+        metrics.update({f"season:{k}": v for k, v in cm.load_metrics(season).items()})
+        _, errors = cm.check_docs([doc], metrics)
+        self.assertEqual(len(errors), 2, errors)
+        self.assertIn("season:hold_n is not a committed metric", errors[0])
+        self.assertIn("dev_s0_pos_rps is not a committed metric", errors[1])
+
+    def test_the_season_file_is_read_only_when_quoted(self):
+        backtest = self.metrics_file("backtest.json")
+        absent = self.dir / "season.json"
+        plain = self.write("a.md", "<!-- metric:hold_n -->647<!-- /metric -->\n")
+        code, _, err = self.run_main(
+            ["docs", "--metrics", backtest, "--season-metrics", absent, plain]
+        )
+        self.assertEqual(code, 0, err)
+        quoted = self.write("b.md", "<!-- metric:season:n_sims -->2000<!-- /metric -->\n")
+        code, _, err = self.run_main(
+            ["docs", "--metrics", backtest, "--season-metrics", absent, quoted]
+        )
+        self.assertEqual(code, 1)
+        self.assertIn("season.json does not exist", err)
+        self.assertIn(cm.SEASON_REGENERATE, err)
+
+    def test_diff_names_the_season_command_for_the_season_file(self):
+        fresh = self.metrics_file("fresh.json", {**SEASON_METRICS, "dev_s0_pos_rps": 0.1323})
+        committed = self.metrics_file("season.json", SEASON_METRICS)
+        code, _, err = self.run_main(["diff", fresh, committed])
+        self.assertEqual(code, 1)
+        self.assertIn("1 of 4 metrics differ", err)
+        self.assertIn(cm.SEASON_REGENERATE, err)
+        self.assertNotIn(cm.REGENERATE, err)
+        code, _, err = self.run_main(["diff", self.dir / "absent.json", committed])
+        self.assertEqual(code, 1)
+        self.assertIn("SEASON_METRICS=", err)
 
 
 if __name__ == "__main__":
