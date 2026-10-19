@@ -274,14 +274,43 @@ class Docs(TempDir):
         self.assertEqual(code, 1)
         self.assertIn("gone.md does not exist", err)
 
-    def test_defaults_are_the_committed_file_and_the_three_docs(self):
+    def test_a_missing_doc_fails_beside_good_ones(self):
+        # A listed doc that is gone is an error, not one file fewer to check,
+        # even when the others pass.
+        metrics = self.metrics_file()
+        good = self.write("a.md", "<!-- metric:hold_n -->647<!-- /metric -->\n")
+        code, _, err = self.run_main(["docs", "--metrics", metrics, good, self.dir / "gone.md"])
+        self.assertEqual(code, 1)
+        self.assertIn("gone.md does not exist", err)
+        self.assertIn("1 problem(s) in 1 metric marker(s)", err)
+
+    def test_defaults_are_the_committed_file_and_the_listed_docs(self):
         self.assertEqual(cm.COMMITTED, cm.ROOT / "data" / "metrics" / "backtest.json")
         self.assertEqual(cm.SEASON_COMMITTED, cm.ROOT / "data" / "metrics" / "season.json")
         self.assertEqual(
-            [p.name for p in cm.DOCS], ["README.md", "README.tr.md", "CLAUDE.md"]
+            [p.relative_to(cm.ROOT).as_posix() for p in cm.DOCS],
+            ["README.md", "README.tr.md", "CLAUDE.md", "docs/model-card.md"],
         )
         for doc in cm.DOCS:
             self.assertTrue(doc.is_file(), doc)
+
+    def test_the_default_list_is_checked_and_a_missing_entry_fails(self):
+        # With no FILE arguments the check reads cm.DOCS as it stands when
+        # main() runs, so a listed doc that does not exist fails it.
+        metrics = self.metrics_file()
+        good = self.write("a.md", "<!-- metric:hold_n -->647<!-- /metric -->\n")
+        saved = cm.DOCS
+        try:
+            cm.DOCS = [good]
+            code, out, err = self.run_main(["docs", "--metrics", metrics])
+            self.assertEqual(code, 0, err)
+            self.assertIn("1 metric marker(s)", out)
+            cm.DOCS = [good, self.dir / "model-card.tr.md"]
+            code, _, err = self.run_main(["docs", "--metrics", metrics])
+            self.assertEqual(code, 1)
+            self.assertIn("model-card.tr.md does not exist", err)
+        finally:
+            cm.DOCS = saved
 
 
 # examples/season_eval.rs's SEASON_METRICS shape: {set}_{snapshot}_{metric}.

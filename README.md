@@ -8,6 +8,8 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 
 > The probabilities and fair odds produced by this project are model estimates, not betting or financial advice.
 
+The [model card](docs/model-card.md) sets out what the model is, what it is and is not for, how it was evaluated, its results with intervals, and where it falls short.
+
 ## Highlights
 
 - Simulates the full 306-fixture, 34-matchday double round-robin between all 18 clubs, 100–200,000 seasons in parallel with Rayon; the dashboard defaults to 50,000.
@@ -18,7 +20,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 - Produces title, top-two, exact third/fourth, top-four, and relegation odds; an 18×18 finishing-position grid; a projected final table beside the current one; the fewest final points that gave a 50, 75 or 90% chance of the title, the top two, the top four or staying up in the simulated seasons; next-matchday forecasts; and pairwise "who finishes above whom" probabilities.
 - Optionally converts natural-language scenarios into validated Elo overrides with Kimi and reruns the season (an API endpoint, off unless `SCENARIO_ENABLED=1`).
 - Computes the default forecast once per state of the league and serves it from a cache; a bounded queue absorbs bursts of fresh simulations.
-- Includes per-IP rate limits, request validation, deterministic seeds, light/dark themes, Docker support, and GitHub Actions CI.
+- Includes per-IP rate limits, request validation, compressed responses under a strict Content-Security-Policy, graceful shutdown, deterministic seeds, light/dark themes, a non-root Docker image, and GitHub Actions CI.
 
 ## Stack
 
@@ -86,7 +88,9 @@ The table is ranked by:
 6. Overall goals scored
 7. Play-off
 
-Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test. A simulated season settles a tie that survives every rule with a random draw in place of the play-off; the current table has no play-off to draw on and lists such clubs by name, in Turkish alphabetical order.
+Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test. A simulated season settles a tie that survives every rule with a random draw in place of the play-off.
+
+The regulation sets the order at the end of the season. The current table, during the season, applies head-to-head to clubs level on points only once every pair of them has played both its meetings; until then they are separated by overall goal difference, then goals scored. That is how the table is usually published, not a published rule, so it too is an assumption. The current table has no play-off to draw on either: clubs that no rule separates are listed by name, in Turkish alphabetical order.
 
 The dashboard reports exact finishing bands—top two, third, fourth, and top four—rather than assigning UEFA competition names. Actual qualification depends on the Turkish Cup winner and that season's UEFA access list, so league position alone is not enough. The bottom three are relegated.
 
@@ -147,7 +151,11 @@ A later sweep of 202 settings on the development seasons (the overall goal level
 | Market | <!-- metric:market:dev_market_1x2_ll:.4f -->0.9888<!-- /metric --> | <!-- metric:market:hold_market_1x2_ll:.4f -->0.9425<!-- /metric --> |
 | Model minus market | <!-- metric:market:dev_diff_1x2_ll:+.4f -->+0.0106<!-- /metric --> [+0.005, +0.017] | <!-- metric:market:hold_diff_1x2_ll:+.4f -->+0.0328<!-- /metric --> [+0.017, +0.050] |
 
-The market is clearly better in both periods (95% intervals from resampling whole match days), on ranked probability score too, and less clearly on 3+ goals. Removing the margin proportionally, or taking the best price across bookmakers, gives the same picture. Mixing the model into the market does not help: the best weight for the model on the development seasons is <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric --> (interval 0 to 0.21), and at that weight the mix does worse than the market alone on the holdout seasons. So the model carries no information the market lacks. On the development seasons the gap is small over the first ten matchdays and opens after that; on the holdout seasons it is large from the start. The archive's odds are pre-match prices, not closing ones, and closing prices are sharper still, so the gap to the closing line is probably wider. Of the live season, only <!-- metric:market:live_n -->19<!-- /metric --> matches have both a frozen forecast and odds so far: far too few to say anything.
+The market is clearly better in both periods (95% intervals from resampling whole match days), on ranked probability score too, and less clearly on 3+ goals. Removing the margin proportionally, or taking the best price across bookmakers, gives the same picture. Mixing the model into the market does not help: the best weight for the model on the development seasons is <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric --> (interval 0 to 0.21), and at that weight the mix does worse than the market alone on the holdout seasons. So no information the market lacks shows up out of sample; with this little data, that does not prove the model carries none.
+
+Whether the gap opens late in the season is not settled either. On the development seasons it is small over the first ten matchdays and larger after that; on the holdout seasons it is large from the start. But the difference between the two periods (after matchday 10 minus matchdays 1-10) is <!-- metric:market:dev_md_late_minus_early_1x2_ll:+.4f -->+0.0106<!-- /metric --> [−0.002, +0.024] on the development seasons and <!-- metric:market:hold_md_late_minus_early_1x2_ll:+.4f -->-0.0100<!-- /metric --> [−0.043, +0.023] on the holdout seasons, within the noise in both.
+
+The archive's odds are pre-match prices, not closing ones, and closing prices are sharper still, so the gap to the closing line is probably wider; comparing with closing prices is a follow-up. Of the live season, only <!-- metric:market:live_n -->19<!-- /metric --> matches have both a frozen forecast and odds so far: far too few to say anything. All were forecast by the August model, each <!-- metric:market:live_age_days_min:d -->0<!-- /metric --> to <!-- metric:market:live_age_days_max:d -->11<!-- /metric --> days before the match, which puts the model at a disadvantage against a pre-match price.
 
 ### Season-level evaluation
 
@@ -251,7 +259,7 @@ Copy `.env.example` to `.env` and adjust these values as needed:
 ## Use the dashboard
 
 1. The page opens on the server's default forecast (50,000 seasons, seed 12345). To change it, choose the simulation count and seed, then select **Run**. Reusing a seed makes the same configuration reproducible.
-2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Once matches have been scored, **Forecast accuracy** on **Overview** shows the hit rate, the log-loss and its difference from the base rates with a 95% interval and the number of matches, and the same for each model version separately (forecasts made by an earlier version of the model are scored apart from the current one's). Open **Forecast history** there to see every scored match's frozen forecast next to its result and the model that made it, matchday by matchday, with a chart of the log-loss so far against the base rates.
+2. Explore the five pages: **Overview**, **Fixtures**, **Table**, **Probabilities**, and **Results**. Each page but Results opens with a line saying how far the season has got ("63 of 306 matches played · latest result 12 October"). **Table** switches between the current table and the projected final table; it opens on the current one once a result is in. **Probabilities** ends with the points needed: for the title, the top two, the top four and the top 15 (staying up), the fewest final points that gave a 50, 75 or 90% chance of that place or better in the simulated seasons. A run of a few hundred seasons is too small for some of these figures, which then show "–"; at about 100 seasons all are blank and the page says to run more simulations. Once matches have been scored, **Forecast accuracy** on **Overview** shows the hit rate, the log-loss and its difference from the base rates with a 95% interval and the number of matches, and the same for each model version separately (forecasts made by an earlier version of the model are scored apart from the current one's). Open **Forecast history** there to see every scored match's frozen forecast next to its result and the model that made it, matchday by matchday, with a chart of the log-loss so far against the base rates.
 3. On **Fixtures**, pick results to assume (at most 20, the API's limit) and select **Recalculate**.
 4. Select **Update live data** to pull the latest TFF results and recompute the forecast, fixture cards, and accuracy view. Results you assumed for matches that have since been played are dropped, with a notice.
 5. Natural-language scenarios are not part of the dashboard. They are an optional API endpoint (`/api/scenario`, below) that is off unless the server sets `SCENARIO_ENABLED=1` and `KIMI_API_KEY`.
@@ -279,6 +287,8 @@ Simulations run one at a time by default (`MAX_CONCURRENT_SIMULATIONS`). Up to `
 The next matchday, used by `/api/upcoming` and as the calendar's `current_round`, is the round of the earliest unplayed fixture dated today or later (Istanbul time). One postponed match therefore does not hold it back. If a rescheduled match falls on the same day as a matchday, the round with more fixtures that day, played or not, is next, and a tie goes to the later round, normally the matchday. On that day the matchday stays next as long as it has a game still to come; once it is over, the rescheduled match is next. When only overdue fixtures remain, it is the earliest round that still has one; once the season is complete, the last round.
 
 The API sends no CORS headers: the dashboard is served from the same origin, and the Vite development server proxies `/api`.
+
+Every response, from the API and the dashboard alike, is compressed with gzip or brotli when the client accepts it and carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` and a Content-Security-Policy that allows scripts, styles and requests from the site itself only, with no inline scripts and no framing.
 
 `/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline: the scoreline is drawn from the model's score probabilities for that match, restricted to the pinned outcome, so goal difference stays honest. A pinned result then updates the simulated season's Elo ratings as the same real result would, and the season is played in kick-off order, so only later fixtures feel it. On the 2026-10-19 calendar (50,000 seasons), pinning a Fenerbahçe win in the round-9 Galatasaray v Fenerbahçe takes Galatasaray's title odds from 59.1% to 32.1%, between entering the match as a real 1-2 (34.5%) and 1-3 (29.8%). Pinning an already-played or non-existent fixture, or one fixture twice, is an error rather than a silent no-op.
 
@@ -328,7 +338,9 @@ docker run --rm -p 3000:3000 \
   superlig-sim
 ```
 
-Omit `SCENARIO_ENABLED` and `KIMI_API_KEY` if scenario analysis is not needed. The build context leaves out host build outputs, `node_modules`, `.env` files, Git metadata, and documentation (see `.dockerignore`).
+Omit `SCENARIO_ENABLED` and `KIMI_API_KEY` if scenario analysis is not needed. The build context leaves out host build outputs, `node_modules`, `.env` files, Git metadata, documentation, and the market benchmark's odds (see `.dockerignore`).
+
+The server runs as an unprivileged user (UID and GID 10001) that owns no files. On `docker stop` (SIGTERM) or Ctrl-C it stops accepting connections, gives open requests up to 5 seconds to finish, and exits without waiting for a simulation still in progress.
 
 ## Deploy to Railway
 
@@ -339,7 +351,7 @@ Omit `SCENARIO_ENABLED` and `KIMI_API_KEY` if scenario analysis is not needed. T
 5. Optionally customize `LIVE_REFRESH_MINUTES`, `ENSEMBLE_WEIGHTS`, `MAX_CONCURRENT_SIMULATIONS`, `MAX_SIMULATION_QUEUE`, `SIM_QUEUE_TIMEOUT_SECS`, and `RUST_LOG`.
 6. Set the health-check path to `/api/health`.
 
-The application reads Railway's injected `PORT` automatically. The scheduled data-refresh workflow (see [Refresh the data](#refresh-the-data)) also redeploys after committing new data, but only when the repository has a `RAILWAY_TOKEN` secret.
+The application reads Railway's injected `PORT` automatically and shuts down gracefully on the SIGTERM Railway sends when it stops a deployment. The scheduled data-refresh workflow (see [Refresh the data](#refresh-the-data)) also redeploys after committing new data, but only when the repository has a `RAILWAY_TOKEN` secret.
 
 ## Validation
 
@@ -371,14 +383,15 @@ EVAL_HOLDOUT=1 SEASON_METRICS=/tmp/season.json cargo run --release --example sea
 python3 scripts/check_metrics.py diff /tmp/season.json data/metrics/season.json
 
 # Offline tests for the fetch scripts and the metrics checker (no network),
-# and every quoted figure in the READMEs and CLAUDE.md against data/metrics/.
+# and every quoted figure in the READMEs, CLAUDE.md and the model card against
+# data/metrics/.
 python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/check_metrics.py docs
 ```
 
-The shipped model's figures in [Backtest results](#backtest-results) and [Season-level evaluation](#season-level-evaluation) are checked this way. Figures from tools that write no metrics file are not: the tuning comparison (`examples/compare.rs`), the season intervals (only printed), the later sweeps (the 202 match settings and the season-spread trials), the holdout comparison of the season-spread change, and the examples of overrides and pinned outcomes (one-off runs, dated where the calendar matters). If a change moves the checked figures, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
+The shipped model's figures in [Backtest results](#backtest-results), [Season-level evaluation](#season-level-evaluation) and the [model card](docs/model-card.md) are checked this way. Figures from tools that write no metrics file are not: the tuning comparison (`examples/compare.rs`), the season intervals (only printed), the later sweeps (the 202 match settings and the season-spread trials), the holdout comparison of the season-spread change, and the examples of overrides and pinned outcomes (one-off runs, dated where the calendar matters). If a change moves the checked figures, regenerate the committed files with `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` and `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval`, then update the quoted figures.
 
-The market comparison in [Against the market](#against-the-market) is quoted from `data/metrics/market.json`, which CI cannot regenerate: its odds are fetched over the network and never committed. To regenerate it, run `python3 scripts/fetch_odds.py`, the holdout backtest with `EVAL_DUMP=/tmp/prod.csv`, then `MARKET_METRICS=data/metrics/market.json cargo run --release --example market -- /tmp/prod.csv`.
+The market comparison in [Against the market](#against-the-market) is quoted from `data/metrics/market.json`, which CI cannot regenerate: its odds are fetched over the network and never committed. CI still checks every quoted figure against the committed file. To regenerate it, run `python3 scripts/fetch_fixtures.py` (so the live comparison sees every played match), `python3 scripts/fetch_odds.py`, the holdout backtest with `EVAL_DUMP=/tmp/prod.csv`, then `MARKET_METRICS=data/metrics/market.json cargo run --release --example market -- /tmp/prod.csv`.
 
 ## Refresh the data
 
@@ -409,7 +422,9 @@ python3 scripts/fetch_history.py --keep-tff
 
 # Bookmaker odds for the offline market benchmark only, from the same archive,
 # reconciled with the history and pinned by SHA-256. Written to data/odds/,
-# which is not committed; nothing in the app reads them.
+# which is not committed; nothing in the app reads them. Run fetch_fixtures.py
+# first: a 2026-27 odds row whose match the calendar does not show as played
+# yet is skipped and counted.
 python3 scripts/fetch_odds.py
 
 # Refit Dixon–Coles against the refreshed history (~0.3 s).
@@ -453,12 +468,15 @@ Data-source details worth knowing about:
 │   └── rate_limit.rs     # Per-IP rate limiting
 ├── data/                 # Fixture calendar, historical results, fitted params, forecast log
 │   └── metrics/          # Committed backtest, season-evaluation and market-benchmark figures
+├── docs/model-card.md    # What the model is for, how it was evaluated, its limits
 ├── frontend/             # React and TypeScript dashboard
 ├── examples/             # Model fitting, backtest, season evaluation, comparison, market benchmark, forecast logging
 ├── scripts/              # Data-acquisition scripts, the metrics checker, their offline tests
 ├── tests/calibration.rs  # Checks the shipped blend against the real league
 ├── .github/workflows/    # CI and the scheduled data refresh
-└── Dockerfile            # Production multi-stage image
+├── Dockerfile            # Production multi-stage image
+├── LICENSE               # MIT
+└── THIRD_PARTY_NOTICES.md # Data sources and their terms
 ```
 
 ## Data and model caveats
@@ -466,8 +484,13 @@ Data-source details worth knowing about:
 - Live refresh depends on tff.org and its current page format; the embedded baseline calendar remains available if a refresh fails.
 - Fair odds are simply the inverse of simulated probabilities and do not include a bookmaker margin, liquidity, or market information.
 - Promoted clubs are the least well-modelled: they have no top-flight history for the Dixon–Coles and pi-rating components, so their forecasts lean entirely on their Elo rating.
-- The head-to-head-once rule (see above) is a stated assumption, not a published one.
+- The head-to-head-once rule, and the current table's wait for both meetings before head-to-head counts (see above), are stated assumptions, not published rules.
+- The model loses to bookmaker prices (see [Against the market](#against-the-market)). It is not a basis for betting, and the dashboard shows no bookmaker odds or market figures.
 - Scenario ratings are model-generated assumptions. Read the returned explanation and treat the output as exploratory.
 - Season-level ranges are too narrow: in backtests, final-points ranges meant to contain 80% of clubs contained about 70%. Applying the strength draw to the whole model fixed that on the development seasons but made the holdout seasons worse, so it was not shipped (see [Season-level evaluation](#season-level-evaluation)).
 - Draws are forecast slightly too rarely and goals slightly too often (see [Calibration](#calibration)).
 - Forecast quality depends on ratings, historical-data coverage, model assumptions, and the number of trials.
+
+## License
+
+The code is released under the [MIT License](LICENSE). The data it ships keep their own terms, listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md): the match archive is MIT-licensed and openfootball CC0, and the 2025-26 results and the 2026-27 fixtures and results, taken from tff.org's public pages, are not covered by the MIT License.

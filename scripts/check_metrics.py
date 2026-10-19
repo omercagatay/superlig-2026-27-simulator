@@ -24,9 +24,11 @@ Usage:
       neither file may have a metric the other lacks.
   python3 scripts/check_metrics.py docs [--metrics PATH] [--season-metrics PATH]
                                         [--market-metrics PATH] [FILE ...]
-      Every metric marker in FILE (default README.md, README.tr.md and
-      CLAUDE.md) must show the committed value, and there must be at least
-      one: a check that finds nothing to check fails.  --metrics defaults to
+      Every metric marker in FILE (default: the files in DOCS, README.md,
+      README.tr.md, CLAUDE.md and docs/model-card.md) must show the
+      committed value, and there must be at least one: a check that finds
+      nothing to check fails.  Every FILE must exist: a listed doc that is
+      missing fails the check rather than being skipped.  --metrics defaults to
       data/metrics/backtest.json, --season-metrics to
       data/metrics/season.json and --market-metrics to
       data/metrics/market.json; those two are read only when a marker
@@ -67,7 +69,15 @@ ROOT = Path(__file__).resolve().parents[1]
 COMMITTED = ROOT / "data" / "metrics" / "backtest.json"
 SEASON_COMMITTED = ROOT / "data" / "metrics" / "season.json"
 MARKET_COMMITTED = ROOT / "data" / "metrics" / "market.json"
-DOCS = [ROOT / "README.md", ROOT / "README.tr.md", ROOT / "CLAUDE.md"]
+# The docs that quote the committed metrics, checked by default.  Explicit
+# rather than a glob, so a doc that goes missing (or was never created)
+# fails the check instead of dropping out of it.
+DOCS = [
+    ROOT / "README.md",
+    ROOT / "README.tr.md",
+    ROOT / "CLAUDE.md",
+    ROOT / "docs" / "model-card.md",
+]
 REGENERATE = (
     "EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json "
     "cargo run --release --example backtest"
