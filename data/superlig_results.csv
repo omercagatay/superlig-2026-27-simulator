@@ -2450,7 +2450,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-09-11,Rizespor,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2020-09-12,Galatasaray,Gaziantep,3,1,Super Lig,,Turkey,False
 2020-09-12,Göztepe,Denizlispor,5,1,Super Lig,,Turkey,False
-2020-09-12,Karagumruk,Yeni Malatyaspor,3,0,Super Lig,,Turkey,False
+2020-09-12,Karagümrük,Yeni Malatyaspor,3,0,Super Lig,,Turkey,False
 2020-09-12,Sivasspor,Alanyaspor,0,2,Super Lig,,Turkey,False
 2020-09-13,Ankaragucu,Erzurumspor,1,2,Super Lig,,Turkey,False
 2020-09-13,Antalyaspor,Gençlerbirliği,2,0,Super Lig,,Turkey,False
@@ -2464,10 +2464,10 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-09-19,Gençlerbirliği,Konyaspor,0,0,Super Lig,,Turkey,False
 2020-09-20,Başakşehir,Galatasaray,0,2,Super Lig,,Turkey,False
 2020-09-20,Erzurumspor,Sivasspor,1,2,Super Lig,,Turkey,False
-2020-09-20,Gaziantep,Karagumruk,2,2,Super Lig,,Turkey,False
+2020-09-20,Gaziantep,Karagümrük,2,2,Super Lig,,Turkey,False
 2020-09-20,Kasımpaşa,Rizespor,2,0,Super Lig,,Turkey,False
 2020-09-21,Fenerbahçe,Hatayspor,0,0,Super Lig,,Turkey,False
-2020-09-25,Karagumruk,Başakşehir,2,0,Super Lig,,Turkey,False
+2020-09-25,Karagümrük,Başakşehir,2,0,Super Lig,,Turkey,False
 2020-09-26,Göztepe,Gaziantep,2,2,Super Lig,,Turkey,False
 2020-09-26,Hatayspor,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2020-09-26,Kayserispor,Erzurumspor,1,3,Super Lig,,Turkey,False
@@ -2481,7 +2481,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-10-02,Gaziantep,Trabzonspor,1,1,Super Lig,,Turkey,False
 2020-10-03,Başakşehir,Göztepe,0,0,Super Lig,,Turkey,False
 2020-10-03,Erzurumspor,Rizespor,0,0,Super Lig,,Turkey,False
-2020-10-03,Fenerbahçe,Karagumruk,2,1,Super Lig,,Turkey,False
+2020-10-03,Fenerbahçe,Karagümrük,2,1,Super Lig,,Turkey,False
 2020-10-03,Yeni Malatyaspor,Antalyaspor,1,0,Super Lig,,Turkey,False
 2020-10-04,Alanyaspor,Hatayspor,6,0,Super Lig,,Turkey,False
 2020-10-04,Beşiktaş,Gençlerbirliği,0,1,Super Lig,,Turkey,False
@@ -2493,19 +2493,19 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-10-17,Trabzonspor,Başakşehir,0,2,Super Lig,,Turkey,False
 2020-10-18,Antalyaspor,Gaziantep,1,1,Super Lig,,Turkey,False
 2020-10-18,Göztepe,Fenerbahçe,2,3,Super Lig,,Turkey,False
-2020-10-18,Karagumruk,Kasımpaşa,1,1,Super Lig,,Turkey,False
+2020-10-18,Karagümrük,Kasımpaşa,1,1,Super Lig,,Turkey,False
 2020-10-19,Galatasaray,Alanyaspor,1,2,Super Lig,,Turkey,False
 2020-10-19,Gençlerbirliği,Denizlispor,1,2,Super Lig,,Turkey,False
 2020-10-23,Kasımpaşa,Göztepe,0,0,Super Lig,,Turkey,False
 2020-10-24,Başakşehir,Antalyaspor,5,1,Super Lig,,Turkey,False
 2020-10-24,Erzurumspor,Galatasaray,1,2,Super Lig,,Turkey,False
 2020-10-24,Gaziantep,Konyaspor,1,0,Super Lig,,Turkey,False
-2020-10-25,Alanyaspor,Karagumruk,2,0,Super Lig,,Turkey,False
+2020-10-25,Alanyaspor,Karagümrük,2,0,Super Lig,,Turkey,False
 2020-10-25,Fenerbahçe,Trabzonspor,3,1,Super Lig,,Turkey,False
 2020-10-25,Yeni Malatyaspor,Gençlerbirliği,2,1,Super Lig,,Turkey,False
 2020-10-26,Denizlispor,Beşiktaş,2,3,Super Lig,,Turkey,False
 2020-10-26,Sivasspor,Rizespor,0,2,Super Lig,,Turkey,False
-2020-10-30,Karagumruk,Erzurumspor,5,1,Super Lig,,Turkey,False
+2020-10-30,Karagümrük,Erzurumspor,5,1,Super Lig,,Turkey,False
 2020-10-30,Trabzonspor,Kasımpaşa,3,4,Super Lig,,Turkey,False
 2020-10-31,Galatasaray,Ankaragucu,1,0,Super Lig,,Turkey,False
 2020-10-31,Gençlerbirliği,Gaziantep,1,1,Super Lig,,Turkey,False
@@ -2519,7 +2519,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-11-07,Erzurumspor,Göztepe,1,1,Super Lig,,Turkey,False
 2020-11-07,Fenerbahçe,Konyaspor,0,2,Super Lig,,Turkey,False
 2020-11-07,Kasımpaşa,Antalyaspor,2,2,Super Lig,,Turkey,False
-2020-11-08,Ankaragucu,Karagumruk,2,2,Super Lig,,Turkey,False
+2020-11-08,Ankaragucu,Karagümrük,2,2,Super Lig,,Turkey,False
 2020-11-08,Başakşehir,Gençlerbirliği,2,1,Super Lig,,Turkey,False
 2020-11-08,Kayserispor,Hatayspor,0,1,Super Lig,,Turkey,False
 2020-11-08,Sivasspor,Galatasaray,1,2,Super Lig,,Turkey,False
@@ -2527,7 +2527,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-11-21,Beşiktaş,Başakşehir,3,2,Super Lig,,Turkey,False
 2020-11-21,Denizlispor,Gaziantep,0,1,Super Lig,,Turkey,False
 2020-11-21,Gençlerbirliği,Fenerbahçe,1,5,Super Lig,,Turkey,False
-2020-11-21,Karagumruk,Sivasspor,1,1,Super Lig,,Turkey,False
+2020-11-21,Karagümrük,Sivasspor,1,1,Super Lig,,Turkey,False
 2020-11-22,Antalyaspor,Alanyaspor,0,2,Super Lig,,Turkey,False
 2020-11-22,Göztepe,Ankaragucu,3,1,Super Lig,,Turkey,False
 2020-11-22,Hatayspor,Rizespor,2,2,Super Lig,,Turkey,False
@@ -2542,7 +2542,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-11-29,Erzurumspor,Antalyaspor,2,2,Super Lig,,Turkey,False
 2020-11-29,Fenerbahçe,Beşiktaş,3,4,Super Lig,,Turkey,False
 2020-11-29,Kasımpaşa,Gençlerbirliği,2,0,Super Lig,,Turkey,False
-2020-11-30,Kayserispor,Karagumruk,0,0,Super Lig,,Turkey,False
+2020-11-30,Kayserispor,Karagümrük,0,0,Super Lig,,Turkey,False
 2020-11-30,Sivasspor,Göztepe,0,1,Super Lig,,Turkey,False
 2020-12-04,Beşiktaş,Kasımpaşa,3,0,Super Lig,,Turkey,False
 2020-12-05,Galatasaray,Hatayspor,3,0,Super Lig,,Turkey,False
@@ -2552,14 +2552,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-12-05,Yeni Malatyaspor,Başakşehir,1,1,Super Lig,,Turkey,False
 2020-12-06,Antalyaspor,Ankaragucu,1,0,Super Lig,,Turkey,False
 2020-12-06,Denizlispor,Fenerbahçe,0,2,Super Lig,,Turkey,False
-2020-12-06,Karagumruk,Rizespor,2,1,Super Lig,,Turkey,False
+2020-12-06,Karagümrük,Rizespor,2,1,Super Lig,,Turkey,False
 2020-12-07,Trabzonspor,Sivasspor,1,1,Super Lig,,Turkey,False
 2020-12-09,Göztepe,Alanyaspor,1,0,Super Lig,,Turkey,False
 2020-12-09,Hatayspor,Erzurumspor,3,0,Super Lig,,Turkey,False
 2020-12-11,Kasımpaşa,Denizlispor,3,2,Super Lig,,Turkey,False
 2020-12-12,Ankaragucu,Konyaspor,4,3,Super Lig,,Turkey,False
 2020-12-12,Fenerbahçe,Yeni Malatyaspor,0,3,Super Lig,,Turkey,False
-2020-12-12,Hatayspor,Karagumruk,3,1,Super Lig,,Turkey,False
+2020-12-12,Hatayspor,Karagümrük,3,1,Super Lig,,Turkey,False
 2020-12-12,Kayserispor,Trabzonspor,0,0,Super Lig,,Turkey,False
 2020-12-12,Rizespor,Göztepe,3,2,Super Lig,,Turkey,False
 2020-12-13,Alanyaspor,Beşiktaş,2,1,Super Lig,,Turkey,False
@@ -2567,7 +2567,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-12-13,Erzurumspor,Gençlerbirliği,0,1,Super Lig,,Turkey,False
 2020-12-14,Sivasspor,Antalyaspor,0,0,Super Lig,,Turkey,False
 2020-12-15,Ankaragucu,Hatayspor,2,0,Super Lig,,Turkey,False
-2020-12-18,Karagumruk,Galatasaray,2,1,Super Lig,,Turkey,False
+2020-12-18,Karagümrük,Galatasaray,2,1,Super Lig,,Turkey,False
 2020-12-19,Gaziantep,Fenerbahçe,3,1,Super Lig,,Turkey,False
 2020-12-19,Göztepe,Hatayspor,0,1,Super Lig,,Turkey,False
 2020-12-19,Trabzonspor,Rizespor,2,1,Super Lig,,Turkey,False
@@ -2587,7 +2587,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2020-12-24,Kayserispor,Konyaspor,1,2,Super Lig,,Turkey,False
 2020-12-24,Rizespor,Antalyaspor,2,1,Super Lig,,Turkey,False
 2020-12-24,Sivasspor,Gençlerbirliği,3,1,Super Lig,,Turkey,False
-2020-12-26,Göztepe,Karagumruk,1,1,Super Lig,,Turkey,False
+2020-12-26,Göztepe,Karagümrük,1,1,Super Lig,,Turkey,False
 2020-12-26,Trabzonspor,Galatasaray,0,2,Super Lig,,Turkey,False
 2020-12-27,Başakşehir,Kasımpaşa,2,2,Super Lig,,Turkey,False
 2020-12-27,Denizlispor,Ankaragucu,1,2,Super Lig,,Turkey,False
@@ -2603,14 +2603,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-01-02,Galatasaray,Antalyaspor,0,0,Super Lig,,Turkey,False
 2021-01-02,Hatayspor,Konyaspor,2,1,Super Lig,,Turkey,False
 2021-01-02,Sivasspor,Denizlispor,2,2,Super Lig,,Turkey,False
-2021-01-03,Karagumruk,Trabzonspor,1,2,Super Lig,,Turkey,False
+2021-01-03,Karagümrük,Trabzonspor,1,2,Super Lig,,Turkey,False
 2021-01-03,Kayserispor,Beşiktaş,0,2,Super Lig,,Turkey,False
 2021-01-03,Rizespor,Gençlerbirliği,1,1,Super Lig,,Turkey,False
 2021-01-04,Kasımpaşa,Fenerbahçe,0,3,Super Lig,,Turkey,False
 2021-01-05,Gaziantep,Ankaragucu,2,0,Super Lig,,Turkey,False
 2021-01-05,Konyaspor,Galatasaray,4,3,Super Lig,,Turkey,False
 2021-01-05,Yeni Malatyaspor,Sivasspor,2,2,Super Lig,,Turkey,False
-2021-01-06,Antalyaspor,Karagumruk,3,1,Super Lig,,Turkey,False
+2021-01-06,Antalyaspor,Karagümrük,3,1,Super Lig,,Turkey,False
 2021-01-06,Başakşehir,Erzurumspor,1,0,Super Lig,,Turkey,False
 2021-01-06,Beşiktaş,Rizespor,6,0,Super Lig,,Turkey,False
 2021-01-06,Denizlispor,Kayserispor,0,1,Super Lig,,Turkey,False
@@ -2623,11 +2623,11 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-01-09,Sivasspor,Gaziantep,2,1,Super Lig,,Turkey,False
 2021-01-10,Ankaragucu,Başakşehir,1,2,Super Lig,,Turkey,False
 2021-01-10,Hatayspor,Beşiktaş,2,2,Super Lig,,Turkey,False
-2021-01-10,Karagumruk,Konyaspor,2,1,Super Lig,,Turkey,False
+2021-01-10,Karagümrük,Konyaspor,2,1,Super Lig,,Turkey,False
 2021-01-10,Rizespor,Denizlispor,1,1,Super Lig,,Turkey,False
 2021-01-11,Alanyaspor,Kasımpaşa,1,2,Super Lig,,Turkey,False
 2021-01-11,Erzurumspor,Fenerbahçe,0,3,Super Lig,,Turkey,False
-2021-01-15,Gençlerbirliği,Karagumruk,1,3,Super Lig,,Turkey,False
+2021-01-15,Gençlerbirliği,Karagümrük,1,3,Super Lig,,Turkey,False
 2021-01-16,Antalyaspor,Trabzonspor,1,1,Super Lig,,Turkey,False
 2021-01-16,Başakşehir,Sivasspor,1,1,Super Lig,,Turkey,False
 2021-01-16,Gaziantep,Kayserispor,2,1,Super Lig,,Turkey,False
@@ -2645,12 +2645,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-01-20,Rizespor,Gaziantep,3,0,Super Lig,,Turkey,False
 2021-01-21,Ankaragucu,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2021-01-21,Erzurumspor,Alanyaspor,1,1,Super Lig,,Turkey,False
-2021-01-21,Karagumruk,Beşiktaş,1,4,Super Lig,,Turkey,False
+2021-01-21,Karagümrük,Beşiktaş,1,4,Super Lig,,Turkey,False
 2021-01-21,Sivasspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
 2021-01-23,Başakşehir,Rizespor,1,1,Super Lig,,Turkey,False
 2021-01-23,Gençlerbirliği,Trabzonspor,1,2,Super Lig,,Turkey,False
 2021-01-24,Beşiktaş,Göztepe,2,1,Super Lig,,Turkey,False
-2021-01-24,Denizlispor,Karagumruk,1,2,Super Lig,,Turkey,False
+2021-01-24,Denizlispor,Karagümrük,1,2,Super Lig,,Turkey,False
 2021-01-24,Gaziantep,Hatayspor,1,1,Super Lig,,Turkey,False
 2021-01-24,Konyaspor,Antalyaspor,0,0,Super Lig,,Turkey,False
 2021-01-24,Yeni Malatyaspor,Galatasaray,0,1,Super Lig,,Turkey,False
@@ -2658,7 +2658,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-01-25,Fenerbahçe,Kayserispor,3,0,Super Lig,,Turkey,False
 2021-01-25,Kasımpaşa,Sivasspor,2,0,Super Lig,,Turkey,False
 2021-01-29,Gaziantep,Galatasaray,1,2,Super Lig,,Turkey,False
-2021-01-29,Yeni Malatyaspor,Karagumruk,0,0,Super Lig,,Turkey,False
+2021-01-29,Yeni Malatyaspor,Karagümrük,0,0,Super Lig,,Turkey,False
 2021-01-30,Başakşehir,Hatayspor,1,5,Super Lig,,Turkey,False
 2021-01-30,Fenerbahçe,Rizespor,1,0,Super Lig,,Turkey,False
 2021-01-30,Kasımpaşa,Kayserispor,0,1,Super Lig,,Turkey,False
@@ -2671,14 +2671,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-02-02,Hatayspor,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2021-02-02,Rizespor,Kasımpaşa,1,1,Super Lig,,Turkey,False
 2021-02-03,Antalyaspor,Beşiktaş,1,1,Super Lig,,Turkey,False
-2021-02-03,Karagumruk,Gaziantep,2,0,Super Lig,,Turkey,False
+2021-02-03,Karagümrük,Gaziantep,2,0,Super Lig,,Turkey,False
 2021-02-03,Kayserispor,Alanyaspor,1,1,Super Lig,,Turkey,False
 2021-02-03,Konyaspor,Gençlerbirliği,0,0,Super Lig,,Turkey,False
 2021-02-03,Sivasspor,Erzurumspor,0,0,Super Lig,,Turkey,False
 2021-02-04,Göztepe,Yeni Malatyaspor,2,2,Super Lig,,Turkey,False
 2021-02-04,Trabzonspor,Denizlispor,1,0,Super Lig,,Turkey,False
 2021-02-06,Alanyaspor,Rizespor,2,1,Super Lig,,Turkey,False
-2021-02-06,Başakşehir,Karagumruk,0,1,Super Lig,,Turkey,False
+2021-02-06,Başakşehir,Karagümrük,0,1,Super Lig,,Turkey,False
 2021-02-06,Fenerbahçe,Galatasaray,0,1,Super Lig,,Turkey,False
 2021-02-06,Kasımpaşa,Hatayspor,1,4,Super Lig,,Turkey,False
 2021-02-07,Ankaragucu,Sivasspor,1,4,Super Lig,,Turkey,False
@@ -2688,7 +2688,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-02-08,Gaziantep,Göztepe,2,0,Super Lig,,Turkey,False
 2021-02-08,Yeni Malatyaspor,Trabzonspor,0,2,Super Lig,,Turkey,False
 2021-02-12,Rizespor,Erzurumspor,0,2,Super Lig,,Turkey,False
-2021-02-13,Karagumruk,Fenerbahçe,1,2,Super Lig,,Turkey,False
+2021-02-13,Karagümrük,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2021-02-13,Kayserispor,Ankaragucu,0,0,Super Lig,,Turkey,False
 2021-02-13,Trabzonspor,Gaziantep,1,0,Super Lig,,Turkey,False
 2021-02-14,Galatasaray,Kasımpaşa,2,1,Super Lig,,Turkey,False
@@ -2700,7 +2700,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-02-19,Başakşehir,Trabzonspor,0,1,Super Lig,,Turkey,False
 2021-02-20,Alanyaspor,Galatasaray,0,1,Super Lig,,Turkey,False
 2021-02-20,Denizlispor,Gençlerbirliği,1,0,Super Lig,,Turkey,False
-2021-02-20,Kasımpaşa,Karagumruk,3,2,Super Lig,,Turkey,False
+2021-02-20,Kasımpaşa,Karagümrük,3,2,Super Lig,,Turkey,False
 2021-02-20,Yeni Malatyaspor,Konyaspor,2,3,Super Lig,,Turkey,False
 2021-02-21,Erzurumspor,Hatayspor,1,3,Super Lig,,Turkey,False
 2021-02-21,Fenerbahçe,Göztepe,0,1,Super Lig,,Turkey,False
@@ -2713,7 +2713,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-02-27,Antalyaspor,Başakşehir,0,0,Super Lig,,Turkey,False
 2021-02-27,Galatasaray,Erzurumspor,2,0,Super Lig,,Turkey,False
 2021-02-27,Hatayspor,Ankaragucu,4,1,Super Lig,,Turkey,False
-2021-02-27,Karagumruk,Alanyaspor,2,0,Super Lig,,Turkey,False
+2021-02-27,Karagümrük,Alanyaspor,2,0,Super Lig,,Turkey,False
 2021-02-27,Rizespor,Sivasspor,0,0,Super Lig,,Turkey,False
 2021-02-28,Göztepe,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2021-02-28,Trabzonspor,Fenerbahçe,0,1,Super Lig,,Turkey,False
@@ -2721,7 +2721,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-03-02,Yeni Malatyaspor,Beşiktaş,0,1,Super Lig,,Turkey,False
 2021-03-03,Ankaragucu,Galatasaray,2,1,Super Lig,,Turkey,False
 2021-03-03,Başakşehir,Konyaspor,1,1,Super Lig,,Turkey,False
-2021-03-03,Erzurumspor,Karagumruk,2,2,Super Lig,,Turkey,False
+2021-03-03,Erzurumspor,Karagümrük,2,2,Super Lig,,Turkey,False
 2021-03-03,Kayserispor,Rizespor,2,1,Super Lig,,Turkey,False
 2021-03-03,Sivasspor,Hatayspor,1,1,Super Lig,,Turkey,False
 2021-03-04,Alanyaspor,Göztepe,1,1,Super Lig,,Turkey,False
@@ -2732,7 +2732,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-03-07,Galatasaray,Sivasspor,2,2,Super Lig,,Turkey,False
 2021-03-07,Gençlerbirliği,Başakşehir,0,1,Super Lig,,Turkey,False
 2021-03-07,Hatayspor,Kayserispor,1,3,Super Lig,,Turkey,False
-2021-03-07,Karagumruk,Ankaragucu,0,1,Super Lig,,Turkey,False
+2021-03-07,Karagümrük,Ankaragucu,0,1,Super Lig,,Turkey,False
 2021-03-08,Antalyaspor,Kasımpaşa,1,1,Super Lig,,Turkey,False
 2021-03-08,Göztepe,Erzurumspor,3,1,Super Lig,,Turkey,False
 2021-03-08,Konyaspor,Fenerbahçe,0,3,Super Lig,,Turkey,False
@@ -2741,14 +2741,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-03-13,Alanyaspor,Antalyaspor,4,0,Super Lig,,Turkey,False
 2021-03-13,Kayserispor,Galatasaray,0,3,Super Lig,,Turkey,False
 2021-03-13,Rizespor,Hatayspor,1,0,Super Lig,,Turkey,False
-2021-03-13,Sivasspor,Karagumruk,1,0,Super Lig,,Turkey,False
+2021-03-13,Sivasspor,Karagümrük,1,0,Super Lig,,Turkey,False
 2021-03-14,Ankaragucu,Göztepe,3,0,Super Lig,,Turkey,False
 2021-03-14,Erzurumspor,Trabzonspor,0,0,Super Lig,,Turkey,False
 2021-03-14,Fenerbahçe,Gençlerbirliği,1,2,Super Lig,,Turkey,False
 2021-03-14,Gaziantep,Denizlispor,2,0,Super Lig,,Turkey,False
 2021-03-15,Kasımpaşa,Konyaspor,1,1,Super Lig,,Turkey,False
 2021-03-19,Galatasaray,Rizespor,3,4,Super Lig,,Turkey,False
-2021-03-19,Karagumruk,Kayserispor,3,0,Super Lig,,Turkey,False
+2021-03-19,Karagümrük,Kayserispor,3,0,Super Lig,,Turkey,False
 2021-03-20,Gençlerbirliği,Kasımpaşa,2,1,Super Lig,,Turkey,False
 2021-03-20,Göztepe,Sivasspor,3,5,Super Lig,,Turkey,False
 2021-03-20,Trabzonspor,Ankaragucu,4,1,Super Lig,,Turkey,False
@@ -2759,7 +2759,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-03-21,Konyaspor,Alanyaspor,1,0,Super Lig,,Turkey,False
 2021-04-03,Hatayspor,Galatasaray,3,0,Super Lig,,Turkey,False
 2021-04-03,Kayserispor,Göztepe,1,1,Super Lig,,Turkey,False
-2021-04-03,Rizespor,Karagumruk,0,0,Super Lig,,Turkey,False
+2021-04-03,Rizespor,Karagümrük,0,0,Super Lig,,Turkey,False
 2021-04-03,Sivasspor,Trabzonspor,0,0,Super Lig,,Turkey,False
 2021-04-04,Alanyaspor,Gençlerbirliği,1,2,Super Lig,,Turkey,False
 2021-04-04,Ankaragucu,Antalyaspor,1,0,Super Lig,,Turkey,False
@@ -2768,7 +2768,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-04-04,Kasımpaşa,Beşiktaş,1,0,Super Lig,,Turkey,False
 2021-04-05,Fenerbahçe,Denizlispor,1,0,Super Lig,,Turkey,False
 2021-04-06,Göztepe,Rizespor,2,0,Super Lig,,Turkey,False
-2021-04-06,Karagumruk,Hatayspor,1,0,Super Lig,,Turkey,False
+2021-04-06,Karagümrük,Hatayspor,1,0,Super Lig,,Turkey,False
 2021-04-06,Trabzonspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2021-04-07,Antalyaspor,Sivasspor,2,4,Super Lig,,Turkey,False
 2021-04-07,Beşiktaş,Alanyaspor,3,0,Super Lig,,Turkey,False
@@ -2777,7 +2777,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-04-08,Denizlispor,Kasımpaşa,1,1,Super Lig,,Turkey,False
 2021-04-08,Gaziantep,Başakşehir,2,0,Super Lig,,Turkey,False
 2021-04-08,Yeni Malatyaspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
-2021-04-10,Galatasaray,Karagumruk,1,1,Super Lig,,Turkey,False
+2021-04-10,Galatasaray,Karagümrük,1,1,Super Lig,,Turkey,False
 2021-04-10,Hatayspor,Göztepe,2,3,Super Lig,,Turkey,False
 2021-04-10,Rizespor,Trabzonspor,0,0,Super Lig,,Turkey,False
 2021-04-11,Ankaragucu,Gençlerbirliği,2,1,Super Lig,,Turkey,False
@@ -2798,7 +2798,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-04-18,Başakşehir,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2021-04-18,Gaziantep,Kasımpaşa,2,2,Super Lig,,Turkey,False
 2021-04-20,Hatayspor,Antalyaspor,3,2,Super Lig,,Turkey,False
-2021-04-20,Karagumruk,Göztepe,1,1,Super Lig,,Turkey,False
+2021-04-20,Karagümrük,Göztepe,1,1,Super Lig,,Turkey,False
 2021-04-20,Kayserispor,Gençlerbirliği,2,2,Super Lig,,Turkey,False
 2021-04-20,Rizespor,Konyaspor,5,3,Super Lig,,Turkey,False
 2021-04-20,Sivasspor,Beşiktaş,0,0,Super Lig,,Turkey,False
@@ -2812,7 +2812,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-04-24,Beşiktaş,Kayserispor,3,1,Super Lig,,Turkey,False
 2021-04-24,Denizlispor,Sivasspor,1,1,Super Lig,,Turkey,False
 2021-04-24,Konyaspor,Hatayspor,0,0,Super Lig,,Turkey,False
-2021-04-24,Trabzonspor,Karagumruk,2,0,Super Lig,,Turkey,False
+2021-04-24,Trabzonspor,Karagümrük,2,0,Super Lig,,Turkey,False
 2021-04-25,Başakşehir,Alanyaspor,0,0,Super Lig,,Turkey,False
 2021-04-25,Fenerbahçe,Kasımpaşa,3,2,Super Lig,,Turkey,False
 2021-04-25,Gaziantep,Erzurumspor,2,3,Super Lig,,Turkey,False
@@ -2820,7 +2820,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-04-27,Hatayspor,Gençlerbirliği,3,1,Super Lig,,Turkey,False
 2021-04-28,Galatasaray,Konyaspor,1,0,Super Lig,,Turkey,False
 2021-04-28,Göztepe,Trabzonspor,1,1,Super Lig,,Turkey,False
-2021-04-28,Karagumruk,Antalyaspor,2,2,Super Lig,,Turkey,False
+2021-04-28,Karagümrük,Antalyaspor,2,2,Super Lig,,Turkey,False
 2021-04-28,Kayserispor,Denizlispor,6,3,Super Lig,,Turkey,False
 2021-04-28,Rizespor,Beşiktaş,2,3,Super Lig,,Turkey,False
 2021-04-29,Alanyaspor,Fenerbahçe,0,0,Super Lig,,Turkey,False
@@ -2831,7 +2831,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-05-02,Antalyaspor,Göztepe,2,3,Super Lig,,Turkey,False
 2021-05-02,Denizlispor,Rizespor,0,1,Super Lig,,Turkey,False
 2021-05-02,Gençlerbirliği,Galatasaray,0,2,Super Lig,,Turkey,False
-2021-05-02,Konyaspor,Karagumruk,5,1,Super Lig,,Turkey,False
+2021-05-02,Konyaspor,Karagümrük,5,1,Super Lig,,Turkey,False
 2021-05-03,Başakşehir,Ankaragucu,2,1,Super Lig,,Turkey,False
 2021-05-03,Fenerbahçe,Erzurumspor,3,1,Super Lig,,Turkey,False
 2021-05-03,Gaziantep,Sivasspor,0,1,Super Lig,,Turkey,False
@@ -2842,14 +2842,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-05-08,Galatasaray,Beşiktaş,3,1,Super Lig,,Turkey,False
 2021-05-08,Göztepe,Konyaspor,0,1,Super Lig,,Turkey,False
 2021-05-08,Hatayspor,Denizlispor,1,0,Super Lig,,Turkey,False
-2021-05-08,Karagumruk,Gençlerbirliği,5,1,Super Lig,,Turkey,False
+2021-05-08,Karagümrük,Gençlerbirliği,5,1,Super Lig,,Turkey,False
 2021-05-08,Kayserispor,Gaziantep,0,0,Super Lig,,Turkey,False
 2021-05-08,Rizespor,Yeni Malatyaspor,0,4,Super Lig,,Turkey,False
 2021-05-08,Sivasspor,Başakşehir,0,0,Super Lig,,Turkey,False
 2021-05-08,Trabzonspor,Antalyaspor,2,1,Super Lig,,Turkey,False
 2021-05-11,Alanyaspor,Erzurumspor,2,3,Super Lig,,Turkey,False
 2021-05-11,Başakşehir,Kayserispor,0,0,Super Lig,,Turkey,False
-2021-05-11,Beşiktaş,Karagumruk,1,2,Super Lig,,Turkey,False
+2021-05-11,Beşiktaş,Karagümrük,1,2,Super Lig,,Turkey,False
 2021-05-11,Denizlispor,Galatasaray,1,4,Super Lig,,Turkey,False
 2021-05-11,Fenerbahçe,Sivasspor,1,2,Super Lig,,Turkey,False
 2021-05-11,Gaziantep,Rizespor,4,5,Super Lig,,Turkey,False
@@ -2862,7 +2862,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-05-15,Galatasaray,Yeni Malatyaspor,3,1,Super Lig,,Turkey,False
 2021-05-15,Göztepe,Beşiktaş,1,2,Super Lig,,Turkey,False
 2021-05-15,Hatayspor,Gaziantep,0,1,Super Lig,,Turkey,False
-2021-05-15,Karagumruk,Denizlispor,5,1,Super Lig,,Turkey,False
+2021-05-15,Karagümrük,Denizlispor,5,1,Super Lig,,Turkey,False
 2021-05-15,Kayserispor,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2021-05-15,Rizespor,Başakşehir,0,2,Super Lig,,Turkey,False
 2021-05-15,Sivasspor,Kasımpaşa,2,1,Super Lig,,Turkey,False
@@ -2870,7 +2870,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-08-13,Beşiktaş,Rizespor,3,0,Super Lig,,Turkey,False
 2021-08-14,Altay,Kayserispor,3,0,Super Lig,,Turkey,False
 2021-08-14,Hatayspor,Kasımpaşa,1,1,Super Lig,,Turkey,False
-2021-08-14,Karagumruk,Gaziantep,3,2,Super Lig,,Turkey,False
+2021-08-14,Karagümrük,Gaziantep,3,2,Super Lig,,Turkey,False
 2021-08-15,Ad. Demirspor,Fenerbahçe,0,1,Super Lig,,Turkey,False
 2021-08-15,Antalyaspor,Göztepe,1,1,Super Lig,,Turkey,False
 2021-08-15,Başakşehir,Alanyaspor,0,1,Super Lig,,Turkey,False
@@ -2881,7 +2881,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-08-21,Alanyaspor,Altay,1,4,Super Lig,,Turkey,False
 2021-08-21,Gaziantep,Beşiktaş,0,0,Super Lig,,Turkey,False
 2021-08-21,Kasımpaşa,Giresunspor,2,0,Super Lig,,Turkey,False
-2021-08-21,Rizespor,Karagumruk,0,0,Super Lig,,Turkey,False
+2021-08-21,Rizespor,Karagümrük,0,0,Super Lig,,Turkey,False
 2021-08-22,Fenerbahçe,Antalyaspor,2,0,Super Lig,,Turkey,False
 2021-08-22,Göztepe,Yeni Malatyaspor,0,1,Super Lig,,Turkey,False
 2021-08-22,Konyaspor,Başakşehir,2,1,Super Lig,,Turkey,False
@@ -2890,7 +2890,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-08-27,Ad. Demirspor,Konyaspor,1,1,Super Lig,,Turkey,False
 2021-08-27,Antalyaspor,Rizespor,3,2,Super Lig,,Turkey,False
 2021-08-28,Başakşehir,Kayserispor,0,1,Super Lig,,Turkey,False
-2021-08-28,Beşiktaş,Karagumruk,1,0,Super Lig,,Turkey,False
+2021-08-28,Beşiktaş,Karagümrük,1,0,Super Lig,,Turkey,False
 2021-08-28,Hatayspor,Alanyaspor,5,0,Super Lig,,Turkey,False
 2021-08-28,Yeni Malatyaspor,Gaziantep,2,0,Super Lig,,Turkey,False
 2021-08-29,Altay,Fenerbahçe,0,2,Super Lig,,Turkey,False
@@ -2898,7 +2898,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-08-29,Kasımpaşa,Galatasaray,2,2,Super Lig,,Turkey,False
 2021-08-29,Sivasspor,Göztepe,2,2,Super Lig,,Turkey,False
 2021-09-11,Beşiktaş,Yeni Malatyaspor,3,0,Super Lig,,Turkey,False
-2021-09-11,Karagumruk,Ad. Demirspor,4,0,Super Lig,,Turkey,False
+2021-09-11,Karagümrük,Ad. Demirspor,4,0,Super Lig,,Turkey,False
 2021-09-11,Kayserispor,Kasımpaşa,2,0,Super Lig,,Turkey,False
 2021-09-11,Konyaspor,Altay,3,1,Super Lig,,Turkey,False
 2021-09-12,Fenerbahçe,Sivasspor,1,1,Super Lig,,Turkey,False
@@ -2908,7 +2908,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-09-13,Alanyaspor,Giresunspor,1,0,Super Lig,,Turkey,False
 2021-09-13,Gaziantep,Antalyaspor,2,0,Super Lig,,Turkey,False
 2021-09-17,Altay,Göztepe,2,1,Super Lig,,Turkey,False
-2021-09-17,Yeni Malatyaspor,Karagumruk,3,4,Super Lig,,Turkey,False
+2021-09-17,Yeni Malatyaspor,Karagümrük,3,4,Super Lig,,Turkey,False
 2021-09-18,Ad. Demirspor,Rizespor,3,1,Super Lig,,Turkey,False
 2021-09-18,Antalyaspor,Beşiktaş,2,3,Super Lig,,Turkey,False
 2021-09-18,Kasımpaşa,Trabzonspor,0,1,Super Lig,,Turkey,False
@@ -2918,7 +2918,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-09-19,Giresunspor,Konyaspor,0,0,Super Lig,,Turkey,False
 2021-09-19,Hatayspor,Kayserispor,2,1,Super Lig,,Turkey,False
 2021-09-21,Beşiktaş,Ad. Demirspor,3,3,Super Lig,,Turkey,False
-2021-09-21,Karagumruk,Antalyaspor,0,0,Super Lig,,Turkey,False
+2021-09-21,Karagümrük,Antalyaspor,0,0,Super Lig,,Turkey,False
 2021-09-21,Rizespor,Altay,1,2,Super Lig,,Turkey,False
 2021-09-21,Yeni Malatyaspor,Sivasspor,0,1,Super Lig,,Turkey,False
 2021-09-22,Gaziantep,Başakşehir,1,0,Super Lig,,Turkey,False
@@ -2930,7 +2930,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-09-24,Altay,Beşiktaş,2,1,Super Lig,,Turkey,False
 2021-09-25,Ad. Demirspor,Gaziantep,4,0,Super Lig,,Turkey,False
 2021-09-25,Antalyaspor,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
-2021-09-25,Sivasspor,Karagumruk,4,0,Super Lig,,Turkey,False
+2021-09-25,Sivasspor,Karagümrük,4,0,Super Lig,,Turkey,False
 2021-09-26,Başakşehir,Rizespor,3,0,Super Lig,,Turkey,False
 2021-09-26,Galatasaray,Göztepe,2,1,Super Lig,,Turkey,False
 2021-09-26,Giresunspor,Kayserispor,1,1,Super Lig,,Turkey,False
@@ -2938,7 +2938,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-09-27,Kasımpaşa,Konyaspor,2,2,Super Lig,,Turkey,False
 2021-09-27,Trabzonspor,Alanyaspor,1,1,Super Lig,,Turkey,False
 2021-10-01,Antalyaspor,Ad. Demirspor,1,2,Super Lig,,Turkey,False
-2021-10-01,Karagumruk,Başakşehir,3,1,Super Lig,,Turkey,False
+2021-10-01,Karagümrük,Başakşehir,3,1,Super Lig,,Turkey,False
 2021-10-02,Beşiktaş,Sivasspor,2,1,Super Lig,,Turkey,False
 2021-10-02,Göztepe,Giresunspor,0,1,Super Lig,,Turkey,False
 2021-10-02,Kayserispor,Trabzonspor,1,2,Super Lig,,Turkey,False
@@ -2951,7 +2951,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-10-16,Ad. Demirspor,Yeni Malatyaspor,0,2,Super Lig,,Turkey,False
 2021-10-16,Giresunspor,Rizespor,2,0,Super Lig,,Turkey,False
 2021-10-16,Sivasspor,Antalyaspor,2,2,Super Lig,,Turkey,False
-2021-10-17,Altay,Karagumruk,0,1,Super Lig,,Turkey,False
+2021-10-17,Altay,Karagümrük,0,1,Super Lig,,Turkey,False
 2021-10-17,Galatasaray,Konyaspor,1,0,Super Lig,,Turkey,False
 2021-10-17,Kasımpaşa,Göztepe,1,2,Super Lig,,Turkey,False
 2021-10-17,Trabzonspor,Fenerbahçe,3,1,Super Lig,,Turkey,False
@@ -2964,7 +2964,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-10-23,Rizespor,Kasımpaşa,2,1,Super Lig,,Turkey,False
 2021-10-24,Antalyaspor,Başakşehir,1,2,Super Lig,,Turkey,False
 2021-10-24,Fenerbahçe,Alanyaspor,1,2,Super Lig,,Turkey,False
-2021-10-24,Karagumruk,Hatayspor,1,1,Super Lig,,Turkey,False
+2021-10-24,Karagümrük,Hatayspor,1,1,Super Lig,,Turkey,False
 2021-10-24,Sivasspor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2021-10-25,Beşiktaş,Galatasaray,2,1,Super Lig,,Turkey,False
 2021-10-29,Trabzonspor,Rizespor,2,1,Super Lig,,Turkey,False
@@ -2974,7 +2974,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-10-30,Konyaspor,Fenerbahçe,2,1,Super Lig,,Turkey,False
 2021-10-31,Alanyaspor,Göztepe,2,2,Super Lig,,Turkey,False
 2021-10-31,Galatasaray,Gaziantep,2,0,Super Lig,,Turkey,False
-2021-10-31,Kayserispor,Karagumruk,2,1,Super Lig,,Turkey,False
+2021-10-31,Kayserispor,Karagümrük,2,1,Super Lig,,Turkey,False
 2021-11-01,Başakşehir,Ad. Demirspor,2,1,Super Lig,,Turkey,False
 2021-11-01,Giresunspor,Antalyaspor,1,2,Super Lig,,Turkey,False
 2021-11-05,Gaziantep,Kasımpaşa,2,0,Super Lig,,Turkey,False
@@ -2986,14 +2986,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-11-07,Ad. Demirspor,Hatayspor,1,0,Super Lig,,Turkey,False
 2021-11-07,Fenerbahçe,Kayserispor,2,2,Super Lig,,Turkey,False
 2021-11-07,Göztepe,Konyaspor,0,2,Super Lig,,Turkey,False
-2021-11-07,Karagumruk,Galatasaray,1,1,Super Lig,,Turkey,False
+2021-11-07,Karagümrük,Galatasaray,1,1,Super Lig,,Turkey,False
 2021-11-20,Alanyaspor,Beşiktaş,2,0,Super Lig,,Turkey,False
 2021-11-20,Başakşehir,Sivasspor,2,1,Super Lig,,Turkey,False
 2021-11-20,Giresunspor,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
 2021-11-20,Hatayspor,Antalyaspor,3,1,Super Lig,,Turkey,False
 2021-11-21,Altay,Ad. Demirspor,1,3,Super Lig,,Turkey,False
 2021-11-21,Galatasaray,Fenerbahçe,1,2,Super Lig,,Turkey,False
-2021-11-21,Kasımpaşa,Karagumruk,1,3,Super Lig,,Turkey,False
+2021-11-21,Kasımpaşa,Karagümrük,1,3,Super Lig,,Turkey,False
 2021-11-21,Konyaspor,Rizespor,3,0,Super Lig,,Turkey,False
 2021-11-22,Kayserispor,Göztepe,1,1,Super Lig,,Turkey,False
 2021-11-22,Trabzonspor,Gaziantep,3,0,Super Lig,,Turkey,False
@@ -3003,7 +3003,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-11-27,Beşiktaş,Giresunspor,0,4,Super Lig,,Turkey,False
 2021-11-27,Rizespor,Kayserispor,1,0,Super Lig,,Turkey,False
 2021-11-28,Gaziantep,Konyaspor,3,2,Super Lig,,Turkey,False
-2021-11-28,Karagumruk,Trabzonspor,0,2,Super Lig,,Turkey,False
+2021-11-28,Karagümrük,Trabzonspor,0,2,Super Lig,,Turkey,False
 2021-11-28,Sivasspor,Hatayspor,4,0,Super Lig,,Turkey,False
 2021-11-28,Yeni Malatyaspor,Galatasaray,0,0,Super Lig,,Turkey,False
 2021-11-29,Göztepe,Fenerbahçe,1,1,Super Lig,,Turkey,False
@@ -3012,7 +3012,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-12-04,Galatasaray,Altay,2,2,Super Lig,,Turkey,False
 2021-12-04,Trabzonspor,Ad. Demirspor,2,0,Super Lig,,Turkey,False
 2021-12-05,Fenerbahçe,Rizespor,4,0,Super Lig,,Turkey,False
-2021-12-05,Giresunspor,Karagumruk,3,1,Super Lig,,Turkey,False
+2021-12-05,Giresunspor,Karagümrük,3,1,Super Lig,,Turkey,False
 2021-12-05,Hatayspor,Başakşehir,0,3,Super Lig,,Turkey,False
 2021-12-05,Kayserispor,Antalyaspor,2,0,Super Lig,,Turkey,False
 2021-12-06,Göztepe,Gaziantep,2,1,Super Lig,,Turkey,False
@@ -3020,7 +3020,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-12-10,Altay,Hatayspor,1,2,Super Lig,,Turkey,False
 2021-12-11,Antalyaspor,Trabzonspor,2,1,Super Lig,,Turkey,False
 2021-12-11,Başakşehir,Kasımpaşa,2,1,Super Lig,,Turkey,False
-2021-12-11,Karagumruk,Konyaspor,1,4,Super Lig,,Turkey,False
+2021-12-11,Karagümrük,Konyaspor,1,4,Super Lig,,Turkey,False
 2021-12-11,Rizespor,Göztepe,3,1,Super Lig,,Turkey,False
 2021-12-12,Ad. Demirspor,Giresunspor,1,0,Super Lig,,Turkey,False
 2021-12-12,Beşiktaş,Kayserispor,4,2,Super Lig,,Turkey,False
@@ -3034,7 +3034,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-12-18,Konyaspor,Antalyaspor,1,0,Super Lig,,Turkey,False
 2021-12-18,Trabzonspor,Hatayspor,2,0,Super Lig,,Turkey,False
 2021-12-19,Fenerbahçe,Beşiktaş,2,2,Super Lig,,Turkey,False
-2021-12-19,Göztepe,Karagumruk,0,1,Super Lig,,Turkey,False
+2021-12-19,Göztepe,Karagümrük,0,1,Super Lig,,Turkey,False
 2021-12-19,Kayserispor,Gaziantep,0,0,Super Lig,,Turkey,False
 2021-12-19,Rizespor,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
 2021-12-21,Ad. Demirspor,Galatasaray,2,0,Super Lig,,Turkey,False
@@ -3043,7 +3043,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-12-21,Başakşehir,Giresunspor,3,1,Super Lig,,Turkey,False
 2021-12-22,Gaziantep,Alanyaspor,2,1,Super Lig,,Turkey,False
 2021-12-22,Hatayspor,Konyaspor,1,3,Super Lig,,Turkey,False
-2021-12-22,Karagumruk,Fenerbahçe,1,1,Super Lig,,Turkey,False
+2021-12-22,Karagümrük,Fenerbahçe,1,1,Super Lig,,Turkey,False
 2021-12-22,Sivasspor,Rizespor,1,1,Super Lig,,Turkey,False
 2021-12-23,Beşiktaş,Göztepe,2,1,Super Lig,,Turkey,False
 2021-12-23,Yeni Malatyaspor,Kayserispor,2,2,Super Lig,,Turkey,False
@@ -3051,7 +3051,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2021-12-25,Giresunspor,Hatayspor,0,1,Super Lig,,Turkey,False
 2021-12-25,Kasımpaşa,Altay,2,0,Super Lig,,Turkey,False
 2021-12-25,Trabzonspor,Başakşehir,0,0,Super Lig,,Turkey,False
-2021-12-26,Alanyaspor,Karagumruk,1,1,Super Lig,,Turkey,False
+2021-12-26,Alanyaspor,Karagümrük,1,1,Super Lig,,Turkey,False
 2021-12-26,Fenerbahçe,Yeni Malatyaspor,2,0,Super Lig,,Turkey,False
 2021-12-26,Göztepe,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2021-12-26,Rizespor,Gaziantep,0,1,Super Lig,,Turkey,False
@@ -3060,7 +3060,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-01-07,Trabzonspor,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
 2022-01-08,Alanyaspor,Başakşehir,1,1,Super Lig,,Turkey,False
 2022-01-08,Galatasaray,Giresunspor,0,1,Super Lig,,Turkey,False
-2022-01-08,Gaziantep,Karagumruk,3,1,Super Lig,,Turkey,False
+2022-01-08,Gaziantep,Karagümrük,3,1,Super Lig,,Turkey,False
 2022-01-08,Kasımpaşa,Hatayspor,3,1,Super Lig,,Turkey,False
 2022-01-09,Göztepe,Antalyaspor,4,0,Super Lig,,Turkey,False
 2022-01-09,Kayserispor,Altay,1,0,Super Lig,,Turkey,False
@@ -3071,12 +3071,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-01-14,Yeni Malatyaspor,Göztepe,1,2,Super Lig,,Turkey,False
 2022-01-15,Ad. Demirspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2022-01-15,Antalyaspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
-2022-01-15,Karagumruk,Rizespor,2,0,Super Lig,,Turkey,False
+2022-01-15,Karagümrük,Rizespor,2,0,Super Lig,,Turkey,False
 2022-01-15,Sivasspor,Trabzonspor,1,1,Super Lig,,Turkey,False
 2022-01-16,Altay,Alanyaspor,0,2,Super Lig,,Turkey,False
 2022-01-16,Giresunspor,Kasımpaşa,0,2,Super Lig,,Turkey,False
 2022-01-16,Hatayspor,Galatasaray,4,2,Super Lig,,Turkey,False
-2022-01-18,Karagumruk,Beşiktaş,0,1,Super Lig,,Turkey,False
+2022-01-18,Karagümrük,Beşiktaş,0,1,Super Lig,,Turkey,False
 2022-01-18,Konyaspor,Ad. Demirspor,1,0,Super Lig,,Turkey,False
 2022-01-19,Fenerbahçe,Altay,2,1,Super Lig,,Turkey,False
 2022-01-19,Göztepe,Sivasspor,2,1,Super Lig,,Turkey,False
@@ -3085,7 +3085,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-01-20,Alanyaspor,Hatayspor,6,0,Super Lig,,Turkey,False
 2022-01-20,Galatasaray,Kasımpaşa,1,3,Super Lig,,Turkey,False
 2022-01-20,Rizespor,Antalyaspor,2,1,Super Lig,,Turkey,False
-2022-01-22,Ad. Demirspor,Karagumruk,5,0,Super Lig,,Turkey,False
+2022-01-22,Ad. Demirspor,Karagümrük,5,0,Super Lig,,Turkey,False
 2022-01-22,Başakşehir,Göztepe,1,2,Super Lig,,Turkey,False
 2022-01-22,Sivasspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
 2022-01-22,Yeni Malatyaspor,Beşiktaş,1,1,Super Lig,,Turkey,False
@@ -3099,7 +3099,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-02-04,Konyaspor,Giresunspor,1,0,Super Lig,,Turkey,False
 2022-02-05,Fenerbahçe,Başakşehir,0,1,Super Lig,,Turkey,False
 2022-02-05,Gaziantep,Sivasspor,5,1,Super Lig,,Turkey,False
-2022-02-05,Karagumruk,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
+2022-02-05,Karagümrük,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
 2022-02-05,Trabzonspor,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2022-02-06,Alanyaspor,Galatasaray,1,1,Super Lig,,Turkey,False
 2022-02-06,Beşiktaş,Antalyaspor,0,0,Super Lig,,Turkey,False
@@ -3109,7 +3109,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-02-12,Başakşehir,Gaziantep,2,0,Super Lig,,Turkey,False
 2022-02-12,Galatasaray,Kayserispor,1,1,Super Lig,,Turkey,False
 2022-02-12,Giresunspor,Fenerbahçe,1,2,Super Lig,,Turkey,False
-2022-02-13,Antalyaspor,Karagumruk,3,0,Super Lig,,Turkey,False
+2022-02-13,Antalyaspor,Karagümrük,3,0,Super Lig,,Turkey,False
 2022-02-13,Kasımpaşa,Alanyaspor,2,2,Super Lig,,Turkey,False
 2022-02-13,Sivasspor,Yeni Malatyaspor,2,1,Super Lig,,Turkey,False
 2022-02-13,Trabzonspor,Konyaspor,2,1,Super Lig,,Turkey,False
@@ -3123,13 +3123,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-02-20,Alanyaspor,Trabzonspor,0,4,Super Lig,,Turkey,False
 2022-02-20,Fenerbahçe,Hatayspor,2,0,Super Lig,,Turkey,False
 2022-02-20,Gaziantep,Ad. Demirspor,0,3,Super Lig,,Turkey,False
-2022-02-20,Karagumruk,Sivasspor,1,0,Super Lig,,Turkey,False
+2022-02-20,Karagümrük,Sivasspor,1,0,Super Lig,,Turkey,False
 2022-02-21,Göztepe,Galatasaray,2,3,Super Lig,,Turkey,False
 2022-02-22,Başakşehir,Konyaspor,2,1,Super Lig,,Turkey,False
 2022-02-23,Gaziantep,Yeni Malatyaspor,0,0,Super Lig,,Turkey,False
 2022-02-25,Ad. Demirspor,Antalyaspor,0,0,Super Lig,,Turkey,False
 2022-02-25,Trabzonspor,Kayserispor,3,2,Super Lig,,Turkey,False
-2022-02-26,Başakşehir,Karagumruk,1,2,Super Lig,,Turkey,False
+2022-02-26,Başakşehir,Karagümrük,1,2,Super Lig,,Turkey,False
 2022-02-26,Sivasspor,Beşiktaş,2,3,Super Lig,,Turkey,False
 2022-02-27,Alanyaspor,Konyaspor,5,1,Super Lig,,Turkey,False
 2022-02-27,Altay,Gaziantep,3,2,Super Lig,,Turkey,False
@@ -3143,12 +3143,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-03-05,Rizespor,Giresunspor,1,2,Super Lig,,Turkey,False
 2022-03-06,Antalyaspor,Sivasspor,1,0,Super Lig,,Turkey,False
 2022-03-06,Fenerbahçe,Trabzonspor,1,1,Super Lig,,Turkey,False
-2022-03-06,Karagumruk,Altay,0,0,Super Lig,,Turkey,False
+2022-03-06,Karagümrük,Altay,0,0,Super Lig,,Turkey,False
 2022-03-07,Beşiktaş,Başakşehir,2,2,Super Lig,,Turkey,False
 2022-03-07,Gaziantep,Hatayspor,2,2,Super Lig,,Turkey,False
 2022-03-07,Kayserispor,Alanyaspor,1,2,Super Lig,,Turkey,False
 2022-03-12,Altay,Yeni Malatyaspor,1,0,Super Lig,,Turkey,False
-2022-03-12,Hatayspor,Karagumruk,3,0,Super Lig,,Turkey,False
+2022-03-12,Hatayspor,Karagümrük,3,0,Super Lig,,Turkey,False
 2022-03-12,Kasımpaşa,Rizespor,3,1,Super Lig,,Turkey,False
 2022-03-12,Trabzonspor,Göztepe,4,2,Super Lig,,Turkey,False
 2022-03-13,Ad. Demirspor,Sivasspor,2,3,Super Lig,,Turkey,False
@@ -3157,7 +3157,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-03-14,Başakşehir,Antalyaspor,0,1,Super Lig,,Turkey,False
 2022-03-14,Galatasaray,Beşiktaş,2,1,Super Lig,,Turkey,False
 2022-03-14,Giresunspor,Gaziantep,2,1,Super Lig,,Turkey,False
-2022-03-18,Karagumruk,Kayserispor,3,0,Super Lig,,Turkey,False
+2022-03-18,Karagümrük,Kayserispor,3,0,Super Lig,,Turkey,False
 2022-03-18,Rizespor,Trabzonspor,3,2,Super Lig,,Turkey,False
 2022-03-19,Ad. Demirspor,Başakşehir,2,1,Super Lig,,Turkey,False
 2022-03-19,Beşiktaş,Hatayspor,1,1,Super Lig,,Turkey,False
@@ -3168,7 +3168,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-03-20,Gaziantep,Galatasaray,3,1,Super Lig,,Turkey,False
 2022-03-20,Sivasspor,Altay,2,1,Super Lig,,Turkey,False
 2022-04-02,Altay,Antalyaspor,1,2,Super Lig,,Turkey,False
-2022-04-02,Galatasaray,Karagumruk,2,0,Super Lig,,Turkey,False
+2022-04-02,Galatasaray,Karagümrük,2,0,Super Lig,,Turkey,False
 2022-04-02,Giresunspor,Sivasspor,2,2,Super Lig,,Turkey,False
 2022-04-02,Kayserispor,Fenerbahçe,0,4,Super Lig,,Turkey,False
 2022-04-03,Alanyaspor,Rizespor,2,1,Super Lig,,Turkey,False
@@ -3180,7 +3180,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-04-09,Beşiktaş,Alanyaspor,4,1,Super Lig,,Turkey,False
 2022-04-09,Gaziantep,Trabzonspor,0,0,Super Lig,,Turkey,False
 2022-04-09,Göztepe,Kayserispor,1,2,Super Lig,,Turkey,False
-2022-04-09,Karagumruk,Kasımpaşa,3,2,Super Lig,,Turkey,False
+2022-04-09,Karagümrük,Kasımpaşa,3,2,Super Lig,,Turkey,False
 2022-04-09,Rizespor,Konyaspor,2,1,Super Lig,,Turkey,False
 2022-04-10,Ad. Demirspor,Altay,3,1,Super Lig,,Turkey,False
 2022-04-10,Fenerbahçe,Galatasaray,2,0,Super Lig,,Turkey,False
@@ -3188,7 +3188,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-04-10,Yeni Malatyaspor,Giresunspor,0,1,Super Lig,,Turkey,False
 2022-04-11,Antalyaspor,Hatayspor,4,1,Super Lig,,Turkey,False
 2022-04-15,Kayserispor,Rizespor,1,1,Super Lig,,Turkey,False
-2022-04-15,Trabzonspor,Karagumruk,1,1,Super Lig,,Turkey,False
+2022-04-15,Trabzonspor,Karagümrük,1,1,Super Lig,,Turkey,False
 2022-04-16,Alanyaspor,Antalyaspor,1,3,Super Lig,,Turkey,False
 2022-04-16,Altay,Başakşehir,1,1,Super Lig,,Turkey,False
 2022-04-16,Fenerbahçe,Göztepe,2,0,Super Lig,,Turkey,False
@@ -3200,7 +3200,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-04-22,Rizespor,Fenerbahçe,0,6,Super Lig,,Turkey,False
 2022-04-23,Ad. Demirspor,Trabzonspor,1,3,Super Lig,,Turkey,False
 2022-04-23,Gaziantep,Göztepe,1,1,Super Lig,,Turkey,False
-2022-04-23,Karagumruk,Giresunspor,2,1,Super Lig,,Turkey,False
+2022-04-23,Karagümrük,Giresunspor,2,1,Super Lig,,Turkey,False
 2022-04-24,Altay,Galatasaray,0,1,Super Lig,,Turkey,False
 2022-04-24,Antalyaspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2022-04-24,Başakşehir,Hatayspor,3,0,Super Lig,,Turkey,False
@@ -3211,7 +3211,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-04-29,Giresunspor,Ad. Demirspor,2,0,Super Lig,,Turkey,False
 2022-04-30,Hatayspor,Altay,0,1,Super Lig,,Turkey,False
 2022-04-30,Kasımpaşa,Başakşehir,2,3,Super Lig,,Turkey,False
-2022-04-30,Konyaspor,Karagumruk,1,2,Super Lig,,Turkey,False
+2022-04-30,Konyaspor,Karagümrük,1,2,Super Lig,,Turkey,False
 2022-04-30,Trabzonspor,Antalyaspor,2,2,Super Lig,,Turkey,False
 2022-05-01,Alanyaspor,Yeni Malatyaspor,2,1,Super Lig,,Turkey,False
 2022-05-01,Galatasaray,Sivasspor,2,3,Super Lig,,Turkey,False
@@ -3221,7 +3221,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-05-06,Hatayspor,Trabzonspor,1,1,Super Lig,,Turkey,False
 2022-05-07,Ad. Demirspor,Alanyaspor,1,2,Super Lig,,Turkey,False
 2022-05-07,Başakşehir,Galatasaray,0,0,Super Lig,,Turkey,False
-2022-05-07,Karagumruk,Göztepe,3,1,Super Lig,,Turkey,False
+2022-05-07,Karagümrük,Göztepe,3,1,Super Lig,,Turkey,False
 2022-05-07,Sivasspor,Kasımpaşa,1,3,Super Lig,,Turkey,False
 2022-05-08,Altay,Giresunspor,1,1,Super Lig,,Turkey,False
 2022-05-08,Beşiktaş,Fenerbahçe,1,1,Super Lig,,Turkey,False
@@ -3229,7 +3229,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-05-09,Antalyaspor,Konyaspor,3,2,Super Lig,,Turkey,False
 2022-05-14,Kayserispor,Yeni Malatyaspor,3,0,Super Lig,,Turkey,False
 2022-05-15,Alanyaspor,Gaziantep,3,0,Super Lig,,Turkey,False
-2022-05-15,Fenerbahçe,Karagumruk,0,0,Super Lig,,Turkey,False
+2022-05-15,Fenerbahçe,Karagümrük,0,0,Super Lig,,Turkey,False
 2022-05-15,Giresunspor,Başakşehir,1,1,Super Lig,,Turkey,False
 2022-05-15,Göztepe,Beşiktaş,0,2,Super Lig,,Turkey,False
 2022-05-15,Kasımpaşa,Antalyaspor,2,4,Super Lig,,Turkey,False
@@ -3246,13 +3246,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-05-22,Ad. Demirspor,Göztepe,7,0,Super Lig,,Turkey,False
 2022-05-22,Başakşehir,Trabzonspor,3,1,Super Lig,,Turkey,False
 2022-05-22,Hatayspor,Giresunspor,4,1,Super Lig,,Turkey,False
-2022-05-22,Karagumruk,Alanyaspor,0,1,Super Lig,,Turkey,False
+2022-05-22,Karagümrük,Alanyaspor,0,1,Super Lig,,Turkey,False
 2022-08-05,Istanbulspor,Trabzonspor,0,2,Super Lig,,Turkey,False
 2022-08-06,Beşiktaş,Kayserispor,1,0,Super Lig,,Turkey,False
 2022-08-06,Sivasspor,Gaziantep,1,1,Super Lig,,Turkey,False
 2022-08-07,Antalyaspor,Galatasaray,0,1,Super Lig,,Turkey,False
 2022-08-07,Giresunspor,Ad. Demirspor,2,3,Super Lig,,Turkey,False
-2022-08-07,Karagumruk,Alanyaspor,2,4,Super Lig,,Turkey,False
+2022-08-07,Karagümrük,Alanyaspor,2,4,Super Lig,,Turkey,False
 2022-08-08,Ankaragucu,Konyaspor,0,0,Super Lig,,Turkey,False
 2022-08-08,Başakşehir,Kasımpaşa,4,0,Super Lig,,Turkey,False
 2022-08-08,Fenerbahçe,Umraniyespor,3,3,Super Lig,,Turkey,False
@@ -3270,14 +3270,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-08-20,Giresunspor,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2022-08-20,Hatayspor,Gaziantep,1,2,Super Lig,,Turkey,False
 2022-08-21,Başakşehir,Kayserispor,2,0,Super Lig,,Turkey,False
-2022-08-21,Beşiktaş,Karagumruk,4,1,Super Lig,,Turkey,False
+2022-08-21,Beşiktaş,Karagümrük,4,1,Super Lig,,Turkey,False
 2022-08-22,Fenerbahçe,Ad. Demirspor,4,2,Super Lig,,Turkey,False
 2022-08-22,Istanbulspor,Konyaspor,0,4,Super Lig,,Turkey,False
 2022-08-22,Sivasspor,Alanyaspor,1,1,Super Lig,,Turkey,False
 2022-08-26,Gaziantep,Antalyaspor,5,2,Super Lig,,Turkey,False
 2022-08-27,Ad. Demirspor,Umraniyespor,1,0,Super Lig,,Turkey,False
 2022-08-27,Alanyaspor,Istanbulspor,0,1,Super Lig,,Turkey,False
-2022-08-27,Karagumruk,Ankaragucu,4,1,Super Lig,,Turkey,False
+2022-08-27,Karagümrük,Ankaragucu,4,1,Super Lig,,Turkey,False
 2022-08-28,Kasımpaşa,Hatayspor,1,0,Super Lig,,Turkey,False
 2022-08-28,Kayserispor,Giresunspor,3,0,Super Lig,,Turkey,False
 2022-08-28,Trabzonspor,Galatasaray,0,0,Super Lig,,Turkey,False
@@ -3287,13 +3287,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-09-03,Başakşehir,Alanyaspor,2,0,Super Lig,,Turkey,False
 2022-09-03,Fenerbahçe,Kayserispor,2,0,Super Lig,,Turkey,False
 2022-09-03,Giresunspor,Konyaspor,0,1,Super Lig,,Turkey,False
-2022-09-03,Sivasspor,Karagumruk,0,0,Super Lig,,Turkey,False
+2022-09-03,Sivasspor,Karagümrük,0,0,Super Lig,,Turkey,False
 2022-09-04,Ankaragucu,Beşiktaş,2,3,Super Lig,,Turkey,False
 2022-09-04,Antalyaspor,Kasımpaşa,0,2,Super Lig,,Turkey,False
 2022-09-04,Hatayspor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2022-09-05,Galatasaray,Gaziantep,2,1,Super Lig,,Turkey,False
 2022-09-09,Alanyaspor,Ankaragucu,2,1,Super Lig,,Turkey,False
-2022-09-10,Karagumruk,Giresunspor,1,1,Super Lig,,Turkey,False
+2022-09-10,Karagümrük,Giresunspor,1,1,Super Lig,,Turkey,False
 2022-09-10,Konyaspor,Hatayspor,1,0,Super Lig,,Turkey,False
 2022-09-11,Gaziantep,Umraniyespor,1,1,Super Lig,,Turkey,False
 2022-09-11,Kasımpaşa,Galatasaray,2,3,Super Lig,,Turkey,False
@@ -3307,7 +3307,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-09-17,Istanbulspor,Beşiktaş,2,2,Super Lig,,Turkey,False
 2022-09-17,Umraniyespor,Kasımpaşa,1,2,Super Lig,,Turkey,False
 2022-09-18,Ankaragucu,Sivasspor,2,1,Super Lig,,Turkey,False
-2022-09-18,Başakşehir,Karagumruk,0,0,Super Lig,,Turkey,False
+2022-09-18,Başakşehir,Karagümrük,0,0,Super Lig,,Turkey,False
 2022-09-18,Fenerbahçe,Alanyaspor,5,0,Super Lig,,Turkey,False
 2022-09-18,Trabzonspor,Gaziantep,3,2,Super Lig,,Turkey,False
 2022-10-01,Ad. Demirspor,Galatasaray,0,0,Super Lig,,Turkey,False
@@ -3318,18 +3318,18 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-10-02,Beşiktaş,Fenerbahçe,0,0,Super Lig,,Turkey,False
 2022-10-02,Konyaspor,Umraniyespor,1,0,Super Lig,,Turkey,False
 2022-10-02,Sivasspor,Hatayspor,1,2,Super Lig,,Turkey,False
-2022-10-03,Karagumruk,Istanbulspor,1,2,Super Lig,,Turkey,False
+2022-10-03,Karagümrük,Istanbulspor,1,2,Super Lig,,Turkey,False
 2022-10-07,Gaziantep,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2022-10-08,Antalyaspor,Konyaspor,1,1,Super Lig,,Turkey,False
 2022-10-08,Giresunspor,Beşiktaş,0,1,Super Lig,,Turkey,False
 2022-10-08,Istanbulspor,Ankaragucu,1,2,Super Lig,,Turkey,False
-2022-10-09,Fenerbahçe,Karagumruk,5,4,Super Lig,,Turkey,False
+2022-10-09,Fenerbahçe,Karagümrük,5,4,Super Lig,,Turkey,False
 2022-10-09,Hatayspor,Alanyaspor,1,0,Super Lig,,Turkey,False
 2022-10-09,Umraniyespor,Kayserispor,2,2,Super Lig,,Turkey,False
 2022-10-10,Başakşehir,Sivasspor,0,2,Super Lig,,Turkey,False
 2022-10-10,Trabzonspor,Kasımpaşa,0,0,Super Lig,,Turkey,False
 2022-10-14,Alanyaspor,Antalyaspor,3,2,Super Lig,,Turkey,False
-2022-10-15,Karagumruk,Hatayspor,3,0,Super Lig,,Turkey,False
+2022-10-15,Karagümrük,Hatayspor,3,0,Super Lig,,Turkey,False
 2022-10-15,Kasımpaşa,Ad. Demirspor,1,4,Super Lig,,Turkey,False
 2022-10-15,Kayserispor,Galatasaray,2,1,Super Lig,,Turkey,False
 2022-10-15,Konyaspor,Gaziantep,0,1,Super Lig,,Turkey,False
@@ -3340,13 +3340,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-10-21,Antalyaspor,Istanbulspor,2,1,Super Lig,,Turkey,False
 2022-10-22,Fenerbahçe,Başakşehir,1,0,Super Lig,,Turkey,False
 2022-10-22,Trabzonspor,Sivasspor,1,0,Super Lig,,Turkey,False
-2022-10-22,Umraniyespor,Karagumruk,1,3,Super Lig,,Turkey,False
+2022-10-22,Umraniyespor,Karagümrük,1,3,Super Lig,,Turkey,False
 2022-10-23,Ad. Demirspor,Konyaspor,1,1,Super Lig,,Turkey,False
 2022-10-23,Galatasaray,Alanyaspor,2,2,Super Lig,,Turkey,False
 2022-10-23,Kasımpaşa,Kayserispor,0,1,Super Lig,,Turkey,False
 2022-10-24,Giresunspor,Ankaragucu,1,1,Super Lig,,Turkey,False
 2022-10-24,Hatayspor,Beşiktaş,2,1,Super Lig,,Turkey,False
-2022-10-28,Karagumruk,Galatasaray,0,2,Super Lig,,Turkey,False
+2022-10-28,Karagümrük,Galatasaray,0,2,Super Lig,,Turkey,False
 2022-10-29,Alanyaspor,Gaziantep,2,0,Super Lig,,Turkey,False
 2022-10-29,Konyaspor,Kasımpaşa,1,1,Super Lig,,Turkey,False
 2022-10-30,Ankaragucu,Hatayspor,4,1,Super Lig,,Turkey,False
@@ -3359,7 +3359,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-11-04,Umraniyespor,Alanyaspor,3,1,Super Lig,,Turkey,False
 2022-11-05,Galatasaray,Beşiktaş,2,1,Super Lig,,Turkey,False
 2022-11-05,Giresunspor,Istanbulspor,3,2,Super Lig,,Turkey,False
-2022-11-06,Antalyaspor,Karagumruk,4,2,Super Lig,,Turkey,False
+2022-11-06,Antalyaspor,Karagümrük,4,2,Super Lig,,Turkey,False
 2022-11-06,Gaziantep,Kayserispor,1,2,Super Lig,,Turkey,False
 2022-11-06,Trabzonspor,Konyaspor,2,2,Super Lig,,Turkey,False
 2022-11-07,Fenerbahçe,Sivasspor,1,0,Super Lig,,Turkey,False
@@ -3370,14 +3370,14 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-11-12,Fenerbahçe,Giresunspor,1,2,Super Lig,,Turkey,False
 2022-11-12,Sivasspor,Umraniyespor,2,2,Super Lig,,Turkey,False
 2022-11-13,Istanbulspor,Hatayspor,0,1,Super Lig,,Turkey,False
-2022-11-13,Karagumruk,Gaziantep,3,3,Super Lig,,Turkey,False
+2022-11-13,Karagümrük,Gaziantep,3,3,Super Lig,,Turkey,False
 2022-11-13,Kayserispor,Konyaspor,1,2,Super Lig,,Turkey,False
 2022-12-23,Antalyaspor,Ankaragucu,0,2,Super Lig,,Turkey,False
 2022-12-23,Umraniyespor,Başakşehir,1,3,Super Lig,,Turkey,False
 2022-12-24,Hatayspor,Giresunspor,1,1,Super Lig,,Turkey,False
 2022-12-24,Kasımpaşa,Sivasspor,1,2,Super Lig,,Turkey,False
 2022-12-24,Trabzonspor,Fenerbahçe,2,0,Super Lig,,Turkey,False
-2022-12-25,Ad. Demirspor,Karagumruk,2,1,Super Lig,,Turkey,False
+2022-12-25,Ad. Demirspor,Karagümrük,2,1,Super Lig,,Turkey,False
 2022-12-25,Galatasaray,Istanbulspor,2,1,Super Lig,,Turkey,False
 2022-12-25,Gaziantep,Beşiktaş,1,1,Super Lig,,Turkey,False
 2022-12-25,Konyaspor,Alanyaspor,2,2,Super Lig,,Turkey,False
@@ -3386,7 +3386,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2022-12-27,Fenerbahçe,Hatayspor,4,0,Super Lig,,Turkey,False
 2022-12-28,Alanyaspor,Kayserispor,3,1,Super Lig,,Turkey,False
 2022-12-28,Istanbulspor,Kasımpaşa,2,1,Super Lig,,Turkey,False
-2022-12-28,Karagumruk,Trabzonspor,4,1,Super Lig,,Turkey,False
+2022-12-28,Karagümrük,Trabzonspor,4,1,Super Lig,,Turkey,False
 2022-12-29,Beşiktaş,Ad. Demirspor,1,0,Super Lig,,Turkey,False
 2022-12-29,Giresunspor,Gaziantep,2,1,Super Lig,,Turkey,False
 2022-12-29,Sivasspor,Galatasaray,1,2,Super Lig,,Turkey,False
@@ -3394,7 +3394,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-01-03,Umraniyespor,Hatayspor,2,2,Super Lig,,Turkey,False
 2023-01-04,Galatasaray,Ankaragucu,2,1,Super Lig,,Turkey,False
 2023-01-04,Kasımpaşa,Alanyaspor,4,1,Super Lig,,Turkey,False
-2023-01-04,Kayserispor,Karagumruk,2,4,Super Lig,,Turkey,False
+2023-01-04,Kayserispor,Karagümrük,2,4,Super Lig,,Turkey,False
 2023-01-04,Konyaspor,Sivasspor,2,2,Super Lig,,Turkey,False
 2023-01-05,Ad. Demirspor,Istanbulspor,6,0,Super Lig,,Turkey,False
 2023-01-05,Gaziantep,Başakşehir,1,1,Super Lig,,Turkey,False
@@ -3404,7 +3404,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-01-08,Ankaragucu,Kayserispor,2,1,Super Lig,,Turkey,False
 2023-01-08,Fenerbahçe,Galatasaray,0,3,Super Lig,,Turkey,False
 2023-01-08,Giresunspor,Umraniyespor,0,1,Super Lig,,Turkey,False
-2023-01-08,Karagumruk,Konyaspor,3,3,Super Lig,,Turkey,False
+2023-01-08,Karagümrük,Konyaspor,3,3,Super Lig,,Turkey,False
 2023-01-09,Alanyaspor,Trabzonspor,5,0,Super Lig,,Turkey,False
 2023-01-09,Başakşehir,Ad. Demirspor,2,1,Super Lig,,Turkey,False
 2023-01-09,Istanbulspor,Gaziantep,1,1,Super Lig,,Turkey,False
@@ -3415,12 +3415,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-01-14,Konyaspor,Beşiktaş,1,2,Super Lig,,Turkey,False
 2023-01-14,Trabzonspor,Başakşehir,1,0,Super Lig,,Turkey,False
 2023-01-15,Gaziantep,Fenerbahçe,1,2,Super Lig,,Turkey,False
-2023-01-15,Kasımpaşa,Karagumruk,2,2,Super Lig,,Turkey,False
+2023-01-15,Kasımpaşa,Karagümrük,2,2,Super Lig,,Turkey,False
 2023-01-15,Umraniyespor,Istanbulspor,0,2,Super Lig,,Turkey,False
 2023-01-20,Ad. Demirspor,Giresunspor,1,1,Super Lig,,Turkey,False
 2023-01-21,Galatasaray,Antalyaspor,2,1,Super Lig,,Turkey,False
 2023-01-21,Kasımpaşa,Başakşehir,1,3,Super Lig,,Turkey,False
-2023-01-22,Alanyaspor,Karagumruk,2,2,Super Lig,,Turkey,False
+2023-01-22,Alanyaspor,Karagümrük,2,2,Super Lig,,Turkey,False
 2023-01-22,Gaziantep,Sivasspor,1,2,Super Lig,,Turkey,False
 2023-01-22,Kayserispor,Beşiktaş,0,2,Super Lig,,Turkey,False
 2023-01-22,Trabzonspor,Istanbulspor,4,0,Super Lig,,Turkey,False
@@ -3436,7 +3436,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-01-29,Fenerbahçe,Kasımpaşa,5,1,Super Lig,,Turkey,False
 2023-01-29,Istanbulspor,Kayserispor,2,4,Super Lig,,Turkey,False
 2023-01-31,Alanyaspor,Sivasspor,0,3,Super Lig,,Turkey,False
-2023-01-31,Karagumruk,Beşiktaş,1,1,Super Lig,,Turkey,False
+2023-01-31,Karagümrük,Beşiktaş,1,1,Super Lig,,Turkey,False
 2023-02-01,Galatasaray,Umraniyespor,3,2,Super Lig,,Turkey,False
 2023-02-01,Gaziantep,Hatayspor,4,1,Super Lig,,Turkey,False
 2023-02-01,Kasımpaşa,Giresunspor,5,1,Super Lig,,Turkey,False
@@ -3444,7 +3444,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-02-02,Ad. Demirspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
 2023-02-02,Kayserispor,Başakşehir,1,0,Super Lig,,Turkey,False
 2023-02-02,Konyaspor,Istanbulspor,0,1,Super Lig,,Turkey,False
-2023-02-04,Ankaragucu,Karagumruk,0,2,Super Lig,,Turkey,False
+2023-02-04,Ankaragucu,Karagümrük,0,2,Super Lig,,Turkey,False
 2023-02-04,Antalyaspor,Gaziantep,1,0,Super Lig,,Turkey,False
 2023-02-04,Sivasspor,Beşiktaş,1,0,Super Lig,,Turkey,False
 2023-02-05,Galatasaray,Trabzonspor,2,1,Super Lig,,Turkey,False
@@ -3456,7 +3456,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-02-26,Beşiktaş,Antalyaspor,0,0,Super Lig,,Turkey,False
 2023-02-26,Umraniyespor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2023-03-03,Alanyaspor,Başakşehir,1,0,Super Lig,,Turkey,False
-2023-03-04,Karagumruk,Sivasspor,4,3,Super Lig,,Turkey,False
+2023-03-04,Karagümrük,Sivasspor,4,3,Super Lig,,Turkey,False
 2023-03-04,Kayserispor,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2023-03-04,Trabzonspor,Umraniyespor,1,2,Super Lig,,Turkey,False
 2023-03-05,Ad. Demirspor,Hatayspor,3,0,Super Lig,,Turkey,False
@@ -3464,7 +3464,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-03-05,Gaziantep,Galatasaray,0,3,Super Lig,,Turkey,False
 2023-03-05,Konyaspor,Giresunspor,0,0,Super Lig,,Turkey,False
 2023-03-06,Kasımpaşa,Antalyaspor,3,1,Super Lig,,Turkey,False
-2023-03-10,Giresunspor,Karagumruk,2,2,Super Lig,,Turkey,False
+2023-03-10,Giresunspor,Karagümrük,2,2,Super Lig,,Turkey,False
 2023-03-11,Antalyaspor,Kayserispor,4,0,Super Lig,,Turkey,False
 2023-03-11,Galatasaray,Kasımpaşa,1,0,Super Lig,,Turkey,False
 2023-03-12,Ankaragucu,Alanyaspor,2,0,Super Lig,,Turkey,False
@@ -3478,7 +3478,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-03-18,Kasımpaşa,Umraniyespor,1,1,Super Lig,,Turkey,False
 2023-03-19,Alanyaspor,Fenerbahçe,1,3,Super Lig,,Turkey,False
 2023-03-19,Gaziantep,Trabzonspor,0,3,Super Lig,,Turkey,False
-2023-03-19,Karagumruk,Başakşehir,2,2,Super Lig,,Turkey,False
+2023-03-19,Karagümrük,Başakşehir,2,2,Super Lig,,Turkey,False
 2023-03-19,Kayserispor,Hatayspor,3,0,Super Lig,,Turkey,False
 2023-03-19,Sivasspor,Ankaragucu,2,0,Super Lig,,Turkey,False
 2023-04-01,Başakşehir,Ankaragucu,1,0,Super Lig,,Turkey,False
@@ -3489,7 +3489,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-04-02,Giresunspor,Alanyaspor,2,2,Super Lig,,Turkey,False
 2023-04-02,Hatayspor,Sivasspor,0,3,Super Lig,,Turkey,False
 2023-04-02,Umraniyespor,Konyaspor,2,2,Super Lig,,Turkey,False
-2023-04-03,Istanbulspor,Karagumruk,0,1,Super Lig,,Turkey,False
+2023-04-03,Istanbulspor,Karagümrük,0,1,Super Lig,,Turkey,False
 2023-04-07,Konyaspor,Antalyaspor,1,1,Super Lig,,Turkey,False
 2023-04-08,Ankaragucu,Istanbulspor,3,2,Super Lig,,Turkey,False
 2023-04-08,Kasımpaşa,Trabzonspor,2,0,Super Lig,,Turkey,False
@@ -3497,7 +3497,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-04-09,Alanyaspor,Hatayspor,3,0,Super Lig,,Turkey,False
 2023-04-09,Beşiktaş,Giresunspor,3,1,Super Lig,,Turkey,False
 2023-04-09,Sivasspor,Başakşehir,1,1,Super Lig,,Turkey,False
-2023-04-10,Karagumruk,Fenerbahçe,1,2,Super Lig,,Turkey,False
+2023-04-10,Karagümrük,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2023-04-10,Kayserispor,Umraniyespor,3,1,Super Lig,,Turkey,False
 2023-04-14,Antalyaspor,Alanyaspor,3,1,Super Lig,,Turkey,False
 2023-04-14,Galatasaray,Kayserispor,6,0,Super Lig,,Turkey,False
@@ -3506,10 +3506,10 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-04-15,Istanbulspor,Başakşehir,1,0,Super Lig,,Turkey,False
 2023-04-16,Gaziantep,Konyaspor,0,3,Super Lig,,Turkey,False
 2023-04-16,Giresunspor,Sivasspor,1,0,Super Lig,,Turkey,False
-2023-04-16,Hatayspor,Karagumruk,0,3,Super Lig,,Turkey,False
+2023-04-16,Hatayspor,Karagümrük,0,3,Super Lig,,Turkey,False
 2023-04-16,Trabzonspor,Beşiktaş,0,0,Super Lig,,Turkey,False
 2023-04-18,Alanyaspor,Galatasaray,1,4,Super Lig,,Turkey,False
-2023-04-18,Karagumruk,Umraniyespor,4,2,Super Lig,,Turkey,False
+2023-04-18,Karagümrük,Umraniyespor,4,2,Super Lig,,Turkey,False
 2023-04-19,Başakşehir,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2023-04-19,Beşiktaş,Hatayspor,3,0,Super Lig,,Turkey,False
 2023-04-19,Istanbulspor,Antalyaspor,3,3,Super Lig,,Turkey,False
@@ -3519,7 +3519,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-04-20,Sivasspor,Trabzonspor,4,1,Super Lig,,Turkey,False
 2023-04-22,Umraniyespor,Beşiktaş,0,2,Super Lig,,Turkey,False
 2023-04-23,Ad. Demirspor,Kayserispor,5,3,Super Lig,,Turkey,False
-2023-04-23,Galatasaray,Karagumruk,3,3,Super Lig,,Turkey,False
+2023-04-23,Galatasaray,Karagümrük,3,3,Super Lig,,Turkey,False
 2023-04-23,Gaziantep,Alanyaspor,0,3,Super Lig,,Turkey,False
 2023-04-23,Hatayspor,Ankaragucu,0,3,Super Lig,,Turkey,False
 2023-04-23,Kasımpaşa,Konyaspor,1,2,Super Lig,,Turkey,False
@@ -3528,7 +3528,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-04-24,Giresunspor,Başakşehir,2,4,Super Lig,,Turkey,False
 2023-04-28,Alanyaspor,Umraniyespor,1,0,Super Lig,,Turkey,False
 2023-04-29,Ankaragucu,Kasımpaşa,0,0,Super Lig,,Turkey,False
-2023-04-29,Karagumruk,Antalyaspor,0,1,Super Lig,,Turkey,False
+2023-04-29,Karagümrük,Antalyaspor,0,1,Super Lig,,Turkey,False
 2023-04-29,Konyaspor,Trabzonspor,2,1,Super Lig,,Turkey,False
 2023-04-29,Sivasspor,Fenerbahçe,1,3,Super Lig,,Turkey,False
 2023-04-30,Başakşehir,Hatayspor,3,0,Super Lig,,Turkey,False
@@ -3537,7 +3537,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-05-01,Istanbulspor,Giresunspor,1,0,Super Lig,,Turkey,False
 2023-05-06,Ad. Demirspor,Alanyaspor,4,2,Super Lig,,Turkey,False
 2023-05-06,Antalyaspor,Beşiktaş,1,3,Super Lig,,Turkey,False
-2023-05-07,Gaziantep,Karagumruk,0,3,Super Lig,,Turkey,False
+2023-05-07,Gaziantep,Karagümrük,0,3,Super Lig,,Turkey,False
 2023-05-07,Giresunspor,Fenerbahçe,1,1,Super Lig,,Turkey,False
 2023-05-07,Hatayspor,Istanbulspor,0,3,Super Lig,,Turkey,False
 2023-05-07,Konyaspor,Kayserispor,2,2,Super Lig,,Turkey,False
@@ -3551,7 +3551,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-05-17,Başakşehir,Umraniyespor,1,1,Super Lig,,Turkey,False
 2023-05-17,Beşiktaş,Gaziantep,3,0,Super Lig,,Turkey,False
 2023-05-17,Giresunspor,Hatayspor,3,0,Super Lig,,Turkey,False
-2023-05-17,Karagumruk,Ad. Demirspor,2,3,Super Lig,,Turkey,False
+2023-05-17,Karagümrük,Ad. Demirspor,2,3,Super Lig,,Turkey,False
 2023-05-18,Fenerbahçe,Trabzonspor,3,1,Super Lig,,Turkey,False
 2023-05-20,Galatasaray,Sivasspor,2,0,Super Lig,,Turkey,False
 2023-05-20,Kasımpaşa,Istanbulspor,1,0,Super Lig,,Turkey,False
@@ -3561,7 +3561,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-05-21,Gaziantep,Giresunspor,0,3,Super Lig,,Turkey,False
 2023-05-21,Hatayspor,Fenerbahçe,0,3,Super Lig,,Turkey,False
 2023-05-21,Umraniyespor,Ankaragucu,1,2,Super Lig,,Turkey,False
-2023-05-22,Trabzonspor,Karagumruk,4,1,Super Lig,,Turkey,False
+2023-05-22,Trabzonspor,Karagümrük,4,1,Super Lig,,Turkey,False
 2023-05-30,Alanyaspor,Kasımpaşa,1,3,Super Lig,,Turkey,False
 2023-05-30,Ankaragucu,Galatasaray,1,4,Super Lig,,Turkey,False
 2023-05-30,Başakşehir,Gaziantep,3,0,Super Lig,,Turkey,False
@@ -3569,19 +3569,19 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-05-30,Giresunspor,Trabzonspor,2,4,Super Lig,,Turkey,False
 2023-05-30,Hatayspor,Umraniyespor,0,3,Super Lig,,Turkey,False
 2023-05-30,Istanbulspor,Ad. Demirspor,0,2,Super Lig,,Turkey,False
-2023-05-30,Karagumruk,Kayserispor,2,0,Super Lig,,Turkey,False
+2023-05-30,Karagümrük,Kayserispor,2,0,Super Lig,,Turkey,False
 2023-05-30,Sivasspor,Konyaspor,1,0,Super Lig,,Turkey,False
 2023-06-03,Ad. Demirspor,Başakşehir,2,3,Super Lig,,Turkey,False
 2023-06-03,Antalyaspor,Hatayspor,3,0,Super Lig,,Turkey,False
 2023-06-03,Gaziantep,Istanbulspor,0,3,Super Lig,,Turkey,False
 2023-06-03,Kasımpaşa,Beşiktaş,2,5,Super Lig,,Turkey,False
 2023-06-03,Kayserispor,Ankaragucu,0,1,Super Lig,,Turkey,False
-2023-06-03,Konyaspor,Karagumruk,1,1,Super Lig,,Turkey,False
+2023-06-03,Konyaspor,Karagümrük,1,1,Super Lig,,Turkey,False
 2023-06-03,Trabzonspor,Alanyaspor,5,1,Super Lig,,Turkey,False
 2023-06-03,Umraniyespor,Giresunspor,0,1,Super Lig,,Turkey,False
 2023-06-04,Galatasaray,Fenerbahçe,3,0,Super Lig,,Turkey,False
 2023-06-06,Başakşehir,Trabzonspor,3,1,Super Lig,,Turkey,False
-2023-06-06,Karagumruk,Kasımpaşa,3,0,Super Lig,,Turkey,False
+2023-06-06,Karagümrük,Kasımpaşa,3,0,Super Lig,,Turkey,False
 2023-06-06,Sivasspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2023-06-07,Ankaragucu,Ad. Demirspor,1,2,Super Lig,,Turkey,False
 2023-06-07,Beşiktaş,Konyaspor,3,3,Super Lig,,Turkey,False
@@ -3598,13 +3598,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-08-13,Fenerbahçe,Gaziantep,2,1,Super Lig,,Turkey,False
 2023-08-13,Sivasspor,Samsunspor,1,1,Super Lig,,Turkey,False
 2023-08-14,Alanyaspor,Başakşehir,2,0,Super Lig,,Turkey,False
-2023-08-14,Karagumruk,Beşiktaş,0,1,Super Lig,,Turkey,False
+2023-08-14,Karagümrük,Beşiktaş,0,1,Super Lig,,Turkey,False
 2023-08-18,Antalyaspor,Konyaspor,1,1,Super Lig,,Turkey,False
 2023-08-18,Istanbulspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2023-08-19,Galatasaray,Trabzonspor,2,0,Super Lig,,Turkey,False
 2023-08-19,Hatayspor,Kasımpaşa,0,0,Super Lig,,Turkey,False
 2023-08-19,Rizespor,Alanyaspor,0,0,Super Lig,,Turkey,False
-2023-08-20,Başakşehir,Karagumruk,0,2,Super Lig,,Turkey,False
+2023-08-20,Başakşehir,Karagümrük,0,2,Super Lig,,Turkey,False
 2023-08-20,Beşiktaş,Pendikspor,1,1,Super Lig,,Turkey,False
 2023-08-20,Gaziantep,Sivasspor,1,3,Super Lig,,Turkey,False
 2023-08-21,Ankaragucu,Ad. Demirspor,1,1,Super Lig,,Turkey,False
@@ -3614,10 +3614,10 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-08-26,Sivasspor,Antalyaspor,1,1,Super Lig,,Turkey,False
 2023-08-26,Trabzonspor,Rizespor,2,3,Super Lig,,Turkey,False
 2023-08-27,Alanyaspor,Hatayspor,0,0,Super Lig,,Turkey,False
-2023-08-27,Karagumruk,Ankaragucu,1,1,Super Lig,,Turkey,False
+2023-08-27,Karagümrük,Ankaragucu,1,1,Super Lig,,Turkey,False
 2023-08-27,Kayserispor,Samsunspor,2,1,Super Lig,,Turkey,False
 2023-09-01,Kasımpaşa,Trabzonspor,1,5,Super Lig,,Turkey,False
-2023-09-01,Rizespor,Karagumruk,1,0,Super Lig,,Turkey,False
+2023-09-01,Rizespor,Karagümrük,1,0,Super Lig,,Turkey,False
 2023-09-02,Antalyaspor,Kayserispor,1,1,Super Lig,,Turkey,False
 2023-09-02,Başakşehir,Konyaspor,0,1,Super Lig,,Turkey,False
 2023-09-02,Gaziantep,Galatasaray,0,3,Super Lig,,Turkey,False
@@ -3633,12 +3633,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-09-17,Fenerbahçe,Antalyaspor,3,2,Super Lig,,Turkey,False
 2023-09-17,Istanbulspor,Başakşehir,0,2,Super Lig,,Turkey,False
 2023-09-17,Trabzonspor,Beşiktaş,3,0,Super Lig,,Turkey,False
-2023-09-18,Karagumruk,Hatayspor,0,0,Super Lig,,Turkey,False
+2023-09-18,Karagümrük,Hatayspor,0,0,Super Lig,,Turkey,False
 2023-09-18,Sivasspor,Ankaragucu,1,3,Super Lig,,Turkey,False
 2023-09-22,Gaziantep,Istanbulspor,2,0,Super Lig,,Turkey,False
 2023-09-23,Antalyaspor,Samsunspor,2,0,Super Lig,,Turkey,False
 2023-09-23,Başakşehir,Galatasaray,1,2,Super Lig,,Turkey,False
-2023-09-23,Pendikspor,Karagumruk,1,1,Super Lig,,Turkey,False
+2023-09-23,Pendikspor,Karagümrük,1,1,Super Lig,,Turkey,False
 2023-09-23,Rizespor,Sivasspor,1,1,Super Lig,,Turkey,False
 2023-09-24,Alanyaspor,Fenerbahçe,0,1,Super Lig,,Turkey,False
 2023-09-24,Ankaragucu,Konyaspor,1,1,Super Lig,,Turkey,False
@@ -3655,11 +3655,11 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-09-30,Trabzonspor,Pendikspor,2,1,Super Lig,,Turkey,False
 2023-10-01,Ad. Demirspor,Alanyaspor,4,0,Super Lig,,Turkey,False
 2023-10-01,Fenerbahçe,Rizespor,5,0,Super Lig,,Turkey,False
-2023-10-01,Karagumruk,Kasımpaşa,2,3,Super Lig,,Turkey,False
+2023-10-01,Karagümrük,Kasımpaşa,2,3,Super Lig,,Turkey,False
 2023-10-01,Konyaspor,Beşiktaş,0,2,Super Lig,,Turkey,False
 2023-10-02,Kayserispor,Başakşehir,0,0,Super Lig,,Turkey,False
 2023-10-06,Ad. Demirspor,Trabzonspor,1,0,Super Lig,,Turkey,False
-2023-10-06,Alanyaspor,Karagumruk,2,1,Super Lig,,Turkey,False
+2023-10-06,Alanyaspor,Karagümrük,2,1,Super Lig,,Turkey,False
 2023-10-07,Ankaragucu,Kayserispor,3,0,Super Lig,,Turkey,False
 2023-10-07,Antalyaspor,Galatasaray,0,2,Super Lig,,Turkey,False
 2023-10-07,Başakşehir,Gaziantep,2,0,Super Lig,,Turkey,False
@@ -3676,7 +3676,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-10-22,Istanbulspor,Ankaragucu,2,1,Super Lig,,Turkey,False
 2023-10-22,Samsunspor,Başakşehir,0,0,Super Lig,,Turkey,False
 2023-10-22,Sivasspor,Kasımpaşa,0,1,Super Lig,,Turkey,False
-2023-10-23,Karagumruk,Ad. Demirspor,2,0,Super Lig,,Turkey,False
+2023-10-23,Karagümrük,Ad. Demirspor,2,0,Super Lig,,Turkey,False
 2023-10-23,Trabzonspor,Alanyaspor,1,0,Super Lig,,Turkey,False
 2023-10-27,Hatayspor,Kayserispor,1,2,Super Lig,,Turkey,False
 2023-10-27,Kasımpaşa,Istanbulspor,3,1,Super Lig,,Turkey,False
@@ -3685,7 +3685,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-10-28,Rizespor,Galatasaray,0,1,Super Lig,,Turkey,False
 2023-10-29,Ankaragucu,Samsunspor,2,0,Super Lig,,Turkey,False
 2023-10-29,Antalyaspor,Başakşehir,1,0,Super Lig,,Turkey,False
-2023-10-29,Karagumruk,Trabzonspor,0,0,Super Lig,,Turkey,False
+2023-10-29,Karagümrük,Trabzonspor,0,0,Super Lig,,Turkey,False
 2023-10-29,Pendikspor,Fenerbahçe,0,5,Super Lig,,Turkey,False
 2023-10-30,Beşiktaş,Gaziantep,2,0,Super Lig,,Turkey,False
 2023-11-03,Galatasaray,Kasımpaşa,2,1,Super Lig,,Turkey,False
@@ -3694,7 +3694,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-11-04,Samsunspor,Hatayspor,2,1,Super Lig,,Turkey,False
 2023-11-05,Antalyaspor,Beşiktaş,3,2,Super Lig,,Turkey,False
 2023-11-05,Başakşehir,Ankaragucu,3,3,Super Lig,,Turkey,False
-2023-11-05,Konyaspor,Karagumruk,1,1,Super Lig,,Turkey,False
+2023-11-05,Konyaspor,Karagümrük,1,1,Super Lig,,Turkey,False
 2023-11-05,Sivasspor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2023-11-06,Gaziantep,Rizespor,2,0,Super Lig,,Turkey,False
 2023-11-06,Kayserispor,Alanyaspor,1,0,Super Lig,,Turkey,False
@@ -3703,7 +3703,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-11-10,Trabzonspor,Konyaspor,2,1,Super Lig,,Turkey,False
 2023-11-11,Alanyaspor,Gaziantep,0,3,Super Lig,,Turkey,False
 2023-11-11,Hatayspor,Galatasaray,2,1,Super Lig,,Turkey,False
-2023-11-11,Karagumruk,Sivasspor,3,0,Super Lig,,Turkey,False
+2023-11-11,Karagümrük,Sivasspor,3,0,Super Lig,,Turkey,False
 2023-11-11,Kasımpaşa,Kayserispor,3,4,Super Lig,,Turkey,False
 2023-11-12,Ad. Demirspor,Fenerbahçe,0,0,Super Lig,,Turkey,False
 2023-11-12,Beşiktaş,Başakşehir,1,0,Super Lig,,Turkey,False
@@ -3714,13 +3714,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-11-25,Istanbulspor,Hatayspor,2,1,Super Lig,,Turkey,False
 2023-11-25,Konyaspor,Kasımpaşa,2,0,Super Lig,,Turkey,False
 2023-11-26,Antalyaspor,Rizespor,0,0,Super Lig,,Turkey,False
-2023-11-26,Fenerbahçe,Karagumruk,2,1,Super Lig,,Turkey,False
+2023-11-26,Fenerbahçe,Karagümrük,2,1,Super Lig,,Turkey,False
 2023-11-26,Kayserispor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
 2023-11-26,Samsunspor,Beşiktaş,1,2,Super Lig,,Turkey,False
 2023-11-27,Başakşehir,Pendikspor,4,1,Super Lig,,Turkey,False
 2023-11-27,Sivasspor,Trabzonspor,3,3,Super Lig,,Turkey,False
 2023-12-01,Hatayspor,Antalyaspor,3,3,Super Lig,,Turkey,False
-2023-12-01,Karagumruk,Istanbulspor,3,0,Super Lig,,Turkey,False
+2023-12-01,Karagümrük,Istanbulspor,3,0,Super Lig,,Turkey,False
 2023-12-02,Ad. Demirspor,Samsunspor,2,3,Super Lig,,Turkey,False
 2023-12-02,Alanyaspor,Konyaspor,2,2,Super Lig,,Turkey,False
 2023-12-02,Pendikspor,Galatasaray,0,2,Super Lig,,Turkey,False
@@ -3730,7 +3730,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-12-03,Trabzonspor,Kayserispor,0,1,Super Lig,,Turkey,False
 2023-12-04,Fenerbahçe,Sivasspor,4,1,Super Lig,,Turkey,False
 2023-12-08,Galatasaray,Ad. Demirspor,3,1,Super Lig,,Turkey,False
-2023-12-09,Antalyaspor,Karagumruk,2,1,Super Lig,,Turkey,False
+2023-12-09,Antalyaspor,Karagümrük,2,1,Super Lig,,Turkey,False
 2023-12-09,Beşiktaş,Fenerbahçe,1,3,Super Lig,,Turkey,False
 2023-12-09,Samsunspor,Kasımpaşa,4,2,Super Lig,,Turkey,False
 2023-12-10,Başakşehir,Hatayspor,1,0,Super Lig,,Turkey,False
@@ -3743,13 +3743,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2023-12-19,Gaziantep,Ad. Demirspor,2,2,Super Lig,,Turkey,False
 2023-12-19,Istanbulspor,Trabzonspor,0,3,Super Lig,,Turkey,False
 2023-12-20,Antalyaspor,Kasımpaşa,0,0,Super Lig,,Turkey,False
-2023-12-20,Galatasaray,Karagumruk,1,0,Super Lig,,Turkey,False
+2023-12-20,Galatasaray,Karagümrük,1,0,Super Lig,,Turkey,False
 2023-12-20,Kayserispor,Fenerbahçe,3,4,Super Lig,,Turkey,False
 2023-12-21,Ankaragucu,Hatayspor,0,0,Super Lig,,Turkey,False
 2023-12-21,Beşiktaş,Alanyaspor,1,3,Super Lig,,Turkey,False
 2023-12-21,Rizespor,Pendikspor,5,1,Super Lig,,Turkey,False
 2023-12-21,Samsunspor,Konyaspor,1,1,Super Lig,,Turkey,False
-2023-12-23,Karagumruk,Gaziantep,0,3,Super Lig,,Turkey,False
+2023-12-23,Karagümrük,Gaziantep,0,3,Super Lig,,Turkey,False
 2023-12-23,Sivasspor,Istanbulspor,1,0,Super Lig,,Turkey,False
 2023-12-23,Trabzonspor,Başakşehir,1,1,Super Lig,,Turkey,False
 2023-12-24,Ad. Demirspor,Antalyaspor,2,1,Super Lig,,Turkey,False
@@ -3765,7 +3765,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-06,Ankaragucu,Trabzonspor,0,1,Super Lig,,Turkey,False
 2024-01-06,Başakşehir,Ad. Demirspor,0,0,Super Lig,,Turkey,False
 2024-01-06,Rizespor,Hatayspor,2,0,Super Lig,,Turkey,False
-2024-01-06,Samsunspor,Karagumruk,1,0,Super Lig,,Turkey,False
+2024-01-06,Samsunspor,Karagümrük,1,0,Super Lig,,Turkey,False
 2024-01-07,Galatasaray,Konyaspor,3,0,Super Lig,,Turkey,False
 2024-01-07,Istanbulspor,Fenerbahçe,1,5,Super Lig,,Turkey,False
 2024-01-07,Kayserispor,Sivasspor,1,3,Super Lig,,Turkey,False
@@ -3776,12 +3776,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-10,Ad. Demirspor,Istanbulspor,2,2,Super Lig,,Turkey,False
 2024-01-10,Fenerbahçe,Konyaspor,7,1,Super Lig,,Turkey,False
 2024-01-10,Hatayspor,Gaziantep,0,0,Super Lig,,Turkey,False
-2024-01-10,Karagumruk,Kayserispor,4,1,Super Lig,,Turkey,False
+2024-01-10,Karagümrük,Kayserispor,4,1,Super Lig,,Turkey,False
 2024-01-11,Sivasspor,Galatasaray,1,1,Super Lig,,Turkey,False
 2024-01-11,Trabzonspor,Samsunspor,2,1,Super Lig,,Turkey,False
 2024-01-13,Ankaragucu,Kasımpaşa,3,1,Super Lig,,Turkey,False
 2024-01-13,Başakşehir,Alanyaspor,3,2,Super Lig,,Turkey,False
-2024-01-13,Beşiktaş,Karagumruk,3,0,Super Lig,,Turkey,False
+2024-01-13,Beşiktaş,Karagümrük,3,0,Super Lig,,Turkey,False
 2024-01-13,Hatayspor,Pendikspor,1,1,Super Lig,,Turkey,False
 2024-01-13,Rizespor,Ad. Demirspor,1,0,Super Lig,,Turkey,False
 2024-01-14,Antalyaspor,Trabzonspor,1,1,Super Lig,,Turkey,False
@@ -3791,7 +3791,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-15,Galatasaray,Kayserispor,2,1,Super Lig,,Turkey,False
 2024-01-20,Ad. Demirspor,Ankaragucu,1,1,Super Lig,,Turkey,False
 2024-01-20,Alanyaspor,Rizespor,2,1,Super Lig,,Turkey,False
-2024-01-20,Karagumruk,Başakşehir,1,1,Super Lig,,Turkey,False
+2024-01-20,Karagümrük,Başakşehir,1,1,Super Lig,,Turkey,False
 2024-01-20,Kasımpaşa,Hatayspor,3,0,Super Lig,,Turkey,False
 2024-01-20,Pendikspor,Beşiktaş,4,0,Super Lig,,Turkey,False
 2024-01-21,Fenerbahçe,Samsunspor,1,1,Super Lig,,Turkey,False
@@ -3802,7 +3802,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-23,Beşiktaş,Ad. Demirspor,0,0,Super Lig,,Turkey,False
 2024-01-23,Hatayspor,Alanyaspor,1,1,Super Lig,,Turkey,False
 2024-01-23,Pendikspor,Kasımpaşa,3,2,Super Lig,,Turkey,False
-2024-01-24,Ankaragucu,Karagumruk,2,0,Super Lig,,Turkey,False
+2024-01-24,Ankaragucu,Karagümrük,2,0,Super Lig,,Turkey,False
 2024-01-24,Antalyaspor,Sivasspor,2,1,Super Lig,,Turkey,False
 2024-01-24,Başakşehir,Fenerbahçe,0,1,Super Lig,,Turkey,False
 2024-01-24,Gaziantep,Konyaspor,1,1,Super Lig,,Turkey,False
@@ -3812,7 +3812,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-27,Ad. Demirspor,Hatayspor,0,1,Super Lig,,Turkey,False
 2024-01-27,Alanyaspor,Pendikspor,1,1,Super Lig,,Turkey,False
 2024-01-28,Fenerbahçe,Ankaragucu,2,1,Super Lig,,Turkey,False
-2024-01-28,Karagumruk,Rizespor,4,0,Super Lig,,Turkey,False
+2024-01-28,Karagümrük,Rizespor,4,0,Super Lig,,Turkey,False
 2024-01-28,Konyaspor,Başakşehir,2,3,Super Lig,,Turkey,False
 2024-01-28,Sivasspor,Beşiktaş,1,0,Super Lig,,Turkey,False
 2024-01-29,Galatasaray,Gaziantep,2,1,Super Lig,,Turkey,False
@@ -3820,7 +3820,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-01-29,Kayserispor,Antalyaspor,1,1,Super Lig,,Turkey,False
 2024-01-29,Trabzonspor,Kasımpaşa,2,3,Super Lig,,Turkey,False
 2024-02-02,Ankaragucu,Sivasspor,0,0,Super Lig,,Turkey,False
-2024-02-02,Hatayspor,Karagumruk,3,1,Super Lig,,Turkey,False
+2024-02-02,Hatayspor,Karagümrük,3,1,Super Lig,,Turkey,False
 2024-02-02,Samsunspor,Galatasaray,0,2,Super Lig,,Turkey,False
 2024-02-03,Antalyaspor,Fenerbahçe,0,2,Super Lig,,Turkey,False
 2024-02-03,Başakşehir,Istanbulspor,2,0,Super Lig,,Turkey,False
@@ -3831,7 +3831,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-02-04,Pendikspor,Ad. Demirspor,2,1,Super Lig,,Turkey,False
 2024-02-09,Ad. Demirspor,Kasımpaşa,1,3,Super Lig,,Turkey,False
 2024-02-10,Galatasaray,Başakşehir,2,0,Super Lig,,Turkey,False
-2024-02-10,Karagumruk,Pendikspor,2,0,Super Lig,,Turkey,False
+2024-02-10,Karagümrük,Pendikspor,2,0,Super Lig,,Turkey,False
 2024-02-11,Fenerbahçe,Alanyaspor,2,2,Super Lig,,Turkey,False
 2024-02-11,Istanbulspor,Gaziantep,1,3,Super Lig,,Turkey,False
 2024-02-11,Konyaspor,Ankaragucu,1,0,Super Lig,,Turkey,False
@@ -3839,7 +3839,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-02-12,Kayserispor,Beşiktaş,0,0,Super Lig,,Turkey,False
 2024-02-12,Samsunspor,Antalyaspor,2,0,Super Lig,,Turkey,False
 2024-02-12,Trabzonspor,Hatayspor,2,0,Super Lig,,Turkey,False
-2024-02-16,Kasımpaşa,Karagumruk,1,1,Super Lig,,Turkey,False
+2024-02-16,Kasımpaşa,Karagümrük,1,1,Super Lig,,Turkey,False
 2024-02-17,Antalyaspor,Istanbulspor,2,2,Super Lig,,Turkey,False
 2024-02-17,Hatayspor,Sivasspor,1,1,Super Lig,,Turkey,False
 2024-02-17,Rizespor,Fenerbahçe,1,3,Super Lig,,Turkey,False
@@ -3855,7 +3855,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-02-24,Kayserispor,Ankaragucu,3,2,Super Lig,,Turkey,False
 2024-02-24,Konyaspor,Hatayspor,2,0,Super Lig,,Turkey,False
 2024-02-25,Istanbulspor,Beşiktaş,0,2,Super Lig,,Turkey,False
-2024-02-25,Karagumruk,Alanyaspor,1,1,Super Lig,,Turkey,False
+2024-02-25,Karagümrük,Alanyaspor,1,1,Super Lig,,Turkey,False
 2024-02-25,Sivasspor,Pendikspor,4,1,Super Lig,,Turkey,False
 2024-02-25,Trabzonspor,Ad. Demirspor,1,0,Super Lig,,Turkey,False
 2024-02-26,Galatasaray,Antalyaspor,2,1,Super Lig,,Turkey,False
@@ -3866,20 +3866,20 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-03-03,Başakşehir,Samsunspor,1,0,Super Lig,,Turkey,False
 2024-03-03,Beşiktaş,Galatasaray,0,1,Super Lig,,Turkey,False
 2024-03-03,Pendikspor,Konyaspor,0,2,Super Lig,,Turkey,False
-2024-03-04,Ad. Demirspor,Karagumruk,1,0,Super Lig,,Turkey,False
+2024-03-04,Ad. Demirspor,Karagümrük,1,0,Super Lig,,Turkey,False
 2024-03-04,Alanyaspor,Trabzonspor,3,1,Super Lig,,Turkey,False
 2024-03-04,Antalyaspor,Gaziantep,1,0,Super Lig,,Turkey,False
 2024-03-08,Galatasaray,Rizespor,6,2,Super Lig,,Turkey,False
 2024-03-09,Başakşehir,Antalyaspor,1,0,Super Lig,,Turkey,False
 2024-03-09,Konyaspor,Ad. Demirspor,2,2,Super Lig,,Turkey,False
 2024-03-09,Sivasspor,Alanyaspor,1,2,Super Lig,,Turkey,False
-2024-03-09,Trabzonspor,Karagumruk,5,1,Super Lig,,Turkey,False
+2024-03-09,Trabzonspor,Karagümrük,5,1,Super Lig,,Turkey,False
 2024-03-10,Fenerbahçe,Pendikspor,4,1,Super Lig,,Turkey,False
 2024-03-10,Istanbulspor,Kasımpaşa,1,2,Super Lig,,Turkey,False
 2024-03-10,Kayserispor,Hatayspor,1,1,Super Lig,,Turkey,False
 2024-03-10,Samsunspor,Ankaragucu,2,1,Super Lig,,Turkey,False
 2024-03-11,Gaziantep,Beşiktaş,2,0,Super Lig,,Turkey,False
-2024-03-15,Karagumruk,Konyaspor,1,1,Super Lig,,Turkey,False
+2024-03-15,Karagümrük,Konyaspor,1,1,Super Lig,,Turkey,False
 2024-03-15,Pendikspor,Istanbulspor,1,0,Super Lig,,Turkey,False
 2024-03-16,Ad. Demirspor,Sivasspor,4,1,Super Lig,,Turkey,False
 2024-03-16,Alanyaspor,Kayserispor,1,0,Super Lig,,Turkey,False
@@ -3896,7 +3896,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-04-03,Fenerbahçe,Ad. Demirspor,4,2,Super Lig,,Turkey,False
 2024-04-03,Kayserispor,Kasımpaşa,0,2,Super Lig,,Turkey,False
 2024-04-03,Konyaspor,Trabzonspor,1,3,Super Lig,,Turkey,False
-2024-04-03,Sivasspor,Karagumruk,1,0,Super Lig,,Turkey,False
+2024-04-03,Sivasspor,Karagümrük,1,0,Super Lig,,Turkey,False
 2024-04-04,Başakşehir,Beşiktaş,1,1,Super Lig,,Turkey,False
 2024-04-04,Samsunspor,Pendikspor,0,0,Super Lig,,Turkey,False
 2024-04-12,Trabzonspor,Sivasspor,0,1,Super Lig,,Turkey,False
@@ -3905,12 +3905,12 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-04-13,Beşiktaş,Samsunspor,1,1,Super Lig,,Turkey,False
 2024-04-13,Kasımpaşa,Konyaspor,0,2,Super Lig,,Turkey,False
 2024-04-14,Hatayspor,Istanbulspor,0,3,Super Lig,,Turkey,False
-2024-04-14,Karagumruk,Fenerbahçe,1,2,Super Lig,,Turkey,False
+2024-04-14,Karagümrük,Fenerbahçe,1,2,Super Lig,,Turkey,False
 2024-04-14,Pendikspor,Başakşehir,2,3,Super Lig,,Turkey,False
 2024-04-14,Rizespor,Antalyaspor,3,0,Super Lig,,Turkey,False
 2024-04-15,Alanyaspor,Galatasaray,0,4,Super Lig,,Turkey,False
 2024-04-19,Beşiktaş,Ankaragucu,2,0,Super Lig,,Turkey,False
-2024-04-20,Istanbulspor,Karagumruk,1,2,Super Lig,,Turkey,False
+2024-04-20,Istanbulspor,Karagümrük,1,2,Super Lig,,Turkey,False
 2024-04-20,Kayserispor,Trabzonspor,1,2,Super Lig,,Turkey,False
 2024-04-20,Konyaspor,Alanyaspor,0,2,Super Lig,,Turkey,False
 2024-04-20,Samsunspor,Ad. Demirspor,1,1,Super Lig,,Turkey,False
@@ -3928,11 +3928,11 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-04-28,Pendikspor,Kayserispor,1,2,Super Lig,,Turkey,False
 2024-04-28,Rizespor,Ankaragucu,2,2,Super Lig,,Turkey,False
 2024-04-28,Trabzonspor,Gaziantep,4,2,Super Lig,,Turkey,False
-2024-04-29,Karagumruk,Antalyaspor,4,1,Super Lig,,Turkey,False
+2024-04-29,Karagümrük,Antalyaspor,4,1,Super Lig,,Turkey,False
 2024-05-03,Ankaragucu,Alanyaspor,1,1,Super Lig,,Turkey,False
 2024-05-03,Beşiktaş,Rizespor,3,2,Super Lig,,Turkey,False
 2024-05-04,Istanbulspor,Ad. Demirspor,0,1,Super Lig,,Turkey,False
-2024-05-04,Kayserispor,Karagumruk,2,2,Super Lig,,Turkey,False
+2024-05-04,Kayserispor,Karagümrük,2,2,Super Lig,,Turkey,False
 2024-05-04,Samsunspor,Trabzonspor,3,1,Super Lig,,Turkey,False
 2024-05-05,Başakşehir,Kasımpaşa,4,1,Super Lig,,Turkey,False
 2024-05-05,Galatasaray,Sivasspor,6,1,Super Lig,,Turkey,False
@@ -3943,7 +3943,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-05-12,Alanyaspor,Beşiktaş,1,1,Super Lig,,Turkey,False
 2024-05-12,Fenerbahçe,Kayserispor,3,0,Super Lig,,Turkey,False
 2024-05-12,Hatayspor,Ankaragucu,2,1,Super Lig,,Turkey,False
-2024-05-12,Karagumruk,Galatasaray,2,3,Super Lig,,Turkey,False
+2024-05-12,Karagümrük,Galatasaray,2,3,Super Lig,,Turkey,False
 2024-05-12,Kasımpaşa,Antalyaspor,3,1,Super Lig,,Turkey,False
 2024-05-12,Konyaspor,Samsunspor,3,0,Super Lig,,Turkey,False
 2024-05-12,Pendikspor,Rizespor,2,1,Super Lig,,Turkey,False
@@ -3954,13 +3954,13 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-05-18,Ankaragucu,Pendikspor,0,0,Super Lig,,Turkey,False
 2024-05-18,Başakşehir,Trabzonspor,0,1,Super Lig,,Turkey,False
 2024-05-18,Beşiktaş,Hatayspor,2,2,Super Lig,,Turkey,False
-2024-05-18,Gaziantep,Karagumruk,3,1,Super Lig,,Turkey,False
+2024-05-18,Gaziantep,Karagümrük,3,1,Super Lig,,Turkey,False
 2024-05-18,Kayserispor,Konyaspor,2,2,Super Lig,,Turkey,False
 2024-05-18,Rizespor,Kasımpaşa,0,0,Super Lig,,Turkey,False
 2024-05-18,Samsunspor,Alanyaspor,1,1,Super Lig,,Turkey,False
 2024-05-19,Galatasaray,Fenerbahçe,0,1,Super Lig,,Turkey,False
 2024-05-24,Alanyaspor,Antalyaspor,1,1,Super Lig,,Turkey,False
-2024-05-25,Karagumruk,Samsunspor,3,1,Super Lig,,Turkey,False
+2024-05-25,Karagümrük,Samsunspor,3,1,Super Lig,,Turkey,False
 2024-05-25,Sivasspor,Kayserispor,2,1,Super Lig,,Turkey,False
 2024-05-26,Ad. Demirspor,Başakşehir,2,6,Super Lig,,Turkey,False
 2024-05-26,Fenerbahçe,Istanbulspor,6,0,Super Lig,,Turkey,False
@@ -4050,6 +4050,33 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2024-10-20,Samsunspor,Fenerbahçe,2,2,Super Lig,,Turkey,False
 2024-10-20,Sivasspor,Hatayspor,3,2,Super Lig,,Turkey,False
 2024-10-21,Bodrumspor,Rizespor,0,1,Super Lig,,Turkey,False
+2024-10-25,Ad. Demirspor,Sivasspor,2,4,Super Lig,,Turkey,False
+2024-10-26,Göztepe,Trabzonspor,2,1,Super Lig,,Turkey,False
+2024-10-26,Hatayspor,Kayserispor,0,1,Super Lig,,Turkey,False
+2024-10-26,Kasımpaşa,Samsunspor,1,4,Super Lig,,Turkey,False
+2024-10-27,Alanyaspor,Antalyaspor,1,2,Super Lig,,Turkey,False
+2024-10-27,Fenerbahçe,Bodrumspor,2,0,Super Lig,,Turkey,False
+2024-10-27,Gaziantep,Konyaspor,3,1,Super Lig,,Turkey,False
+2024-10-28,Başakşehir,Eyüpspor,1,1,Super Lig,,Turkey,False
+2024-10-28,Galatasaray,Beşiktaş,2,1,Super Lig,,Turkey,False
+2024-11-01,Gaziantep,Göztepe,2,1,Super Lig,,Turkey,False
+2024-11-02,Beşiktaş,Kasımpaşa,1,3,Super Lig,,Turkey,False
+2024-11-02,Kayserispor,Ad. Demirspor,0,0,Super Lig,,Turkey,False
+2024-11-02,Sivasspor,Rizespor,2,1,Super Lig,,Turkey,False
+2024-11-03,Bodrumspor,Alanyaspor,0,0,Super Lig,,Turkey,False
+2024-11-03,Eyüpspor,Hatayspor,2,0,Super Lig,,Turkey,False
+2024-11-03,Konyaspor,Başakşehir,3,2,Super Lig,,Turkey,False
+2024-11-03,Trabzonspor,Fenerbahçe,2,3,Super Lig,,Turkey,False
+2024-11-04,Samsunspor,Antalyaspor,2,0,Super Lig,,Turkey,False
+2024-11-08,Kasımpaşa,Kayserispor,1,2,Super Lig,,Turkey,False
+2024-11-09,Ad. Demirspor,Eyüpspor,0,1,Super Lig,,Turkey,False
+2024-11-09,Antalyaspor,Bodrumspor,3,2,Super Lig,,Turkey,False
+2024-11-09,Hatayspor,Gaziantep,3,1,Super Lig,,Turkey,False
+2024-11-09,Rizespor,Trabzonspor,3,1,Super Lig,,Turkey,False
+2024-11-10,Başakşehir,Beşiktaş,0,0,Super Lig,,Turkey,False
+2024-11-10,Fenerbahçe,Sivasspor,4,0,Super Lig,,Turkey,False
+2024-11-10,Galatasaray,Samsunspor,3,2,Super Lig,,Turkey,False
+2024-11-10,Göztepe,Konyaspor,2,0,Super Lig,,Turkey,False
 2024-11-23,Bodrumspor,Galatasaray,0,1,Super Lig,,Turkey,False
 2024-11-23,Eyüpspor,Rizespor,1,2,Super Lig,,Turkey,False
 2024-11-23,Gaziantep,Başakşehir,3,0,Super Lig,,Turkey,False
