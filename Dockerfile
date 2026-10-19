@@ -16,8 +16,8 @@ COPY data/ ./data/
 COPY src/ ./src/
 RUN cargo build --release
 
-# Stage 2: Build React frontend
-FROM node:20-slim AS frontend-builder
+# Stage 2: Build React frontend (Node 22, as CI uses)
+FROM node:22-slim AS frontend-builder
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -27,8 +27,15 @@ RUN npm run build
 # Stage 3: Runtime
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# The server runs as an unprivileged user with a fixed UID. It only reads
+# its binary (data is embedded) and frontend/dist, which stay root-owned and
+# world-readable, so it owns nothing and has no home directory.
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home \
+           --home-dir /nonexistent --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=backend-builder /app/target/release/superlig-sim .
 COPY --from=frontend-builder /app/dist ./frontend/dist
+USER 10001:10001
 EXPOSE 3000
 CMD ["./superlig-sim"]

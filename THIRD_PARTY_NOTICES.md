@@ -1,5 +1,9 @@
 # Third-party notices
 
+The project is released under the MIT License in [`LICENSE`](LICENSE). The
+match history it ships includes data from the sources below, which keep
+their own terms.
+
 ## Club Football Match Data 2000–2025
 
 `data/superlig_results.csv` includes match records derived from

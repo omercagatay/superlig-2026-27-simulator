@@ -25,14 +25,14 @@ import { ProbabilitiesPage } from "./pages/ProbabilitiesPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { TablePage, type TableView } from "./pages/TablePage";
 
-// Must match --bg in styles.css and the pre-paint script in index.html.
+// Must match --bg in styles.css and the pre-paint script, public/theme.js.
 const THEME_COLOR: Record<Theme, string> = { light: "#ffffff", dark: "#16181c" };
 
 // The settings GET /api/forecast answers for; the footer starts on them.
 const DEFAULT_SIMS = 50000;
 const DEFAULT_SEED = 12345;
 
-// index.html makes the same choice before first paint; this only has to
+// public/theme.js makes the same choice before first paint; this only has to
 // agree with it so React state matches the attribute already set.
 function initialTheme(): Theme {
   try {

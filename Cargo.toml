@@ -3,6 +3,7 @@ name = "superlig-sim"
 version = "0.9.0"
 edition = "2021"
 rust-version = "1.87"
+license = "MIT"
 
 [dependencies]
 axum = "0.7"
@@ -13,7 +14,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 rand_distr = "0.4"
 rayon = "1"
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
-tower-http = { version = "0.5", features = ["fs", "limit"] }
+tower-http = { version = "0.5", features = ["fs", "limit", "compression-gzip", "compression-br", "set-header"] }
 tower = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -26,6 +27,11 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 argmin = { version = "0.11", default-features = false }
 argmin-math = { version = "0.5", default-features = false, features = ["vec"] }
 encoding_rs = "0.8"
+
+[dev-dependencies]
+# Already in the tree through tower-http's gzip support; a router test
+# decompresses a response with it.
+flate2 = "1"
 
 [profile.release]
 opt-level = 3

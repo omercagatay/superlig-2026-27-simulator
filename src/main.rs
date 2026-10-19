@@ -3,10 +3,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::{
+    http::{header, HeaderName, HeaderValue},
     routing::{get, post},
     Router,
 };
-use tower_http::{limit::RequestBodyLimitLayer, services::ServeDir};
+use tower::ServiceBuilder;
+use tower_http::{
+    compression::CompressionLayer, limit::RequestBodyLimitLayer, services::ServeDir,
+    set_header::SetResponseHeaderLayer,
+};
 use tracing_subscriber::EnvFilter;
 
 use superlig_sim::{
@@ -23,9 +28,40 @@ fn env_flag(name: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// What the built SPA loads and nothing more: its own scripts, stylesheet and
+/// API, and the inline SVG favicon, a `data:` image. The pre-paint theme
+/// script is a file (`frontend/public/theme.js`) so scripts need no inline
+/// allowance, and React sets `style` props through the CSSOM, which
+/// `style-src` does not police, so styles need none either.
+const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; \
+     style-src 'self'; img-src 'self' data:; connect-src 'self'; \
+     frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
+
+/// Headers every response carries, the SPA's files and errors included.
+fn security_headers() -> [(HeaderName, HeaderValue); 4] {
+    [
+        (
+            header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static("nosniff"),
+        ),
+        (
+            header::REFERRER_POLICY,
+            HeaderValue::from_static("strict-origin-when-cross-origin"),
+        ),
+        (header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY")),
+        (
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(CONTENT_SECURITY_POLICY),
+        ),
+    ]
+}
+
 /// The API, each rate-limited group with its own per-IP allowance, and the
-/// built SPA for everything else.
+/// built SPA for everything else, all compressed for clients that accept
+/// gzip or brotli and all carrying `security_headers`.
 fn router(state: Arc<AppState>, trust_proxy: bool) -> Router {
+    let [nosniff, referrer, frame, csp] =
+        security_headers().map(|(name, value)| SetResponseHeaderLayer::overriding(name, value));
     // No CORS layer: the SPA is served from this origin, and the Vite dev
     // server proxies /api, so no cross-origin caller needs access.
     Router::new()
@@ -64,10 +100,64 @@ fn router(state: Arc<AppState>, trust_proxy: bool) -> Router {
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .with_state(state)
         .fallback_service(ServeDir::new("frontend/dist"))
+        // Added after the fallback, so the SPA's files get them too.
+        .layer(
+            ServiceBuilder::new()
+                .layer(nosniff)
+                .layer(referrer)
+                .layer(frame)
+                .layer(csp)
+                .layer(CompressionLayer::new()),
+        )
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+/// How long requests still open when the shutdown signal arrives may take to
+/// finish before the process exits without them.
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(5);
+
+/// Resolves on Ctrl-C or SIGTERM, which Railway and `docker stop` send. As
+/// PID 1 in the container the process has no default SIGTERM action, so
+/// without a handler a stop waits out its timeout and ends in SIGKILL.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        if let Err(e) = tokio::signal::ctrl_c().await {
+            tracing::warn!("Cannot listen for Ctrl-C: {e}");
+            std::future::pending::<()>().await;
+        }
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+            Ok(mut sigterm) => {
+                sigterm.recv().await;
+            }
+            Err(e) => {
+                tracing::warn!("Cannot listen for SIGTERM: {e}");
+                std::future::pending::<()>().await;
+            }
+        }
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        () = ctrl_c => tracing::info!("Ctrl-C received, shutting down"),
+        () = terminate => tracing::info!("SIGTERM received, shutting down"),
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let runtime = tokio::runtime::Runtime::new()?;
+    let result = runtime.block_on(serve());
+    // Dropping the runtime would wait for any simulation still running on the
+    // blocking pool (the startup warm-up, or a run of up to 200,000 seasons),
+    // grace period or not. Its answer could only go to a cache about to
+    // vanish, so exit without it.
+    runtime.shutdown_background();
+    result
+}
+
+/// Builds the world and the state, then serves until a shutdown signal.
+async fn serve() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("superlig_sim=info".parse()?))
@@ -185,11 +275,31 @@ async fn main() -> anyhow::Result<()> {
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("listening on http://{addr}");
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(
+    // On the signal the server stops accepting connections and lets open
+    // requests finish, for up to SHUTDOWN_GRACE.
+    let (stopping, stopped) = tokio::sync::oneshot::channel();
+    let server = axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .await?;
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        let _ = stopping.send(());
+    });
+    let grace = async {
+        match stopped.await {
+            Ok(()) => tokio::time::sleep(SHUTDOWN_GRACE).await,
+            Err(_) => std::future::pending().await,
+        }
+    };
+    tokio::select! {
+        result = server => result?,
+        () = grace => tracing::warn!(
+            "Requests still open {} s after the signal; exiting without them",
+            SHUTDOWN_GRACE.as_secs()
+        ),
+    }
+    tracing::info!("Server stopped");
     Ok(())
 }
 
@@ -201,18 +311,94 @@ mod tests {
         extract::ConnectInfo,
         http::{Request, StatusCode},
     };
+    use std::io::Read;
     use superlig_sim::forecast_cache::SimKey;
     use tower::Service;
 
-    /// One visitor's page loads must not use up the calendar's allowance.
-    #[tokio::test]
-    async fn the_forecast_has_its_own_allowance() {
-        let state = Arc::new(AppState::new(
+    fn test_state() -> Arc<AppState> {
+        Arc::new(AppState::new(
             World::new(),
             None,
             false,
             SimulationQueue::new(1, 0, Duration::from_secs(1)),
-        ));
+        ))
+    }
+
+    /// A GET from one peer, offering `encoding` if given.
+    async fn fetch(
+        app: &mut Router,
+        path: &str,
+        encoding: Option<&str>,
+    ) -> axum::response::Response {
+        let mut req = Request::builder().uri(path);
+        if let Some(encoding) = encoding {
+            req = req.header(header::ACCEPT_ENCODING, encoding);
+        }
+        let mut req = req.body(Body::empty()).unwrap();
+        let peer: SocketAddr = "192.0.2.1:5000".parse().unwrap();
+        req.extensions_mut().insert(ConnectInfo(peer));
+        app.call(req).await.unwrap()
+    }
+
+    /// API answers and the SPA fallback carry them, its 404s included (the
+    /// last path is one whether or not frontend/dist is built).
+    #[tokio::test]
+    async fn every_response_carries_the_security_headers() {
+        let mut app = router(test_state(), false);
+        for path in ["/api/health", "/api/matches", "/no-such-file.js"] {
+            let resp = fetch(&mut app, path, None).await;
+            for (name, value) in security_headers() {
+                assert_eq!(resp.headers().get(&name), Some(&value), "{name} on {path}");
+            }
+        }
+    }
+
+    /// The calendar, the largest API answer, goes out compressed to a client
+    /// that accepts it and inflates to the bytes an identity client gets.
+    #[tokio::test]
+    async fn large_responses_are_compressed() {
+        let mut app = router(test_state(), false);
+        let body = |resp: axum::response::Response| async move {
+            assert_eq!(resp.status(), StatusCode::OK);
+            axum::body::to_bytes(resp.into_body(), usize::MAX)
+                .await
+                .unwrap()
+        };
+
+        let resp = fetch(&mut app, "/api/matches", None).await;
+        assert!(resp.headers().get(header::CONTENT_ENCODING).is_none());
+        let plain = body(resp).await;
+
+        let resp = fetch(&mut app, "/api/matches", Some("gzip")).await;
+        assert_eq!(resp.headers()[header::CONTENT_ENCODING], "gzip");
+        let gzip = body(resp).await;
+        let mut inflated = Vec::new();
+        flate2::read::GzDecoder::new(&gzip[..])
+            .read_to_end(&mut inflated)
+            .unwrap();
+        assert_eq!(inflated, plain);
+        assert!(
+            gzip.len() * 2 < plain.len(),
+            "gzip {} of {} bytes",
+            gzip.len(),
+            plain.len()
+        );
+
+        let resp = fetch(&mut app, "/api/matches", Some("br;q=1, gzip;q=0.5")).await;
+        assert_eq!(resp.headers()[header::CONTENT_ENCODING], "br");
+        let br = body(resp).await;
+        assert!(
+            br.len() * 2 < plain.len(),
+            "br {} of {} bytes",
+            br.len(),
+            plain.len()
+        );
+    }
+
+    /// One visitor's page loads must not use up the calendar's allowance.
+    #[tokio::test]
+    async fn the_forecast_has_its_own_allowance() {
+        let state = test_state();
         // A cached default forecast, so no request here runs a simulation.
         state
             .sim_cache
