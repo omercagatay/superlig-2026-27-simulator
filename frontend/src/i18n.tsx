@@ -116,9 +116,9 @@ const DICT = {
 
   // Table
   currentTable: ["Current table", "Güncel puan durumu"],
-  projectedTable: ["Projected final table", "Tahmini sezon sonu puan durumu"],
+  projectedTable: ["Projected final table", "Tahminî sezon sonu puan durumu"],
   tableCurrent: ["Current", "Güncel"],
-  tableProjected: ["Projected", "Tahmini"],
+  tableProjected: ["Projected", "Tahminî"],
   colPos: ["Pos", "Sıra"],
   colP: ["P", "O"],
   colW: ["W", "G"],
