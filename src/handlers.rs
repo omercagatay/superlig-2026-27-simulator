@@ -783,6 +783,37 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_fixture_pinned_twice_is_a_bad_request() {
+        let state = test_state(1, 1, Duration::from_secs(5));
+        let (home, away) = {
+            let world = state.world.read().await;
+            let f = world
+                .fixtures
+                .iter()
+                .find(|f| !world.played.contains_key(&(f.home, f.away)))
+                .expect("an unplayed fixture");
+            (world.teams[f.home].clone(), world.teams[f.away].clone())
+        };
+        for second in ["away", "home"] {
+            let pins = json!([
+                { "home": home, "away": away, "outcome": "home" },
+                { "home": home, "away": away, "outcome": second },
+            ]);
+            let resp = run_sim(
+                State(state.clone()),
+                sim_request(json!({ "n_sims": 100, "seed": 1, "what_if": pins })),
+            )
+            .await
+            .into_response();
+            assert_eq!(resp.status(), StatusCode::BAD_REQUEST, "{second}");
+            assert_eq!(
+                body_bytes(resp).await,
+                format!("{home} v {away} is pinned twice")
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn only_a_real_world_change_bumps_the_version() {
         let state = test_state(1, 0, Duration::from_secs(5));
         let (mut played, next) = {

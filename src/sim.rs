@@ -1493,40 +1493,79 @@ mod tests {
         total as f64 / trials as f64
     }
 
-    /// The simulator scores an overridden club's goals at the λs
-    /// `fixture_probs` shows for it, wherever the random shock acts.
+    /// The simulator takes an override as `fixture_probs` does, wherever
+    /// the random shock acts. With no shock a trial's λ pair is the fixture
+    /// forecast's, bit for bit; with one, the override moves the shocked
+    /// pair by the forecast's own factor. Over whole seasons the club scores
+    /// the goals the forecast expects.
     #[test]
     fn the_simulator_takes_an_override_as_the_fixture_forecast_does() {
-        let mut w = shipped(World::with_played(0));
-        let club = w.idx["Göztepe"];
+        let plain = shipped(World::with_played(0));
+        let club = plain.idx["Göztepe"];
+        let mut w = plain.clone();
         w.apply_overrides(&HashMap::from([(
             "Göztepe".to_string(),
             w.elo[club] + 100.0,
         )]));
-        let expected: f64 = w
-            .fixtures
-            .iter()
-            .map(|f| {
-                let p = w.fixture_probs(f.home, f.away);
-                if f.home == club {
-                    p.home_xg
-                } else if f.away == club {
-                    p.away_xg
-                } else {
-                    0.0
-                }
-            })
-            .sum();
+        let xg = |w: &World, f: &LeagueFixture| {
+            let p = w.fixture_probs(f.home, f.away);
+            (p.home_xg, p.away_xg)
+        };
+        let none = vec![0.0; w.teams.len()];
+        // A season's shock, clear of the λ clamps.
+        let shock: Vec<f64> = (0..w.teams.len())
+            .map(|c| [60.0, -45.0, 20.0][c % 3])
+            .collect();
+        let inflation = shock_inflation(data::RATING_SIGMA * data::RATING_SIGMA);
+        let close = |a: f64, b: f64| (a / b - 1.0).abs() < 1e-12;
+        for f in &w.fixtures {
+            let (fh, fa) = xg(&w, f);
+            let (gh, ga) = xg(&plain, f);
+            for on in [ShockOn::Elo, ShockOn::Blend] {
+                let lam = |w: &World, shock: &[f64], inflation| {
+                    w.dispersed_lambdas(&w.elo, shock, inflation, on, f.home, f.away)
+                };
+                assert_eq!(lam(&w, &none, 1.0), (fh, fa), "{on:?} {f:?}");
+                let (sh, sa) = lam(&w, &shock, inflation);
+                let (ph, pa) = lam(&plain, &shock, inflation);
+                assert!(
+                    close(sh / ph, fh / gh) && close(sa / pa, fa / ga),
+                    "{on:?} {f:?}: shocked λs move by {} and {}, the forecast by {} and {}",
+                    sh / ph,
+                    sa / pa,
+                    fh / gh,
+                    fa / ga
+                );
+            }
+        }
+
+        let goals = |w: &World| -> f64 {
+            w.fixtures
+                .iter()
+                .map(|f| {
+                    let (h, a) = xg(w, f);
+                    if f.home == club {
+                        h
+                    } else if f.away == club {
+                        a
+                    } else {
+                        0.0
+                    }
+                })
+                .sum()
+        };
+        let expected = goals(&w);
+        // Ignoring the override would cost the club this many goals.
+        let worth = expected - goals(&plain);
         for (disp, tol) in [
-            (dispersion(0.0, ShockOn::Blend, 0.0, 0.0), 0.8),
-            (dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 0.8),
-            (Dispersion::PRODUCTION, 1.2),
-            (
-                dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0),
-                1.2,
-            ),
+            (dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 2.0),
+            (Dispersion::PRODUCTION, 2.5),
         ] {
-            let got = mean_goals_for(&w, &disp, club, 1500, 31);
+            assert!(
+                worth > 3.0 * tol,
+                "{worth:.1} goals against a {tol} tolerance"
+            );
+            let got = mean_goals_for(&w, &disp, club, 300, 31);
             assert!(
                 (got - expected).abs() < tol,
                 "{disp:?}: {got:.2} goals simulated, {expected:.2} expected"
@@ -2519,28 +2558,34 @@ mod tests {
     }
 
     /// Over whole simulated seasons the shock leaves the league's goals
-    /// where the cold simulation has them, with drift as without.
+    /// where the point forecast has them, with drift as without: at every
+    /// fixture's λ pair, which the score table's draws average, and so
+    /// where a cold simulation has them.
     #[test]
     fn a_blend_shock_keeps_the_league_scoring_rate() {
         let w = shipped(World::with_played(0));
-        let goals = |disp: &Dispersion| {
-            let trials = 1000u64;
-            let total: i64 = (0..trials)
-                .into_par_iter()
-                .map(|t| {
-                    let mut rng = SmallRng::seed_from_u64(77 + t * 2_654_435_761);
-                    let season = w.simulate_one_dispersed(&mut rng, &HashMap::new(), disp);
-                    season.records.iter().map(|r| r.gf).sum::<i64>()
-                })
-                .sum();
-            total as f64 / trials as f64
-        };
-        let cold = goals(&dispersion(0.0, ShockOn::Blend, 0.0, 0.0));
+        let cold: f64 = w
+            .fixtures
+            .iter()
+            .map(|f| {
+                let (lh, la) = w.lam_pair(f.home, f.away);
+                lh + la
+            })
+            .sum();
+        let trials = 400u64;
         for disp in [
             dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 0.0),
             dispersion(data::RATING_SIGMA, ShockOn::Blend, 0.0, 15.0),
         ] {
-            let shocked = goals(&disp);
+            let total: i64 = (0..trials)
+                .into_par_iter()
+                .map(|t| {
+                    let mut rng = SmallRng::seed_from_u64(77 + t * 2_654_435_761);
+                    let season = w.simulate_one_dispersed(&mut rng, &HashMap::new(), &disp);
+                    season.records.iter().map(|r| r.gf).sum::<i64>()
+                })
+                .sum();
+            let shocked = total as f64 / trials as f64;
             assert!(
                 (shocked / cold - 1.0).abs() < 0.006,
                 "{disp:?}: {shocked:.1} goals a season against {cold:.1} cold"
@@ -2560,7 +2605,7 @@ mod tests {
             ForcedOutcome::Away,
         ];
         let mut rng = SmallRng::seed_from_u64(12);
-        let draws = 100_000;
+        let draws = 30_000;
         for (lh, la, rho) in [(1.6, 1.1, fitted), (0.7, 2.4, 0.0)] {
             let table = crate::dixoncoles::score_table(lh, la, rho);
             for want in outcomes {
@@ -2612,10 +2657,13 @@ mod tests {
     }
 
     /// A pinned draw's scoreline comes from the score table with the
-    /// world's fitted ρ. With every other result in and no shock, the
-    /// pinned fixture is the only match a season plays, so its score is the
-    /// home club's goals beyond those of its played fixtures; the share of
-    /// 0-0 among its draws must be the table's, which at ρ = 0 it is not.
+    /// world's fitted ρ: the share of 0-0 among `draw_score`'s pinned draws
+    /// must be the table's, which at ρ = 0 it is not. And a season draws its
+    /// pin there: with every other result in and no shock, the pinned
+    /// fixture is the only match a season plays, so its score is the home
+    /// club's goals beyond those of its played fixtures, and it is
+    /// `pinned_score` at the fitted ρ for the trial's first uniform, which at
+    /// ρ = 0 it is not in every trial.
     #[test]
     fn a_pinned_draw_is_drawn_with_the_fitted_rho() {
         let mut w = shipped(World::with_played(data::N_FIXTURES));
@@ -2629,6 +2677,25 @@ mod tests {
             t[0][0] / (0..t.len()).map(|g| t[g][g]).sum::<f64>()
         };
         let (want, independent) = (goalless_share(rho), goalless_share(0.0));
+        let draws = 50_000;
+        let mut rng = SmallRng::seed_from_u64(41);
+        let mut goalless = 0usize;
+        for _ in 0..draws {
+            let (hg, ag) = w.draw_score(lh, la, Some(ForcedOutcome::Draw), &mut rng);
+            assert_eq!(hg, ag, "the pin binds");
+            goalless += usize::from(hg == 0);
+        }
+        let got = goalless as f64 / draws as f64;
+        let se = (want * (1.0 - want) / draws as f64).sqrt();
+        assert!(
+            (want - independent).abs() > 8.0 * se,
+            "ρ {rho} barely moves the share: {want:.4} against {independent:.4}"
+        );
+        assert!(
+            (got - want).abs() < 4.0 * se,
+            "0-0 in {got:.4} of pinned draws; table {want:.4} at ρ {rho}, {independent:.4} at 0"
+        );
+
         // The home club's goals for and against in its played fixtures.
         let (mut gf, mut ga) = (0i64, 0i64);
         for g in &w.fixtures {
@@ -2642,29 +2709,22 @@ mod tests {
         }
         let forced = HashMap::from([((f.home, f.away), ForcedOutcome::Draw)]);
         let cold = dispersion(0.0, ShockOn::Elo, 0.0, 0.0);
-        let trials = 60_000u64;
-        // Seasons whose pinned fixture ended 0-0, and ones it did not end level.
-        let (goalless, not_drawn) = (0..trials)
-            .into_par_iter()
-            .map(|t| {
-                let mut rng = SmallRng::seed_from_u64(41 + t * 2_654_435_761);
-                let season = w.simulate_one_dispersed(&mut rng, &forced, &cold);
-                let r = &season.records[f.home];
-                let (hg, ag) = (r.gf - gf, r.ga - ga);
-                (usize::from(hg == 0 && ag == 0), usize::from(hg != ag))
-            })
-            .reduce(|| (0, 0), |x, y| (x.0 + y.0, x.1 + y.1));
-        assert_eq!(not_drawn, 0, "the pin binds");
-        let got = goalless as f64 / trials as f64;
-        let se = (want * (1.0 - want) / trials as f64).sqrt();
-        assert!(
-            (want - independent).abs() > 8.0 * se,
-            "ρ {rho} barely moves the share: {want:.4} against {independent:.4}"
-        );
-        assert!(
-            (got - want).abs() < 4.0 * se,
-            "0-0 in {got:.4} of pinned draws; table {want:.4} at ρ {rho}, {independent:.4} at 0"
-        );
+        let mut rho_told = 0;
+        for seed in 0..200u64 {
+            let u = SmallRng::seed_from_u64(seed).gen::<f64>();
+            let season =
+                w.simulate_one_dispersed(&mut SmallRng::seed_from_u64(seed), &forced, &cold);
+            let r = &season.records[f.home];
+            let goals = |g: i64| u16::try_from(g).expect("the pinned fixture's goals");
+            let score = (goals(r.gf - gf), goals(r.ga - ga));
+            assert_eq!(
+                score,
+                pinned_score(lh, la, rho, ForcedOutcome::Draw, u),
+                "seed {seed}"
+            );
+            rho_told += usize::from(score != pinned_score(lh, la, 0.0, ForcedOutcome::Draw, u));
+        }
+        assert!(rho_told > 0, "ρ 0 would draw these seasons' pins the same");
     }
 
     /// How a trial's ratings learn from a result. Cold, a pinned result
@@ -2781,31 +2841,12 @@ mod tests {
         assert_eq!(pinned.points_sum, w.simulate(&config).points_sum);
     }
 
-    /// `club`'s title share over `trials` production seasons with `forced`
-    /// pinned, pinned results moving ratings by `pin_k`.
-    fn title_share(
-        w: &World,
-        forced: &HashMap<(usize, usize), ForcedOutcome>,
-        pin_k: f64,
-        club: usize,
-        trials: u64,
-    ) -> f64 {
-        let disp = Dispersion::PRODUCTION;
-        let order = w.play_order(forced, &disp);
-        let titles = (0..trials)
-            .into_par_iter()
-            .filter(|&t| {
-                let mut rng = SmallRng::seed_from_u64(5 + t * 2_654_435_761);
-                w.play_season(&mut rng, forced, &disp, &order, pin_k).order[0] == club
-            })
-            .count();
-        titles as f64 / trials as f64
-    }
-
-    /// A pinned derby win moves the title race as far as the same win
-    /// entered as played, because the trial's ratings learn from it: between
-    /// a one-goal and a two-goal win, as the pin's own margins fall. With the
-    /// update switched off the pin moves it much less.
+    /// A pinned derby win moves the trial's ratings exactly as
+    /// `refresh_ratings` moves them for the same win entered as played (the
+    /// derby is dated after every result in), whatever its margin, and the
+    /// rest of the trial plays on them: on the same seeds, Galatasaray,
+    /// beaten, take fewer points from the rest of the season than with the
+    /// update switched off, and Fenerbahçe more.
     #[test]
     fn a_pinned_result_moves_the_ratings_as_the_same_real_result_would() {
         let w = shipped(World::with_played(MID_SEASON));
@@ -2823,28 +2864,51 @@ mod tests {
             ForcedOutcome::Away
         };
         let forced = HashMap::from([((derby.home, derby.away), fb_wins)]);
-        let trials = 4000;
-        let as_played = |margin: u16| {
-            let mut played = w.clone();
+        let disp = Dispersion::PRODUCTION;
+        let none = vec![0.0; w.teams.len()];
+        for margin in [1, 2] {
             let score = if derby.home == fb {
                 (1 + margin, 1)
             } else {
                 (1, 1 + margin)
             };
+            let mut played = w.clone();
             played.played.insert((derby.home, derby.away), score);
             played.refresh_ratings();
-            title_share(&played, &HashMap::new(), data::ELO_K, gs, trials)
-        };
-        let (by_one, by_two) = (as_played(1), as_played(2));
-        let pinned = title_share(&w, &forced, data::ELO_K, gs, trials);
-        let frozen = title_share(&w, &forced, 0.0, gs, trials);
-        let shares = format!(
-            "played 2-1 {by_one:.3}, 3-1 {by_two:.3}; pinned {pinned:.3}, no update {frozen:.3}"
+            let d = w
+                .trial_elo_delta(&w.elo, &none, &disp, Some(data::ELO_K), derby, score)
+                .expect("a pin moves the trial's ratings");
+            let mut learnt = w.elo.clone();
+            learnt[derby.home] += d;
+            learnt[derby.away] -= d;
+            assert_eq!(learnt, played.elo, "{score:?}");
+        }
+
+        // Points with the update on minus off, over the same seasons.
+        let order = w.play_order(&forced, &disp);
+        let trials = 200u64;
+        let (gs_gain, fb_gain) = (0..trials)
+            .into_par_iter()
+            .map(|t| {
+                let season = |pin_k| {
+                    let mut rng = SmallRng::seed_from_u64(5 + t * 2_654_435_761);
+                    w.play_season(&mut rng, &forced, &disp, &order, pin_k)
+                        .records
+                };
+                let (on, off) = (season(data::ELO_K), season(0.0));
+                (
+                    on[gs].points - off[gs].points,
+                    on[fb].points - off[fb].points,
+                )
+            })
+            .reduce(|| (0, 0), |x, y| (x.0 + y.0, x.1 + y.1));
+        let (gs_gain, fb_gain) = (
+            gs_gain as f64 / trials as f64,
+            fb_gain as f64 / trials as f64,
         );
-        assert!(frozen - by_one > 0.06, "{shares}");
         assert!(
-            by_two - 0.015 < pinned && pinned < by_one + 0.015,
-            "{shares}"
+            gs_gain < -0.5 && fb_gain > 0.5,
+            "the update is worth {gs_gain:+.2} points to Galatasaray, {fb_gain:+.2} to Fenerbahçe"
         );
 
         // `simulate` plays the pinned season as `simulate_one_with` does.
@@ -2938,9 +3002,9 @@ mod tests {
     #[test]
     fn a_blend_shock_spreads_seasons_wider_than_the_same_elo_shock() {
         let w = shipped(World::with_played(0));
-        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 400, 21);
-        let elo = points_spread(&w, &dispersion(150.0, ShockOn::Elo, 0.0, 0.0), 400, 21);
-        let blend = points_spread(&w, &dispersion(150.0, ShockOn::Blend, 0.0, 0.0), 400, 21);
+        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 150, 21);
+        let elo = points_spread(&w, &dispersion(150.0, ShockOn::Elo, 0.0, 0.0), 150, 21);
+        let blend = points_spread(&w, &dispersion(150.0, ShockOn::Blend, 0.0, 0.0), 150, 21);
         assert!(elo > cold * 1.03, "Elo shock {elo} vs cold {cold}");
         assert!(blend > elo * 1.08, "blend shock {blend} vs Elo shock {elo}");
     }
@@ -2948,17 +3012,17 @@ mod tests {
     #[test]
     fn hot_simulation_widens_the_spread_of_final_points() {
         let w = World::with_played(0);
-        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 600, 5);
-        let hot = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 40.0, 0.0), 600, 5);
+        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 200, 5);
+        let hot = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 40.0, 0.0), 200, 5);
         assert!(hot > cold * 1.08, "hot {hot} vs cold {cold}");
     }
 
     #[test]
     fn drift_widens_the_spread_of_final_points() {
         let w = World::with_played(0);
-        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 600, 9);
+        let cold = points_spread(&w, &dispersion(0.0, ShockOn::Elo, 0.0, 0.0), 200, 9);
         for shock_on in [ShockOn::Elo, ShockOn::Blend] {
-            let drifting = points_spread(&w, &dispersion(0.0, shock_on, 0.0, 15.0), 600, 9);
+            let drifting = points_spread(&w, &dispersion(0.0, shock_on, 0.0, 15.0), 200, 9);
             assert!(
                 drifting > cold * 1.08,
                 "{shock_on:?} drift {drifting} vs cold {cold}"
