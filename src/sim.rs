@@ -234,8 +234,12 @@ pub fn blend_lambdas(
             )
         }
     };
-    // Heavy underdogs score more than the blend predicts (backtest: 0.66
-    // expected, 0.88 scored), so lift low λs part of the way to the pivot.
+    // Underdogs score more than the blend predicts, so lift the lower λ part
+    // of the way to the pivot. With the lift off (`EVAL_LIFT=0
+    // EVAL_HOLDOUT=1` backtest with `EVAL_DUMP`; a one-off, not in a metrics
+    // file), the lower λ of the 572 dev and holdout matches where it was
+    // below 0.9 averaged 0.776, and those sides scored 0.953 goals a match
+    // (dev alone: 0.788 against 0.930, 430 matches).
     let lift = |l: f64| {
         if l < data::UNDERDOG_PIVOT {
             l + data::UNDERDOG_LIFT * (data::UNDERDOG_PIVOT - l)

@@ -312,12 +312,15 @@ pub fn build_matches_response_on(world: &crate::sim::World, today: &str) -> Matc
 /// measurement), a club on the old 50, 75 and 90% figures took the place
 /// 66-74%, 90-93% and 96-98% of the time across the four places.
 ///
-/// `None` when no total qualifies: too few simulated seasons to say. Runs
-/// under about 1,000 seasons leave figures `None`, most of them below about
-/// 500: on the same forecast (seeds 12345, 1 and 2; a one-off measurement)
-/// all twelve at 100 seasons, nine at 200 and 300, five or six at 500, two
-/// to four at 700, and one or two at 1,000 (the surest title figures). From
-/// about 1,500 seasons there are none or one; the default 50,000 leaves none.
+/// `None` when too few simulated seasons say: no total qualifies, or none
+/// seen often enough below the last one that does fell short of the chance
+/// (`points_for_place`), so that one marks where the sample thins out, not
+/// the fewest points. Runs under about 1,000 seasons leave figures `None`,
+/// most of them below about 500: on the same forecast (seeds 12345, 1 and
+/// 2; a one-off measurement) all twelve at 100 and 200 seasons, nine at
+/// 300, five or six at 500, two to four at 700, and one or two at 1,000
+/// (the surest title figures). From about 1,500 seasons there are none or
+/// one; the default 50,000 leaves none.
 #[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct RaceThreshold {
     /// The lowest place that counts: 1 for the title, 2 for the top two, 4
@@ -343,6 +346,14 @@ pub const MIN_CLUB_SEASONS: usize = 100;
 /// `counts` (`SimResults::position_point_counts`) finished in the top
 /// `places`, with every higher total seen at least `min_seen` times doing as
 /// well. Rarer totals are skipped, and cannot be the answer themselves.
+///
+/// The answer must also have a total seen at least `min_seen` times below
+/// it that fell short. Without one, the scan ran out of well-sampled totals
+/// first, and the last one that qualified is where the sample thins out,
+/// not the fewest points: `None` then. On the default forecast of 19
+/// October 2026 (63 results; a one-off measurement, seeds 12345, 1 and 2),
+/// 200 seasons read 37/37/37 for staying up that way, where 50,000 seasons
+/// give 33/35/37.
 fn points_for_place(
     counts: &[Vec<usize>],
     places: usize,
@@ -358,11 +369,11 @@ fn points_for_place(
         }
         let took: usize = counts[..places].iter().map(|at| at[points]).sum();
         if took * 100 < pct * seen {
-            break;
+            return fewest;
         }
         fewest = Some(points as i64);
     }
-    fewest
+    None
 }
 
 /// The four marks of the points-needed table. UEFA qualification is
@@ -691,14 +702,16 @@ mod tests {
 
     /// Points needed are ordered by place and by chance: a higher place
     /// needs at least as many points, and being surer of it at least as many
-    /// again. Whichever figure is missing (too few seasons to say) is a
-    /// surer or higher one than every figure present.
+    /// again. Only figures present are compared: a missing one (too few
+    /// seasons to say) can lie above every total seen often enough or below
+    /// the last one that qualified (`points_for_place`), so it has no place
+    /// in the order.
     fn assert_thresholds_ordered(thresholds: &[RaceThreshold]) {
         // `a` should need no more points than `b`.
-        let ordered = |a: Option<i64>, b: Option<i64>, what: &str| match (a, b) {
-            (Some(a), Some(b)) => assert!(a <= b, "{what}: {a} then {b}: {thresholds:?}"),
-            (None, Some(_)) => panic!("{what}: only the harder one has a figure: {thresholds:?}"),
-            _ => {}
+        let ordered = |a: Option<i64>, b: Option<i64>, what: &str| {
+            if let (Some(a), Some(b)) = (a, b) {
+                assert!(a <= b, "{what}: {a} then {b}: {thresholds:?}");
+            }
         };
         for t in thresholds {
             ordered(t.p50, t.p75, &t.label);
@@ -843,6 +856,73 @@ mod tests {
         for t in race_thresholds(&rare) {
             assert_eq!((t.p50, t.p75, t.p90), (None, None, None), "{}", t.label);
         }
+    }
+
+    /// A figure needs a total seen often enough below it that fell short.
+    /// Here every club on 28 points or more stayed up, and every total below
+    /// 28 was seen too rarely to judge, though clubs on 27, 25, 23 and 21
+    /// stayed up too. The old scan ran out of totals and gave the last one
+    /// it had passed, 28, for every chance: only where the sample thins out,
+    /// as staying up read 37/37/37 at 200 seasons on the forecast of 19
+    /// October 2026, where 50,000 give 33/35/37. Once a total below falls
+    /// short often enough to judge, the figure is back.
+    #[test]
+    fn points_needed_need_a_total_below_that_fell_short() {
+        let m = MIN_CLUB_SEASONS;
+        let last_safe = crate::data::N_TEAMS - crate::data::RELEGATION_SPOTS;
+        // The last safe place on 27 - 2k points and the bottom three below
+        // it, every one of those totals in one kind of season only.
+        let thin = |k: i64| {
+            let mut points = season(70, 60);
+            assert_eq!(points[last_safe - 2], 28);
+            points[last_safe - 1..].copy_from_slice(&[
+                27 - 2 * k,
+                20 - 4 * k,
+                19 - 4 * k,
+                18 - 4 * k,
+            ]);
+            points
+        };
+        let mut seasons: Vec<_> = (0..4).map(|k| (m / 2, thin(k))).collect();
+        let results = results_from_seasons(&seasons);
+
+        // The scan as it was: the last total seen often enough that
+        // qualified, whether or not one below it fell short.
+        let old = |pct: usize| {
+            let counts = &results.position_point_counts;
+            let mut fewest = None;
+            for points in (0..counts[0].len()).rev() {
+                let seen: usize = counts.iter().map(|at| at[points]).sum();
+                if seen < m {
+                    continue;
+                }
+                let took: usize = counts[..last_safe].iter().map(|at| at[points]).sum();
+                if took * 100 < pct * seen {
+                    break;
+                }
+                fewest = Some(points as i64);
+            }
+            fewest
+        };
+        assert_eq!([old(50), old(75), old(90)], [Some(28); 3]);
+        assert_eq!(share(&results, 27, last_safe), 100.0);
+
+        let thresholds = race_thresholds(&results);
+        let safe = &thresholds[3];
+        assert_eq!((safe.label.as_str(), safe.position), ("Safe", last_safe));
+        assert_eq!((safe.p50, safe.p75, safe.p90), (None, None, None));
+        // The places above are bracketed by the club just below them.
+        let p90: Vec<_> = thresholds[..3].iter().map(|t| t.p90).collect();
+        assert_eq!(p90, [Some(70), Some(60), Some(48)]);
+
+        // Seen often enough, the relegated totals of the first kind of
+        // season fall short below 27, the fewest points now judged enough.
+        seasons[0].0 = m;
+        let safe = &race_thresholds(&results_from_seasons(&seasons))[3];
+        assert_eq!(
+            (safe.p50, safe.p75, safe.p90),
+            (Some(27), Some(27), Some(27))
+        );
     }
 
     /// Ordered by chance and by place, on simulated seasons from preseason

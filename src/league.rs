@@ -184,13 +184,16 @@ fn meetings_complete(block: &[usize], results: &HashMap<(usize, usize), (i64, i6
 /// The table as it stands after `results` (keyed as for `rank_table`): each
 /// club's record, and the clubs in table order.
 ///
-/// The league's regulation ranks clubs level on points by head-to-head at
-/// the end of the season (`rank_table`), when every pair has met twice. It
-/// says nothing of the table during the season. Assumed here, as the table
-/// is usually published (head-to-head once the clubs' meetings are
-/// complete, overall goal difference before): within a block of clubs level
-/// on points, the head-to-head mini-table applies only if every pair in the
-/// block has played both its meetings, home and away. Otherwise the block
+/// TFF's regulation, as the press reports its text (tff.org was not
+/// reachable from the development environment), ranks clubs level on points
+/// by head-to-head at the end of the season (`rank_table`), when every pair
+/// has met twice. Press sources differ on the table during the season: some
+/// say head-to-head counts once the clubs' meetings are complete, others
+/// that the weekly table uses overall goal difference until the season
+/// ends. Assumed here is the first reading, which agrees with the
+/// season-end rule: within a block of clubs level on points, the
+/// head-to-head mini-table applies only if every pair in the block has
+/// played both its meetings, home and away. Otherwise the block
 /// goes by overall goal difference, then goals scored. So one first-half 1-0
 /// does not lift the winner above a club level on points with the better
 /// goal difference. Where the mini-table applies, it applies once, as in

@@ -19,9 +19,10 @@
 //!     frozen pre-kick-off forecasts and the model label of each) and the
 //!     played results of the shipped calendar (`data::fixtures()`).
 //!
-//! Market probabilities. The primary market forecast, declared before any
-//! result was looked at, is Bet365's 1X2 with the margin removed by Shin's
-//! method: with π_i = 1/odds_i and book B = Σ π_i,
+//! Market probabilities. The primary market forecast, chosen before the run
+//! (in the session notes; committed together with the results, not before),
+//! is Bet365's 1X2 with the margin removed by Shin's method: with
+//! π_i = 1/odds_i and book B = Σ π_i,
 //! p_i = (√(z² + 4 (1 − z) π_i² / B) − z) / (2 (1 − z)), z in (0, 1) solved
 //! by bisection so that Σ p_i = 1. z is Shin's share of insider money; the
 //! method takes more margin off long shots than off favourites.
@@ -1440,7 +1441,7 @@ fn main() {
     report.line(
         "odds: Bet365 and best of ~17 books, pre-match (the archive has no closing prices); offline evaluation only",
     );
-    report.line("primary market: Bet365 1X2 and over/under 2.5, margin removed by Shin's method (declared in advance); checks: proportional, and the best-price line");
+    report.line("primary market: Bet365 1X2 and over/under 2.5, margin removed by Shin's method (chosen before the run; committed with the results); checks: proportional, and the best-price line");
     report.line(format!(
         "paired block bootstrap over match dates: {} resamples, seed {}; model-mkt > 0: the market has the lower loss",
         opts.resamples, opts.seed

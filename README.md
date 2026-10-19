@@ -53,7 +53,7 @@ By default those rates are blended with two models trained on real Süper Lig hi
 
 Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. When the Dixon–Coles weight is active, scorelines are drawn from its joint distribution.
 
-After blending, an expected-goals rate below 0.9 is lifted 70% of the way back to 0.9, and the favourite's rate rises by half of that relative lift: heavy underdogs score more often than the rating gap implies. In the backtest this improves the both-teams-score forecast and nothing else (see [Backtest results](#backtest-results)).
+After blending, the lower of a match's two expected-goals rates, when it is below 0.9, is lifted 70% of the way to 0.9, and the favourite's rate rises by half of that relative lift (when both are below 0.9, only the lower is lifted): heavy underdogs score more often than the rating gap implies. In the backtest this improves the both-teams-score forecast and nothing else (see [Backtest results](#backtest-results)).
 
 Clubs promoted from the 1. Lig (Amedspor and Çorum for 2026-27) have no top-flight record, so the Dixon–Coles and pi-rating components give them league-average profiles; their Elo rating still distinguishes them.
 
@@ -90,7 +90,7 @@ The table is ranked by:
 
 Head-to-head precedes goal difference — this is not the FIFA/UEFA group-stage order. Head-to-head is applied **once** per block of clubs level on points; clubs still level after that pass fall through to overall goal difference rather than to a fresh mini-table among the remainder. The published rule does not specify this case, so it is a stated modelling assumption, covered by a dedicated test. A simulated season settles a tie that survives every rule with a random draw in place of the play-off.
 
-The regulation sets the order at the end of the season. The current table, during the season, applies head-to-head to clubs level on points only once every pair of them has played both its meetings; until then they are separated by overall goal difference, then goals scored. That is how the table is usually published, not a published rule, so it too is an assumption. The current table has no play-off to draw on either: clubs that no rule separates are listed by name, in Turkish alphabetical order.
+TFF's regulation, as the press reports its text (tff.org could not be reached from the development environment), sets the order at the end of the season. Press sources differ on the table during the season: some say head-to-head counts once the clubs' meetings are complete, others that the weekly table uses overall goal difference until the season ends. The site follows the first reading, which agrees with the season-end rule: the current table applies head-to-head to clubs level on points only once every pair of them has played both its meetings; until then they are separated by overall goal difference, then goals scored. That is not a published rule, so it too is an assumption. The current table has no play-off to draw on either: clubs that no rule separates are listed by name, in Turkish alphabetical order.
 
 The dashboard reports exact finishing bands—top two, third, fourth, and top four—rather than assigning UEFA competition names. Actual qualification depends on the Turkish Cup winner and that season's UEFA access list, so league position alone is not enough. The bottom three are relegated.
 
@@ -128,7 +128,7 @@ Home wins agree within the history's own sampling error. Draws are under-predict
 
 Lower log-loss is better. Skill is the share of the base-rate forecast's loss that the model removes; the base rates come only from seasons before the one scored. The model clearly beats them on results and on goal totals, but its both-teams-score forecast is no better than the base rate. Draws come out slightly too rare in both periods, as in the calibration check above. Goals come out too high, by about 0.05 a match in the development seasons and 0.18 in the holdout seasons (the goals row above), and both-teams-score slightly too low, so the model splits goals too unevenly between the two sides.
 
-The October 2026 tuning (faster in-season rating updates and the underdog lift), compared match by match with the model before it (`examples/compare.rs`; 95% intervals from resampling whole match days):
+The October 2026 tuning (faster in-season rating updates and the underdog lift), compared match by match with the model before it (`examples/compare.rs`; 95% intervals from resampling whole match dates):
 
 | Change in loss, tuned minus before | Development | Holdout |
 |---|---:|---:|
@@ -142,7 +142,7 @@ A later sweep of 202 settings on the development seasons (the overall goal level
 
 ### Against the market
 
-`examples/market.rs` scores the same walk-forward forecasts against bookmaker prices: Bet365's pre-match odds from the MIT-licensed match archive, with the bookmaker's margin removed by Shin's method (chosen before any result was looked at). This is offline evaluation only. The odds are not committed, and no odds or market figure reaches the API or the dashboard.
+`examples/market.rs` scores the same walk-forward forecasts against bookmaker prices: Bet365's pre-match odds from the MIT-licensed match archive, with the bookmaker's margin removed by Shin's method (chosen before the run, in the working notes; it was committed together with the results). This is offline evaluation only. The odds are not committed, and no bookmaker odds or market figure reaches the API or the dashboard; the API's `*_odds` fields are the model's own 1 / p, not prices.
 
 | Result log-loss, matches with odds | Development | Holdout |
 |---|---:|---:|
@@ -151,11 +151,11 @@ A later sweep of 202 settings on the development seasons (the overall goal level
 | Market | <!-- metric:market:dev_market_1x2_ll:.4f -->0.9888<!-- /metric --> | <!-- metric:market:hold_market_1x2_ll:.4f -->0.9425<!-- /metric --> |
 | Model minus market | <!-- metric:market:dev_diff_1x2_ll:+.4f -->+0.0106<!-- /metric --> [+0.005, +0.017] | <!-- metric:market:hold_diff_1x2_ll:+.4f -->+0.0328<!-- /metric --> [+0.017, +0.050] |
 
-The market is clearly better in both periods (95% intervals from resampling whole match days), on ranked probability score too, and less clearly on 3+ goals. Removing the margin proportionally, or taking the best price across bookmakers, gives the same picture. Mixing the model into the market does not help: the best weight for the model on the development seasons is <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric --> (interval 0 to 0.21), and at that weight the mix does worse than the market alone on the holdout seasons. So no information the market lacks shows up out of sample; with this little data, that does not prove the model carries none.
+The market is clearly better in both periods (95% intervals from resampling whole match dates), on ranked probability score too, and less clearly on 3+ goals. Removing the margin proportionally, or taking the best price across bookmakers, gives the same picture. Mixing the model into the market does not help: the best weight for the model on the development seasons is <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric --> (interval 0 to 0.21), and at that weight the mix does worse than the market alone on the holdout seasons. So no information the market lacks shows up out of sample; with this little data, that does not prove the model carries none.
 
 Whether the gap opens late in the season is not settled either. On the development seasons it is small over the first ten matchdays and larger after that; on the holdout seasons it is large from the start. But the difference between the two periods (after matchday 10 minus matchdays 1-10) is <!-- metric:market:dev_md_late_minus_early_1x2_ll:+.4f -->+0.0106<!-- /metric --> [−0.002, +0.024] on the development seasons and <!-- metric:market:hold_md_late_minus_early_1x2_ll:+.4f -->-0.0100<!-- /metric --> [−0.043, +0.023] on the holdout seasons, within the noise in both.
 
-The archive's odds are pre-match prices, not closing ones, and closing prices are sharper still, so the gap to the closing line is probably wider; comparing with closing prices is a follow-up. Of the live season, only <!-- metric:market:live_n -->19<!-- /metric --> matches have both a frozen forecast and odds so far: far too few to say anything. All were forecast by the August model, each <!-- metric:market:live_age_days_min:d -->0<!-- /metric --> to <!-- metric:market:live_age_days_max:d -->11<!-- /metric --> days before the match, which puts the model at a disadvantage against a pre-match price.
+The archive's odds are pre-match prices, not closing ones, and closing prices are sharper still, so the gap to the closing line is probably wider; comparing with closing prices is a follow-up. Of the live season, only <!-- metric:market:live_n -->19<!-- /metric --> matches have both a frozen forecast and odds so far: far too few to say anything. All were forecast by the August model, each <!-- metric:market:live_age_days_min:d -->0<!-- /metric --> to <!-- metric:market:live_age_days_max:d -->11<!-- /metric --> days before the match, which may put the model at a disadvantage against a pre-match price.
 
 ### Season-level evaluation
 
@@ -288,7 +288,7 @@ The next matchday, used by `/api/upcoming` and as the calendar's `current_round`
 
 The API sends no CORS headers: the dashboard is served from the same origin, and the Vite development server proxies `/api`.
 
-Every response, from the API and the dashboard alike, is compressed with gzip or brotli when the client accepts it and carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` and a Content-Security-Policy that allows scripts, styles and requests from the site itself only, with no inline scripts and no framing.
+Responses, from the API and the dashboard alike, are compressed with gzip or brotli when the client accepts it (images and very small bodies excepted), and every response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` and a Content-Security-Policy that allows scripts, styles and requests from the site itself only, with no inline scripts and no framing.
 
 `/api/simulate` also accepts `what_if`: up to 20 pinned outcomes for unplayed fixtures, e.g. `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. The *outcome* is fixed, not the scoreline: the scoreline is drawn from the model's score probabilities for that match, restricted to the pinned outcome, so goal difference stays honest. A pinned result then updates the simulated season's Elo ratings as the same real result would, and the season is played in kick-off order, so only later fixtures feel it. On the 2026-10-19 calendar (50,000 seasons), pinning a Fenerbahçe win in the round-9 Galatasaray v Fenerbahçe takes Galatasaray's title odds from 59.1% to 32.1%, between entering the match as a real 1-2 (34.5%) and 1-3 (29.8%). Pinning an already-played or non-existent fixture, or one fixture twice, is an error rather than a silent no-op.
 
