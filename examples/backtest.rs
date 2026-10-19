@@ -29,10 +29,33 @@
 //!   EVAL_PROMO_REL=-60      promoted clubs start at last season's league
 //!                           mean plus this offset [off: new clubs at
 //!                           EVAL_PROMO, returning clubs keep old rating]
+//!   EVAL_PIVOT=0.9          underdog-lift pivot λ [data::UNDERDOG_PIVOT]
+//!   EVAL_LIFT=0.7           share of the gap to the pivot a lower λ is
+//!                           lifted [data::UNDERDOG_LIFT]; a fraction, not a
+//!                           switch: 0 turns the lift, and with it the
+//!                           favourite's follow, off
+//!   EVAL_FOLLOW=0.5         favourite's share of the underdog's relative
+//!                           lift [data::FAV_FOLLOW]
 //!   EVAL_DUMP=path.csv      write one row per scored match
+//!   EVAL_METRICS=path.json  also write the summary lines as one JSON object,
+//!                           keys sorted, values at their printed precision
 //!   EVAL_SEASON_SIM=2000    also replay each scored season from its start
 //!                           with the production season simulator and
 //!                           compare the spread of final points to reality
+//!
+//! The model as it was before the October 2026 tuning is
+//! `EVAL_K=20 EVAL_DDIV=1600 EVAL_LIFT=0`; its preseason track already ran at
+//! K 20, today's `PRESEASON_K`. Compare two runs' dumps with
+//! `cargo run --release --example compare -- A.csv B.csv`.
+//!
+//! The summary (`dev_*`, then `hold_*`) gives each aspect's mean loss. After
+//! those lines come skill scores against a base-rate forecast (1 − the
+//! model's loss / the base rate's, which `_base` gives), whose home/draw/away,
+//! over-2.5 and both-score rates come from every season before the one being
+//! scored, and calibration per outcome: mean forecast against observed rate,
+//! and the slope `b` of `logit P(outcome) = a + b · logit(forecast)` fitted
+//! by Newton's method with a free intercept (1 is calibrated; below 1, the
+//! forecasts spread too wide), with its standard error.
 //!
 //! Run: cargo run --release --example backtest
 
@@ -72,9 +95,72 @@ struct Cfg {
     promo: f64,
     promo_rel: Option<f64>,
     regress: f64,
+    lift: Lift,
     /// True when every Elo knob is at its production value, so the shared
     /// production functions are called rather than the local variants.
     production_elo: bool,
+}
+
+/// The underdog lift applied after blending (`sim::blend_lambdas`).
+#[derive(Clone, Copy, PartialEq)]
+struct Lift {
+    pivot: f64,
+    lift: f64,
+    follow: f64,
+}
+
+impl Lift {
+    const PRODUCTION: Lift = Lift {
+        pivot: data::UNDERDOG_PIVOT,
+        lift: data::UNDERDOG_LIFT,
+        follow: data::FAV_FOLLOW,
+    };
+
+    /// Production's `sim::blend_lambdas` at production values, otherwise
+    /// `blend_local`.
+    fn blend(self, elo: (f64, f64), e: &Ensemble, home: usize, away: usize) -> (f64, f64) {
+        if self == Lift::PRODUCTION {
+            return sim::blend_lambdas(elo, Some(e), home, away);
+        }
+        self.blend_local(elo, e, home, away)
+    }
+
+    /// `sim::blend_lambdas`, operation for operation, with this lift.
+    fn blend_local(
+        self,
+        (lh_elo, la_elo): (f64, f64),
+        e: &Ensemble,
+        home: usize,
+        away: usize,
+    ) -> (f64, f64) {
+        let w_models = e.w_dc + e.w_pi;
+        let (lh, la) = if w_models > 0.0 {
+            let (dc_h, dc_a) = e.dc.lam(home, away, false);
+            let (pi_h, pi_a) = e.pi.lambdas(home, away, false);
+            let eh = (e.w_dc * dc_h + e.w_pi * pi_h) / w_models;
+            let ea = (e.w_dc * dc_a + e.w_pi * pi_a) / w_models;
+            let total = e.w_elo + w_models;
+            (
+                (e.w_elo * lh_elo + w_models * eh) / total,
+                (e.w_elo * la_elo + w_models * ea) / total,
+            )
+        } else {
+            (lh_elo, la_elo)
+        };
+        let (lo, hi) = if lh < la { (lh, la) } else { (la, lh) };
+        let lo_new = if lo < self.pivot {
+            lo + self.lift * (self.pivot - lo)
+        } else {
+            lo
+        };
+        let hi_new = hi * (1.0 + self.follow * (lo_new / lo - 1.0));
+        let (lh, la) = if lh < la {
+            (lo_new, hi_new)
+        } else {
+            (hi_new, lo_new)
+        };
+        (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
+    }
 }
 
 impl Cfg {
@@ -120,6 +206,11 @@ impl Cfg {
                 .ok()
                 .map(|v| v.parse().expect("EVAL_PROMO_REL")),
             regress: env_f("EVAL_REGRESS", 0.0),
+            lift: Lift {
+                pivot: env_f("EVAL_PIVOT", data::UNDERDOG_PIVOT),
+                lift: env_f("EVAL_LIFT", data::UNDERDOG_LIFT),
+                follow: env_f("EVAL_FOLLOW", data::FAV_FOLLOW),
+            },
             production_elo: k == data::ELO_K
                 && home_adv == data::HOME_ADV
                 && d_div == data::D_DIV
@@ -205,7 +296,58 @@ fn fit_ensemble(
     }
 }
 
-#[derive(Default, Clone, Copy)]
+/// 0 home win, 1 draw, 2 away win.
+fn outcome(home_goals: u16, away_goals: u16) -> usize {
+    match home_goals.cmp(&away_goals) {
+        std::cmp::Ordering::Greater => 0,
+        std::cmp::Ordering::Equal => 1,
+        std::cmp::Ordering::Less => 2,
+    }
+}
+
+/// Log-loss of a forecast that gave what happened probability `p`.
+fn nll(p: f64) -> f64 {
+    -p.max(1e-9).ln()
+}
+
+/// Ranked probability score of a home/draw/away forecast.
+fn rps(p3: [f64; 3], o: usize) -> f64 {
+    let c1 = p3[0] - if o == 0 { 1.0 } else { 0.0 };
+    let c2 = p3[0] + p3[1] - if o <= 1 { 1.0 } else { 0.0 };
+    (c1 * c1 + c2 * c2) / 2.0
+}
+
+/// The forecast that knows nothing about the two clubs: league-wide
+/// home/draw/away, over-2.5 and both-score rates.
+struct BaseRates {
+    p3: [f64; 3],
+    over: f64,
+    btts: f64,
+}
+
+impl BaseRates {
+    fn from_matches(matches: &[HistoricalMatch]) -> Self {
+        assert!(
+            !matches.is_empty(),
+            "no earlier match to take base rates from"
+        );
+        let (mut counts, mut over, mut btts) = ([0usize; 3], 0usize, 0usize);
+        for m in matches {
+            counts[outcome(m.home_score, m.away_score)] += 1;
+            over += usize::from(m.home_score + m.away_score >= 3);
+            btts += usize::from(m.home_score >= 1 && m.away_score >= 1);
+        }
+        let n = matches.len() as f64;
+        BaseRates {
+            p3: counts.map(|c| c as f64 / n),
+            over: over as f64 / n,
+            btts: btts as f64 / n,
+        }
+    }
+}
+
+/// Summed losses over scored matches, with the base rates' alongside.
+#[derive(Default, Clone)]
 struct Acc {
     n: usize,
     ll: f64,
@@ -214,6 +356,12 @@ struct Acc {
     btts: f64,
     score: f64,
     hits: usize,
+    base_ll: f64,
+    base_rps: f64,
+    base_ou: f64,
+    base_btts: f64,
+    /// Every match's home/draw/away forecast and outcome, for calibration.
+    outcomes: Vec<([f64; 3], usize)>,
 }
 
 impl Acc {
@@ -225,20 +373,117 @@ impl Acc {
         self.btts += o.btts;
         self.score += o.score;
         self.hits += o.hits;
+        self.base_ll += o.base_ll;
+        self.base_rps += o.base_rps;
+        self.base_ou += o.base_ou;
+        self.base_btts += o.base_btts;
+        self.outcomes.extend_from_slice(&o.outcomes);
     }
-    fn line(&self, prefix: &str) -> String {
+
+    /// The loss lines, `(key, value)` as printed.
+    fn summary(&self, prefix: &str) -> Vec<(String, String)> {
         let n = self.n as f64;
-        format!(
-            "{prefix}_1x2_ll={:.5}\n{prefix}_rps={:.5}\n{prefix}_ou25_ll={:.5}\n{prefix}_btts_ll={:.5}\n{prefix}_score_ll={:.5}\n{prefix}_acc={:.4}\n{prefix}_n={}",
-            self.ll / n,
-            self.rps / n,
-            self.ou / n,
-            self.btts / n,
-            self.score / n,
-            self.hits as f64 / n,
-            self.n
-        )
+        vec![
+            (format!("{prefix}_1x2_ll"), format!("{:.5}", self.ll / n)),
+            (format!("{prefix}_rps"), format!("{:.5}", self.rps / n)),
+            (format!("{prefix}_ou25_ll"), format!("{:.5}", self.ou / n)),
+            (format!("{prefix}_btts_ll"), format!("{:.5}", self.btts / n)),
+            (
+                format!("{prefix}_score_ll"),
+                format!("{:.5}", self.score / n),
+            ),
+            (
+                format!("{prefix}_acc"),
+                format!("{:.4}", self.hits as f64 / n),
+            ),
+            (format!("{prefix}_n"), self.n.to_string()),
+        ]
     }
+
+    /// Skill against the base rates, then calibration per outcome.
+    fn evidence(&self, prefix: &str) -> Vec<(String, String)> {
+        let n = self.n as f64;
+        let mut out = Vec::new();
+        for (base_key, skill_key, model, base) in [
+            ("1x2_ll_base", "1x2_skill", self.ll, self.base_ll),
+            ("rps_base", "rpss", self.rps, self.base_rps),
+            ("ou25_ll_base", "ou25_skill", self.ou, self.base_ou),
+            ("btts_ll_base", "btts_skill", self.btts, self.base_btts),
+        ] {
+            out.push((format!("{prefix}_{base_key}"), format!("{:.5}", base / n)));
+            out.push((
+                format!("{prefix}_{skill_key}"),
+                format!("{:.5}", 1.0 - model / base),
+            ));
+        }
+        for (k, name) in ["home", "draw", "away"].into_iter().enumerate() {
+            let forecasts: Vec<(f64, bool)> =
+                self.outcomes.iter().map(|&(p, o)| (p[k], o == k)).collect();
+            let pred = forecasts.iter().map(|f| f.0).sum::<f64>() / n;
+            let obs = forecasts.iter().filter(|f| f.1).count() as f64 / n;
+            let (slope, se) = calibration_slope(&forecasts).unwrap_or((f64::NAN, f64::NAN));
+            out.push((format!("{prefix}_cal_{name}_pred"), format!("{pred:.4}")));
+            out.push((format!("{prefix}_cal_{name}_obs"), format!("{obs:.4}")));
+            out.push((format!("{prefix}_cal_{name}_slope"), format!("{slope:.3}")));
+            out.push((format!("{prefix}_cal_{name}_slope_se"), format!("{se:.3}")));
+        }
+        out
+    }
+}
+
+/// Logistic recalibration `logit P(event) = a + b · logit(p)` over
+/// `(forecast p, happened)` pairs, by Newton's method from the calibrated
+/// a = 0, b = 1. Returns `b` and its standard error (from the inverse
+/// Hessian), or `None` if the fit is degenerate or does not converge.
+fn calibration_slope(forecasts: &[(f64, bool)]) -> Option<(f64, f64)> {
+    let logit = |p: f64| {
+        let p = p.clamp(1e-9, 1.0 - 1e-9);
+        (p / (1.0 - p)).ln()
+    };
+    let (mut a, mut b) = (0.0, 1.0);
+    for _ in 0..100 {
+        let (mut g0, mut g1, mut h00, mut h01, mut h11) = (0.0, 0.0, 0.0, 0.0, 0.0);
+        for &(p, happened) in forecasts {
+            let x = logit(p);
+            let mu = 1.0 / (1.0 + (-(a + b * x)).exp());
+            let r = if happened { 1.0 } else { 0.0 } - mu;
+            let w = mu * (1.0 - mu);
+            g0 += r;
+            g1 += r * x;
+            h00 += w;
+            h01 += w * x;
+            h11 += w * x * x;
+        }
+        // A forecast that never varies leaves the slope undetermined.
+        let det = h00 * h11 - h01 * h01;
+        if det.is_nan() || det <= 1e-12 * h00 * h11 {
+            return None;
+        }
+        let (da, db) = ((h11 * g0 - h01 * g1) / det, (h00 * g1 - h01 * g0) / det);
+        a += da;
+        b += db;
+        if !(a.is_finite() && b.is_finite()) {
+            return None;
+        }
+        if da.abs() + db.abs() < 1e-10 {
+            return Some((b, (h00 / det).sqrt()));
+        }
+    }
+    None
+}
+
+/// The summary as one JSON object for `EVAL_METRICS`: keys sorted, each
+/// value the number as printed (a failed fit's `NaN` as null).
+fn metrics_json(summary: &[(String, String)]) -> String {
+    let map: std::collections::BTreeMap<&str, serde_json::Value> = summary
+        .iter()
+        .map(|(k, v)| {
+            let value = serde_json::from_str(v).unwrap_or(serde_json::Value::Null);
+            (k.as_str(), value)
+        })
+        .collect();
+    assert_eq!(map.len(), summary.len(), "duplicate summary key");
+    serde_json::to_string_pretty(&map).expect("serialize metrics") + "\n"
 }
 
 /// Replay a season from its start `n` times with the production simulator
@@ -390,6 +635,7 @@ fn main() {
         let scored = cfg.seasons.contains(&year);
         let idx = index_for(&season);
         let mut ens = scored.then(|| fit_ensemble(&cfg, &before_season, &idx, season_start));
+        let base = scored.then(|| BaseRates::from_matches(&before_season));
         if let (Some(e), Ok(n)) = (ens.as_ref(), std::env::var("EVAL_SEASON_SIM")) {
             season_sim(
                 year,
@@ -418,11 +664,11 @@ fn main() {
                 last_fit = date;
             }
             // Price every match of the day before revealing any result.
-            if let Some(e) = ens.as_ref() {
+            if let (Some(e), Some(base)) = (ens.as_ref(), base.as_ref()) {
                 for m in &season[i..j] {
                     let (h, a) = (idx.canonical(&m.home_team), idx.canonical(&m.away_team));
                     let (rh, ra) = (elo_in[&m.home_team], elo_in[&m.away_team]);
-                    let (lh, la) = sim::blend_lambdas(cfg.elo_lambdas(rh, ra), Some(e), h, a);
+                    let (lh, la) = cfg.lift.blend(cfg.elo_lambdas(rh, ra), e, h, a);
                     let rho = sim::score_rho(Some(e)).unwrap_or(0.0);
                     let p = sim::probs_from_lambdas(lh, la, rho);
                     let p3 = [
@@ -430,11 +676,7 @@ fn main() {
                         p.draw_pct / 100.0,
                         p.away_win_pct / 100.0,
                     ];
-                    let o = match m.home_score.cmp(&m.away_score) {
-                        std::cmp::Ordering::Greater => 0,
-                        std::cmp::Ordering::Equal => 1,
-                        std::cmp::Ordering::Less => 2,
-                    };
+                    let o = outcome(m.home_score, m.away_score);
                     let table = dixoncoles::score_table(lh, la, rho);
                     let total: f64 = table.iter().flatten().sum();
                     let (hs, as_) = (m.home_score as usize, m.away_score as usize);
@@ -447,19 +689,22 @@ fn main() {
                     let pbtts = p.btts_pct / 100.0;
                     let over = hs + as_ >= 3;
                     let both = hs >= 1 && as_ >= 1;
-                    let c1 = p3[0] - if o == 0 { 1.0 } else { 0.0 };
-                    let c2 = p3[0] + p3[1] - if o <= 1 { 1.0 } else { 0.0 };
                     let pick = (0..3)
                         .max_by(|&x, &y| p3[x].total_cmp(&p3[y]))
                         .expect("three");
                     acc.add(&Acc {
                         n: 1,
-                        ll: -p3[o].max(1e-9).ln(),
-                        rps: (c1 * c1 + c2 * c2) / 2.0,
-                        ou: -(if over { pov } else { 1.0 - pov }).max(1e-9).ln(),
-                        btts: -(if both { pbtts } else { 1.0 - pbtts }).max(1e-9).ln(),
-                        score: -pscore.max(1e-9).ln(),
+                        ll: nll(p3[o]),
+                        rps: rps(p3, o),
+                        ou: nll(if over { pov } else { 1.0 - pov }),
+                        btts: nll(if both { pbtts } else { 1.0 - pbtts }),
+                        score: nll(pscore),
                         hits: usize::from(pick == o),
+                        base_ll: nll(base.p3[o]),
+                        base_rps: rps(base.p3, o),
+                        base_ou: nll(if over { base.over } else { 1.0 - base.over }),
+                        base_btts: nll(if both { base.btts } else { 1.0 - base.btts }),
+                        outcomes: vec![(p3, o)],
                     });
                     if let Some((_, s)) = dump.as_mut() {
                         let gh = games.get(m.home_team.as_str()).copied().unwrap_or(0);
@@ -521,14 +766,156 @@ fn main() {
         prev_clubs = clubs;
     }
 
-    if dev.n > 0 {
-        println!("{}", dev.line("dev"));
+    // The loss lines first, in their long-standing order, then the rest.
+    let sets = [(&dev, "dev"), (&hold, "hold")];
+    let mut summary: Vec<(String, String)> = Vec::new();
+    for (acc, prefix) in sets.iter().filter(|(acc, _)| acc.n > 0) {
+        summary.extend(acc.summary(prefix));
     }
-    if hold.n > 0 {
-        println!("{}", hold.line("hold"));
+    for (acc, prefix) in sets.iter().filter(|(acc, _)| acc.n > 0) {
+        summary.extend(acc.evidence(prefix));
+    }
+    for (key, value) in &summary {
+        println!("{key}={value}");
+    }
+    if let Ok(path) = std::env::var("EVAL_METRICS") {
+        std::fs::write(&path, metrics_json(&summary)).expect("write metrics");
+        eprintln!("summary metrics written to {path}");
     }
     if let Some((path, s)) = dump {
         std::fs::write(&path, s).expect("write dump");
         eprintln!("per-match rows written to {path}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The local blend is production's, operation for operation, so setting
+    /// a lift knob changes nothing but the lift.
+    #[test]
+    fn local_blend_is_production_at_production_values() {
+        for (w_elo, w_dc, w_pi) in [(0.5, 0.3, 0.2), (1.0, 0.0, 0.0), (0.2, 0.0, 0.8)] {
+            let e = Ensemble::from_embedded_data(w_elo, w_dc, w_pi).expect("embedded ensemble");
+            for (home, away) in [(0, 1), (3, 17), (17, 3), (5, 18)] {
+                for elo in [
+                    (0.3, 2.9),
+                    (1.35, 1.35),
+                    (2.4, 0.5),
+                    (0.05, 6.0),
+                    (0.9, 0.95),
+                ] {
+                    assert_eq!(
+                        Lift::PRODUCTION.blend_local(elo, &e, home, away),
+                        sim::blend_lambdas(elo, Some(&e), home, away),
+                        "weights {w_elo}/{w_dc}/{w_pi}, clubs {home} v {away}, Elo λs {elo:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_zero_lift_turns_the_lift_and_the_follow_off() {
+        let elo_only = Ensemble::from_embedded_data(1.0, 0.0, 0.0).expect("embedded ensemble");
+        let off = Lift {
+            lift: 0.0,
+            ..Lift::PRODUCTION
+        };
+        for elo in [(0.3, 2.9), (2.4, 0.5), (1.2, 1.1)] {
+            assert_eq!(off.blend(elo, &elo_only, 0, 1), elo);
+        }
+        let (lh, la) = Lift::PRODUCTION.blend((0.3, 2.9), &elo_only, 0, 1);
+        assert!(lh > 0.3 && la > 2.9, "production lifts both: {lh}, {la}");
+    }
+
+    #[test]
+    fn losses_by_hand() {
+        assert_eq!(outcome(2, 1), 0);
+        assert_eq!(outcome(1, 1), 1);
+        assert_eq!(outcome(0, 3), 2);
+        assert!((nll(0.5) - 2f64.ln()).abs() < 1e-15);
+        assert_eq!(nll(0.0), nll(1e-9));
+        // ((0.5 - 1)² + (0.8 - 1)²) / 2, ((0.5 - 0)² + (0.8 - 1)²) / 2 and
+        // (0.5² + 0.8²) / 2.
+        assert!((rps([0.5, 0.3, 0.2], 0) - 0.145).abs() < 1e-12);
+        assert!((rps([0.5, 0.3, 0.2], 1) - 0.145).abs() < 1e-12);
+        assert!((rps([0.5, 0.3, 0.2], 2) - 0.445).abs() < 1e-12);
+    }
+
+    #[test]
+    fn base_rates_count_results_goals_and_both_scoring() {
+        let day = NaiveDate::from_ymd_opt(2020, 1, 1).expect("valid date");
+        let m = |home_score, away_score| HistoricalMatch {
+            date: day,
+            home_team: "A".into(),
+            away_team: "B".into(),
+            home_score,
+            away_score,
+            neutral: false,
+        };
+        let b = BaseRates::from_matches(&[m(2, 1), m(1, 0), m(0, 0), m(0, 3)]);
+        assert_eq!(b.p3, [0.5, 0.25, 0.25]);
+        assert_eq!(b.over, 0.5);
+        assert_eq!(b.btts, 0.25);
+    }
+
+    /// `(forecast, times it happened, times it was made)` as pairs.
+    fn grouped(rates: &[(f64, usize, usize)]) -> Vec<(f64, bool)> {
+        rates
+            .iter()
+            .flat_map(|&(p, hits, n)| (0..n).map(move |i| (p, i < hits)))
+            .collect()
+    }
+
+    #[test]
+    fn calibrated_forecasts_have_slope_one() {
+        let f = grouped(&[(0.2, 2, 10), (0.5, 5, 10), (0.8, 8, 10)]);
+        let (b, se) = calibration_slope(&f).expect("fit");
+        assert!((b - 1.0).abs() < 1e-9, "slope {b}");
+        assert!(se > 0.0 && se.is_finite(), "se {se}");
+    }
+
+    #[test]
+    fn overconfident_forecasts_have_slope_below_one() {
+        // 20% and 80% forecasts come true 35% and 65% of the time. The
+        // observed rates lie on a line through the origin in logit space,
+        // so the fit passes through all three: b = logit(0.65) / logit(0.8).
+        let expected = (0.65f64 / 0.35).ln() / 4f64.ln();
+        let f = grouped(&[(0.2, 7, 20), (0.5, 10, 20), (0.8, 13, 20)]);
+        let (b, se) = calibration_slope(&f).expect("fit");
+        assert!(
+            (b - expected).abs() < 1e-9,
+            "slope {b}, expected {expected}"
+        );
+        // Four times the matches at the same rates: same slope, half the error.
+        let f4 = grouped(&[(0.2, 28, 80), (0.5, 40, 80), (0.8, 52, 80)]);
+        let (b4, se4) = calibration_slope(&f4).expect("fit");
+        assert!((b4 - expected).abs() < 1e-9, "slope {b4}");
+        assert!((se / se4 - 2.0).abs() < 1e-6, "se {se} vs {se4}");
+    }
+
+    #[test]
+    fn a_forecast_that_never_varies_has_no_slope() {
+        assert_eq!(calibration_slope(&grouped(&[(0.3, 3, 10)])), None);
+        assert_eq!(calibration_slope(&[]), None);
+    }
+
+    #[test]
+    fn metrics_json_sorts_keys_and_keeps_printed_numbers() {
+        let summary: Vec<(String, String)> = [
+            ("dev_n", "2717".to_string()),
+            ("dev_acc", "0.5410".to_string()),
+            ("dev_1x2_ll", "0.99907".to_string()),
+            ("dev_cal_draw_slope", format!("{:.3}", f64::NAN)),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect();
+        assert_eq!(
+            metrics_json(&summary),
+            "{\n  \"dev_1x2_ll\": 0.99907,\n  \"dev_acc\": 0.541,\n  \"dev_cal_draw_slope\": null,\n  \"dev_n\": 2717\n}\n"
+        );
     }
 }
