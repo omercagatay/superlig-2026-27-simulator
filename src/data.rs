@@ -20,14 +20,14 @@ pub const ELO_DIV: f64 = 400.0;
 /// makes favourites' title odds run hot and the tails too thin.
 ///
 /// Calibrated in `examples/arena.rs` against the spread of real final tables:
-/// replaying held-out seasons from the model's own match probabilities, the
-/// a sigma near this value raises the played-match table spread from 13.1 to
-/// roughly 14.4 against 16.3 observed on 2024-25, and from 13.3 to roughly
-/// 14.7 against 15.2 on 2025-26. Costs nothing per analytic match forecast;
-/// only season simulation draws it.
+/// replaying held-out seasons from the model's own match probabilities, this
+/// sigma (a row of the arena's sweep) raises the played-match table spread
+/// from 13.4 to 15.0 against 17.3 observed on 2024-25, and from 13.0 to 14.4
+/// against 15.2 on 2025-26. Costs nothing per analytic match forecast; only
+/// season simulation draws it.
 ///
-/// Known residual: it remains under-dispersed on 2024-25; the 86 points won
-/// from played fixtures remain only about a 7% replay event.
+/// Known residual: it remains under-dispersed on 2024-25; Galatasaray's 92
+/// points from played fixtures remain only about a 7% replay event (6.7%).
 pub const RATING_SIGMA: f64 = 75.0;
 
 /// In-season Elo update rate for one league match, before the goal-difference

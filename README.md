@@ -28,7 +28,7 @@ A full-stack Monte Carlo forecast for the 2026-27 Trendyol Süper Lig. It combin
 | Simulation | Rayon, Rand, Dixon–Coles, pi-ratings, Elo/Poisson |
 | Frontend | React 18, TypeScript, Vite |
 | Live data | Türkiye Futbol Federasyonu (tff.org) fixture page |
-| Historical data | MIT-licensed Club Football Match Data (2012-13 to 2024-25) plus official TFF results (2025-26) |
+| Historical data | MIT-licensed Club Football Match Data (2012-13 to 2024-25), openfootball (CC0) for the archive's missing 2024-25 matchdays 10-12, and official TFF results (2025-26) |
 | Scenario analysis | Kimi via the Moonshot API |
 | Deployment | Multi-stage Docker image; Railway-compatible |
 
@@ -46,7 +46,7 @@ Home advantage is a property of the **fixture**, not of the club: every club get
 By default those rates are blended with two models trained on real Süper Lig history:
 
 - **Elo (0.5):** current club strength, computed from every top-flight result since 2012-13 and updated after each match this season, plus an 80-point home adjustment.
-- **Dixon–Coles (0.3):** time-decayed attack/defence strengths and low-score correlation, fitted over 4,590 chronologically dated matches with a four-year half-life.
+- **Dixon–Coles (0.3):** time-decayed attack/defence strengths and low-score correlation, fitted over 4,588 chronologically dated matches with a four-year half-life.
 - **Pi-ratings (0.2):** sequential home/away strength updates from the same history.
 
 Set `ENSEMBLE_WEIGHTS` to change the blend; `1,0,0` selects the pure-Elo model. When the Dixon–Coles weight is active, scorelines are drawn from its joint distribution.
@@ -59,14 +59,14 @@ The sigma is calibrated, not guessed. The arena replays each held-out season fro
 
 | | 2024-25 | 2025-26 |
 |---|---:|---:|
-| Played-match leader points | 86 | 77 |
-| Actual played-match points spread (sd) | 16.3 | 15.2 |
-| Model spread, σ=0 | 13.1 | 13.3 |
-| Model spread, σ=75 | ~14.4 | ~14.7 |
+| Played-match leader points | 92 | 77 |
+| Actual played-match points spread (sd) | 17.3 | 15.2 |
+| Model spread, σ=0 | 13.4 | 13.0 |
+| Model spread, σ=75 | 15.0 | 14.4 |
 
-Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes most of that gap. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 archive excludes unplayed administrative awards, so this diagnostic deliberately compares points from played fixtures on both sides.
+Independent match sampling understates season-long strength persistence; a shared per-season strength draw closes about two-fifths of that gap on 2024-25 and two-thirds on 2025-26. It costs nothing per analytic match forecast because only season simulation draws it. The 2024-25 history leaves out the season's one administrative award (Galatasaray v Adana Demirspor, awarded 3-0), so this diagnostic deliberately compares points from played fixtures on both sides.
 
-**A known residual:** the model remains somewhat under-dispersed on 2024-25; an 86-point played-match leader occurs in roughly 12% of replays from the season's start (`EVAL_SEASON_SIM` in `examples/backtest.rs`). Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
+**A known residual:** the model remains under-dispersed on 2024-25; a 92-point played-match leader occurs in roughly 14% of replays from the season's start (`EVAL_SEASON_SIM` in `examples/backtest.rs`). Read title odds as "who is most likely to win", not as a precise forecast of the winning points total.
 
 **Ratings move with the season.** The Elo component starts from a preseason rating computed from the results history and is walked forward through every result played so far, in kick-off order: a `ELO_K`-scaled update with a square-root goal-difference multiplier, transferring rating from loser to winner. It is always recomputed from the baseline rather than compounded, so a repeated live refresh is a no-op. The Dixon–Coles and pi-rating components stay at their fitted values until refitted offline.
 
@@ -107,18 +107,18 @@ The blend was chosen by backtest, not by fiat. `cargo run --release --example ar
 
 | model | log-loss | RPS |
 |---|---:|---:|
-| Dixon–Coles, 1.5y half-life | 0.9916 | 0.1925 |
-| **ensemble 0.5/0.3/0.2** | **0.9949** | **0.1943** |
-| logistic stack | 0.9974 | 0.1952 |
-| Dixon–Coles, 4y half-life | 0.9988 | 0.1950 |
-| ensemble, validation-fitted weights | 1.0018 | 0.1957 |
-| Elo–Poisson | 1.0049 | 0.1963 |
-| pi-ratings | 1.0076 | 0.1981 |
-| home-advantage baseline | 1.0865 | 0.2250 |
+| Dixon–Coles, 1.5y half-life | 0.9994 | 0.1954 |
+| logistic stack | 1.0003 | 0.1968 |
+| **ensemble 0.5/0.3/0.2** | **1.0011** | **0.1965** |
+| ensemble, validation-fitted weights | 1.0051 | 0.1970 |
+| pi-ratings | 1.0061 | 0.1978 |
+| Dixon–Coles, 4y half-life | 1.0065 | 0.1979 |
+| Elo–Poisson | 1.0122 | 0.1988 |
+| home-advantage baseline | 1.0866 | 0.2250 |
 
-Every fitted model clears the baselines by a wide margin. The production blend is within 0.0033 log-loss of the test winner while remaining competitive on validation. Weights fitted only to validation (0.4/0/0.6) win that season but fall behind on test, so the broader 0.5/0.3/0.2 blend stays.
+Every fitted model clears the baselines by a wide margin. The production blend is 0.0017 log-loss behind the test winner, and 0.0150 ahead of it on validation (0.9828 against 0.9978). Weights fitted only to validation (0.4/0/0.6) win that season but fall behind on test, so the broader 0.5/0.3/0.2 blend stays.
 
-The arena also builds a leak-free walk-forward multinomial logistic stack whose features are fitted only on earlier seasons. It scores 0.9974 on the test season: respectable, but behind the statistical ensemble. Results-only features do not currently justify replacing the simpler model; richer inputs such as xG and lineups are not available here.
+The arena also builds a leak-free walk-forward multinomial logistic stack whose features are fitted only on earlier seasons. It scores 1.0003 on the test season, 0.0008 ahead of the ensemble, but 0.9978 on validation, 0.0150 behind it. An edge that small on one season does not justify replacing the simpler model with results-only features; richer inputs such as xG and lineups are not available here.
 
 ## Run locally
 
@@ -298,7 +298,7 @@ npm run build
 npm test            # needs Node.js 22.6+ (--experimental-strip-types)
 cd ..
 
-# Offline tests for the fixture fetch script (no network).
+# Offline tests for the fixture and history fetch scripts (no network).
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
@@ -318,9 +318,16 @@ The repository already includes the fixture calendar, historical results, and fi
 python3 scripts/fetch_fixtures.py
 
 # Chronological 2012-13 to 2024-25 results from the MIT-licensed Club Football
-# Match Data archive, plus the official TFF 2025-26 weekly archive. The script
-# validates every expected season/week count before replacing the CSV.
+# Match Data archive, the archive's missing 2024-25 matchdays 10-12 from
+# openfootball (CC0, reconciled against the archive's rows of that season),
+# and the official TFF 2025-26 weekly archive. Both upstream files are pinned
+# by SHA-256 (the archive by the slice of rows the script uses); a changed
+# digest stops the run. Every season must be a complete double round-robin,
+# bar one listed 2024-25 award, before the CSV is replaced.
 python3 scripts/fetch_history.py
+# The same, but reusing (and re-validating) the committed 2025-26 rows
+# instead of fetching tff.org.
+python3 scripts/fetch_history.py --keep-tff
 
 # Refit Dixon–Coles against the refreshed history (~0.3 s).
 cargo run --release --example fit_dc
@@ -333,7 +340,8 @@ The committed calendar is also refreshed automatically. A scheduled GitHub Actio
 Data-source details worth knowing about:
 
 - **Historical match dates are preserved.** Dixon–Coles recency weights and sequential pi-ratings both depend on chronology; the generator rejects partial season archives instead of silently fitting them.
-- The redistributed archive-derived rows retain their upstream MIT notice in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+- **The archive lacks three 2024-25 matchdays.** It has 314 of the season's 342 fixtures: the 27 matches of matchdays 10-12 and one administrative award are missing upstream. The generator adds the 27 from openfootball after checking that every archive row of that season agrees with it, and keeps the award out, since its 3-0 was not decided on the pitch.
+- The redistributed archive-derived rows retain their upstream MIT notice in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), which also credits openfootball (CC0 1.0).
 
 - **tff.org serves its pages as windows-1254**, not UTF-8. Decoding them as UTF-8 mangles every Turkish club name.
 - **tff.org serves an incomplete TLS chain**, omitting the GlobalSign intermediate that signs its certificate. Browsers recover by chasing the certificate's AIA URL; `curl`, Python `urllib`, and `reqwest` do not, and fail with "unable to get local issuer certificate". The fetch script performs the AIA fetch itself (pinned by SHA-256) and the server embeds the same intermediate at `data/tff_intermediate.pem`. Certificate verification stays on throughout.

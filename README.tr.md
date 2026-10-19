@@ -28,7 +28,7 @@
 | Simülasyon | Rayon, Rand, Dixon–Coles, pi-rating, Elo/Poisson |
 | Arayüz | React 18, TypeScript, Vite |
 | Canlı veri | Türkiye Futbol Federasyonu (tff.org) fikstür sayfası |
-| Geçmiş veri | MIT lisanslı Club Football Match Data (2012-13 – 2024-25) ve resmî TFF sonuçları (2025-26) |
+| Geçmiş veri | MIT lisanslı Club Football Match Data (2012-13 – 2024-25), arşivde eksik olan 2024-25 sezonunun 10-12. haftaları için openfootball (CC0) ve resmî TFF sonuçları (2025-26) |
 | Senaryo analizi | Moonshot API üzerinden Kimi |
 | Dağıtım | Çok aşamalı Docker imajı; Railway uyumlu |
 
@@ -46,7 +46,7 @@ Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift d
 Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki modelle harmanlanır:
 
 - **Elo (0,5):** 2012-13'ten bu yana tüm üst lig sonuçlarından hesaplanan ve bu sezon her maçtan sonra güncellenen kulüp gücü, artı 80 puanlık ev sahibi düzeltmesi.
-- **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; gerçek tarihleri korunan 4.590 maç üzerinde kalibre edilmiştir.
+- **Dixon–Coles (0,3):** dört yıllık yarılanma ömrüyle zaman ağırlıklandırılmış hücum/savunma güçleri ve az gollü skor korelasyonu; gerçek tarihleri korunan 4.588 maç üzerinde kalibre edilmiştir.
 - **Pi-rating (0,2):** aynı geçmiş üzerinde ardışık ev/deplasman güç güncellemeleri.
 
 Harmanı değiştirmek için `ENSEMBLE_WEIGHTS` kullanılır; `1,0,0` saf Elo modelini seçer. Dixon–Coles ağırlığı etkinken skorlar onun ortak dağılımından örneklenir.
@@ -262,7 +262,7 @@ npm run build
 npm test            # Node.js 22.6+ gerektirir (--experimental-strip-types)
 cd ..
 
-# Fikstür betiğinin çevrimdışı testleri (ağ gerekmez).
+# Fikstür ve geçmiş veri betiklerinin çevrimdışı testleri (ağ gerekmez).
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
 
@@ -283,9 +283,17 @@ Depo, derleme sırasında kullanılan fikstürü, geçmiş sonuçları ve kalibr
 python3 scripts/fetch_fixtures.py
 
 # MIT lisanslı Club Football Match Data arşivinden tarih sıralı 2012-13 –
-# 2024-25 sonuçları ve resmî TFF haftalık arşivinden 2025-26 sonuçları.
-# CSV değiştirilmeden önce bütün sezon/hafta sayıları doğrulanır.
+# 2024-25 sonuçları, arşivde eksik olan 2024-25 sezonunun 10-12. haftaları
+# için openfootball (CC0; arşivin o sezondaki satırlarıyla karşılaştırılarak)
+# ve resmî TFF haftalık arşivinden 2025-26 sonuçları. İki kaynak dosya da
+# SHA-256 ile sabitlenir (arşiv, betiğin kullandığı satırlar üzerinden);
+# özet değişirse çalıştırma durur. CSV değiştirilmeden önce her sezonun,
+# listelenen tek 2024-25 hükmen kararı dışında, eksiksiz çift devreli
+# olduğu doğrulanır.
 python3 scripts/fetch_history.py
+# Aynısı; ancak tff.org'dan çekmek yerine depodaki 2025-26 satırlarını
+# yeniden doğrulayıp kullanır.
+python3 scripts/fetch_history.py --keep-tff
 
 # Yenilenen geçmişle Dixon–Coles'u yeniden kalibre et (~0,3 sn).
 cargo run --release --example fit_dc
@@ -298,7 +306,8 @@ Depodaki fikstür ayrıca kendiliğinden yenilenir. Zamanlanmış bir GitHub Act
 Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 
 - **Geçmiş maçların gerçek tarihleri korunur.** Dixon–Coles zaman ağırlıkları ve ardışık pi-rating modeli kronolojiye bağlıdır; üretici eksik sezon arşivini sessizce kullanmak yerine reddeder.
-- Yeniden dağıtılan arşiv kaynaklı satırların MIT bildirimi [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) içinde korunur.
+- **Arşivde 2024-25 sezonunun üç haftası eksiktir.** Sezonun 342 maçından 314'ü vardır: 10-12. haftaların 27 maçı ve bir hükmen karar kaynakta yoktur. Üretici, arşivin o sezondaki her satırının openfootball ile uyuştuğunu doğruladıktan sonra 27 maçı oradan ekler; hükmen kararı ise, 3-0 skor sahada belirlenmediği için dışarıda bırakır.
+- Yeniden dağıtılan arşiv kaynaklı satırların MIT bildirimi [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) içinde korunur; openfootball (CC0 1.0) da orada anılır.
 
 - **tff.org sayfalarını windows-1254 ile sunar**, UTF-8 ile değil. UTF-8 varsayarak çözmek bütün Türkçe kulüp adlarını bozar.
 - **tff.org eksik bir TLS zinciri sunar**: sertifikasını imzalayan GlobalSign ara sertifikasını göndermez. Tarayıcılar sertifikadaki AIA adresini kendiliğinden çekerek bunu telafi eder; `curl`, Python `urllib` ve `reqwest` etmez ve "unable to get local issuer certificate" hatası verir. Fikstür betiği bu AIA indirmesini kendisi yapar (SHA-256 ile sabitlenmiş), sunucu ise aynı ara sertifikayı `data/tff_intermediate.pem` içinde gömülü tutar. Sertifika doğrulaması hiçbir aşamada kapatılmaz.

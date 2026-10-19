@@ -3,7 +3,6 @@ use std::path::Path;
 
 use argmin::core::{CostFunction, Error as ArgminError, Executor, Gradient, State};
 use argmin::solver::{linesearch::MoreThuenteLineSearch, quasinewton::LBFGS};
-use chrono::NaiveDate;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -352,16 +351,14 @@ pub fn fit(
     })
 }
 
+/// Today's UTC date, for `fitted_at`. (Counting days from the Common Era by
+/// hand put 1970-01-01 at day 719162 instead of 719163 and stamped every fit
+/// with the day before.)
 fn now_iso() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    let days = (secs / 86400) as i64;
-    let nd = NaiveDate::from_num_days_from_ce_opt(719162 + days as i32)
-        .unwrap_or_else(|| NaiveDate::from_ymd_opt(2026, 6, 14).unwrap());
-    nd.format("%Y-%m-%d").to_string()
+    chrono::Utc::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string()
 }
 
 /// Fit then persist to disk (used by /api/refresh).
@@ -385,6 +382,7 @@ pub fn fit_and_save(
 mod tests {
     use super::*;
     use crate::history::HistoricalMatch;
+    use chrono::NaiveDate;
 
     fn idx_fixture(n_clubs: usize) -> TeamIndex {
         let mut league_names: Vec<String> = (0..n_clubs).map(|i| format!("T{}", i)).collect();
@@ -403,6 +401,17 @@ mod tests {
             league_names,
             other_idx,
         }
+    }
+
+    #[test]
+    fn fitted_at_is_todays_utc_date() {
+        let before = chrono::Utc::now().date_naive().to_string();
+        let stamped = now_iso();
+        let after = chrono::Utc::now().date_naive().to_string();
+        assert!(
+            stamped == before || stamped == after,
+            "stamped {stamped}, today {before}"
+        );
     }
 
     #[test]

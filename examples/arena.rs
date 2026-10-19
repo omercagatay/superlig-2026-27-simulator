@@ -18,6 +18,7 @@ use chrono::{Datelike, NaiveDate};
 use rand::rngs::SmallRng;
 use rand::{Rng, SeedableRng};
 
+use superlig_sim::data;
 use superlig_sim::dixoncoles::{self, DcParams};
 use superlig_sim::history::{self, HistoricalMatch, TeamIndex};
 use superlig_sim::piratings::PiRatings;
@@ -728,7 +729,9 @@ fn main() {
         "season", "champ pts", "model p50", "model p90", "P(>=act)", "actual sd", "model sd"
     );
     for (split, fitted) in [(&val, &fv), (&test, &ft)] {
-        for sigma in [0.0, 30.0, 45.0, 60.0, 80.0, 100.0] {
+        // The production value is in the sweep, so the figures the docs
+        // quote for it are read off this table.
+        for sigma in [0.0, 30.0, 45.0, 60.0, data::RATING_SIGMA, 80.0, 100.0] {
             let (act, act_sd, p50, p90, model_sd, pct_ge) = season_points_dispersion(
                 &split.eval,
                 |m| fitted.blend_probs(m, 0.5, 0.3, 0.2, elo_cfg),
