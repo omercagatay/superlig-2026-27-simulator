@@ -181,7 +181,9 @@ pub struct AsOf {
 }
 
 /// The table as it stands: every recorded result, ranked by the league
-/// rules, with clubs no rule separates listed by name (`league::standings`).
+/// rules, with head-to-head counting only once a level block's meetings are
+/// all played and clubs no rule separates listed by name
+/// (`league::standings`).
 pub fn current_standings(world: &crate::sim::World) -> Vec<TableRow> {
     let results: HashMap<(usize, usize), (i64, i64)> = world
         .played
@@ -308,9 +310,14 @@ pub fn build_matches_response_on(world: &crate::sim::World, today: &str) -> Matc
 /// on it also took the place in the seasons the place went for fewer points.
 /// On the default forecast of 19 October 2026 (63 results; a one-off
 /// measurement), a club on the old 50, 75 and 90% figures took the place
-/// 66-75%, 90-93% and 96-98% of the time across the four places.
+/// 66-74%, 90-93% and 96-98% of the time across the four places.
 ///
-/// `None` when no total qualifies: too few simulated seasons to say.
+/// `None` when no total qualifies: too few simulated seasons to say. Runs
+/// under about 1,000 seasons leave figures `None`, most of them below about
+/// 500: on the same forecast (seeds 12345, 1 and 2; a one-off measurement)
+/// all twelve at 100 seasons, nine at 200 and 300, five or six at 500, two
+/// to four at 700, and one or two at 1,000 (the surest title figures). From
+/// about 1,500 seasons there are none or one; the default 50,000 leaves none.
 #[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct RaceThreshold {
     /// The lowest place that counts: 1 for the title, 2 for the top two, 4

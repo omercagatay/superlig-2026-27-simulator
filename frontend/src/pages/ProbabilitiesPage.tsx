@@ -129,10 +129,21 @@ function RaceList({ race, teams }: { race: Race; teams: TeamRow[] }) {
 }
 
 /** The fewest points that gave each chance of finishing in a place or
- *  higher; "–" where too few simulated seasons ended near it to say. */
+ *  higher; "–" where too few simulated seasons ended near it to say, and one
+ *  line instead of the table when that is every figure (a run of 100
+ *  seasons or so). */
 function PointsNeeded({ rows }: { rows: RaceThreshold[] }) {
   const t = useT();
   const { lang } = useLang();
+  const empty = rows.every((r) => r.p50 == null && r.p75 == null && r.p90 == null);
+  if (empty) {
+    return (
+      <section>
+        <h2 className="section-title">{t("pointsNeeded")}</h2>
+        <p className="muted">{t("runMoreSims")}</p>
+      </section>
+    );
+  }
   const tip = (chance: number) => fill(t("tipPointsNeeded"), { pct: pct(chance, lang, 0) });
   const cell = (points: number | null, className?: string) =>
     points == null ? (

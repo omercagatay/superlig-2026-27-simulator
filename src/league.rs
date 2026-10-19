@@ -61,6 +61,10 @@ pub fn apply_result(records: &mut [TeamRecord], home: usize, away: usize, hg: i6
 /// fresh mini-table among the remaining pair — federations differ on this and
 /// the published rule does not specify it, so one pass is the reading here.
 ///
+/// Head-to-head is taken over whatever meetings `results` holds. That is the
+/// rule at the season's end, when every pair has met twice, which is what a
+/// simulated season ranks; the table during the season is `standings`.
+///
 /// `results` is keyed `(home, away) -> (home_goals, away_goals)`.
 /// `tiebreak` supplies the play-off stand-in; it is called once per club in
 /// each multi-club block, so callers control determinism.
@@ -81,6 +85,29 @@ pub fn rank_table_by(
     results: &HashMap<(usize, usize), (i64, i64)>,
     key: &mut dyn FnMut(usize) -> u64,
 ) -> Vec<usize> {
+    rank(records, results, HeadToHead::Always, key)
+}
+
+/// When a block of clubs level on points goes to the head-to-head
+/// mini-table.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum HeadToHead {
+    /// Always, over whatever meetings `results` holds: the season-end rule
+    /// (`rank_table`). At the end of a double round-robin every pair has met
+    /// twice.
+    Always,
+    /// Only once every pair in the block has played both its meetings, home
+    /// and away; until then the block goes straight to overall goal
+    /// difference. The live table's rule (`standings`).
+    WhenMeetingsComplete,
+}
+
+fn rank(
+    records: &[TeamRecord],
+    results: &HashMap<(usize, usize), (i64, i64)>,
+    head_to_head: HeadToHead,
+    key: &mut dyn FnMut(usize) -> u64,
+) -> Vec<usize> {
     let n = records.len();
     let mut order: Vec<usize> = (0..n).collect();
     order.sort_by_key(|&c| std::cmp::Reverse(records[c].points));
@@ -96,7 +123,7 @@ pub fn rank_table_by(
         if block.len() == 1 {
             final_order.push(block[0]);
         } else {
-            final_order.extend(rank_tied_block(block, records, results, key));
+            final_order.extend(rank_tied_block(block, records, results, head_to_head, key));
         }
         i = j + 1;
     }
@@ -107,22 +134,33 @@ fn rank_tied_block(
     block: &[usize],
     records: &[TeamRecord],
     results: &HashMap<(usize, usize), (i64, i64)>,
+    head_to_head: HeadToHead,
     key: &mut dyn FnMut(usize) -> u64,
 ) -> Vec<usize> {
     let members: HashSet<usize> = block.iter().copied().collect();
 
-    // Mini-table over only the matches played among the tied clubs.
+    // Mini-table over only the matches played among the tied clubs. Left
+    // empty (every club level on it) when the rule does not apply yet, so
+    // overall goal difference decides.
     let mut h2h: HashMap<usize, TeamRecord> =
         block.iter().map(|&c| (c, TeamRecord::default())).collect();
-    for (&(home, away), &(hg, ag)) in results {
-        if members.contains(&home) && members.contains(&away) {
-            let mut pair = [h2h[&home], h2h[&away]];
-            apply_result(&mut pair, 0, 1, hg, ag);
-            h2h.insert(home, pair[0]);
-            h2h.insert(away, pair[1]);
+    let applies = match head_to_head {
+        HeadToHead::Always => true,
+        HeadToHead::WhenMeetingsComplete => meetings_complete(block, results),
+    };
+    if applies {
+        for (&(home, away), &(hg, ag)) in results {
+            if members.contains(&home) && members.contains(&away) {
+                let mut pair = [h2h[&home], h2h[&away]];
+                apply_result(&mut pair, 0, 1, hg, ag);
+                h2h.insert(home, pair[0]);
+                h2h.insert(away, pair[1]);
+            }
         }
     }
 
+    // Called for every club of the block whatever decides it, so a simulated
+    // season's random stream does not depend on the table.
     let keys: HashMap<usize, u64> = block.iter().map(|&c| (c, key(c))).collect();
     let mut sorted = block.to_vec();
     sorted.sort_by_key(|&c| {
@@ -133,8 +171,31 @@ fn rank_tied_block(
     sorted
 }
 
+/// Whether every pair of clubs in `block` has played both its meetings,
+/// home and away.
+fn meetings_complete(block: &[usize], results: &HashMap<(usize, usize), (i64, i64)>) -> bool {
+    block.iter().all(|&a| {
+        block
+            .iter()
+            .all(|&b| a == b || results.contains_key(&(a, b)))
+    })
+}
+
 /// The table as it stands after `results` (keyed as for `rank_table`): each
-/// club's record, and the clubs in table order by the league rules.
+/// club's record, and the clubs in table order.
+///
+/// The league's regulation ranks clubs level on points by head-to-head at
+/// the end of the season (`rank_table`), when every pair has met twice. It
+/// says nothing of the table during the season. Assumed here, as the table
+/// is usually published (head-to-head once the clubs' meetings are
+/// complete, overall goal difference before): within a block of clubs level
+/// on points, the head-to-head mini-table applies only if every pair in the
+/// block has played both its meetings, home and away. Otherwise the block
+/// goes by overall goal difference, then goals scored. So one first-half 1-0
+/// does not lift the winner above a club level on points with the better
+/// goal difference. Where the mini-table applies, it applies once, as in
+/// `rank_table`. At the season's end every pair has met twice, so this is
+/// `rank_table`'s order.
 ///
 /// The rules end in a play-off, which a live table has none of. Clubs that
 /// no rule separates (before the first result, every club) are listed by
@@ -148,15 +209,26 @@ pub fn standings(
     for (&(home, away), &(hg, ag)) in results {
         apply_result(&mut records, home, away, hg, ag);
     }
+    let name_key = name_keys(names);
+    let order = rank(
+        &records,
+        results,
+        HeadToHead::WhenMeetingsComplete,
+        &mut |club| name_key[club],
+    );
+    (records, order)
+}
+
+/// The live table's stand-in for the play-off: each club's key, larger for
+/// a name earlier in the Turkish alphabet, so that name ranks higher.
+fn name_keys(names: &[String]) -> Vec<u64> {
     let mut by_name: Vec<usize> = (0..names.len()).collect();
     by_name.sort_by(|&a, &b| turkish_order(&names[a], &names[b]));
-    // The first name in the alphabet gets the largest key, so ranks highest.
     let mut name_key = vec![0; names.len()];
-    for (rank, &club) in by_name.iter().enumerate() {
-        name_key[club] = (names.len() - rank) as u64;
+    for (place, &club) in by_name.iter().enumerate() {
+        name_key[club] = (names.len() - place) as u64;
     }
-    let order = rank_table_by(&records, results, &mut |club| name_key[club]);
-    (records, order)
+    name_key
 }
 
 /// Turkish alphabetical order, ignoring case: Ç after C, Ğ after G, I (ı)
@@ -298,30 +370,189 @@ mod tests {
         list.iter().map(|s| s.to_string()).collect()
     }
 
-    /// The live table follows the league's order too. Alanyaspor, Beşiktaş
-    /// and Rizespor are level on 3 points; Beşiktaş has much the best goal
-    /// difference (+5, against +1 and 0) but lost the one meeting among the
-    /// three it played, so it is third of them, not first.
+    /// `rank_table` is `rank_table_by` with a key that ignores the club, and
+    /// a simulated season draws the same numbers through either: the stand-in
+    /// is called once for every club of every block level on points, even
+    /// the clubs an earlier rule separates, blocks from the top, clubs in
+    /// index order within a block, and never for a club alone on its points.
     #[test]
-    fn standings_put_head_to_head_before_goal_difference() {
+    fn rank_table_and_rank_table_by_draw_the_same_numbers() {
+        use rand::rngs::SmallRng;
+        use rand::{Rng, SeedableRng};
+
+        // Clubs 0, 2 and 4 level on 10 points with nothing to separate them
+        // (they have not met); clubs 1 and 5 level on 7, which goal
+        // difference separates; club 3 alone on 3.
+        let records = vec![
+            rec(10, 8, 4),
+            rec(7, 6, 6),
+            rec(10, 8, 4),
+            rec(3, 2, 9),
+            rec(10, 8, 4),
+            rec(7, 9, 5),
+        ];
+        let mut results = HashMap::new();
+        results.insert((1, 5), (1, 1));
+        results.insert((5, 1), (0, 0));
+
+        let mut rng = SmallRng::seed_from_u64(20261019);
+        let mut drawn = Vec::new();
+        let order = rank_table(&records, &results, &mut || {
+            let x = rng.gen::<u64>();
+            drawn.push(x);
+            x
+        });
+
+        let mut rng = SmallRng::seed_from_u64(20261019);
+        let mut calls = Vec::new();
+        let order_by = rank_table_by(&records, &results, &mut |club| {
+            let x = rng.gen::<u64>();
+            calls.push((club, x));
+            x
+        });
+
+        assert_eq!(order, order_by);
+        assert_eq!(drawn, calls.iter().map(|&(_, x)| x).collect::<Vec<_>>());
+        assert_eq!(
+            calls.iter().map(|&(club, _)| club).collect::<Vec<_>>(),
+            [0, 2, 4, 1, 5]
+        );
+        // The draws decide the three-way tie: the largest ranks highest.
+        let mut top = calls[..3].to_vec();
+        top.sort_by_key(|&(_, x)| std::cmp::Reverse(x));
+        let top: Vec<usize> = top.iter().map(|&(club, _)| club).collect();
+        assert_eq!(order[..3], top[..]);
+        assert_eq!(order[3..], [5, 1, 3]);
+    }
+
+    /// In the live table one meeting is not yet head-to-head. Alanyaspor and
+    /// Beşiktaş are level on 3 points and Alanyaspor won the only meeting,
+    /// 1-0, but the return is still to come, so Beşiktaş's better goal
+    /// difference (+5 against +1) puts it above.
+    #[test]
+    fn standings_use_goal_difference_until_the_meetings_are_complete() {
         let clubs = names(&["Alanyaspor", "Beşiktaş", "Çorum", "Rizespor"]);
         let mut results = HashMap::new();
         results.insert((0, 1), (1, 0)); // Alanyaspor 1-0 Beşiktaş
         results.insert((1, 2), (6, 0)); // Beşiktaş 6-0 Çorum
-        results.insert((3, 0), (1, 0)); // Rizespor 1-0 Alanyaspor
         let (records, order) = standings(&clubs, &results);
 
         assert_eq!(
             records.iter().map(|r| r.points).collect::<Vec<_>>(),
-            [3, 3, 0, 3]
+            [3, 3, 0, 0]
         );
         assert_eq!(
             records.iter().map(TeamRecord::gd).collect::<Vec<_>>(),
-            [0, 5, -6, 1]
+            [1, 5, -6, 0]
         );
-        // Head-to-head among the three: Rizespor 3 pts (+1), Alanyaspor 3
-        // (0), Beşiktaş 0.
-        assert_eq!(order, vec![3, 0, 1, 2]);
+        // Rizespor and Çorum, level on nothing and never met, go by goal
+        // difference too.
+        assert_eq!(order, vec![1, 0, 3, 2]);
+        // The season-end rule would put the 1-0 first.
+        let by_head_to_head = rank_table_by(&records, &results, &mut |_| 0);
+        assert_eq!(by_head_to_head[..2], [0, 1]);
+    }
+
+    /// The same two clubs once the return is played, 0-0: still level on
+    /// points, both meetings in, so head-to-head (Alanyaspor 4 points,
+    /// Beşiktaş 1) decides before Beşiktaş's goal difference.
+    #[test]
+    fn standings_use_head_to_head_once_both_meetings_are_played() {
+        let clubs = names(&["Alanyaspor", "Beşiktaş", "Çorum", "Rizespor"]);
+        let mut results = HashMap::new();
+        results.insert((0, 1), (1, 0)); // Alanyaspor 1-0 Beşiktaş
+        results.insert((1, 2), (6, 0)); // Beşiktaş 6-0 Çorum
+        results.insert((1, 0), (0, 0)); // Beşiktaş 0-0 Alanyaspor
+        let (records, order) = standings(&clubs, &results);
+
+        assert_eq!(
+            records.iter().map(|r| r.points).collect::<Vec<_>>(),
+            [4, 4, 0, 0]
+        );
+        assert!(records[1].gd() > records[0].gd());
+        assert_eq!(order, vec![0, 1, 3, 2]);
+    }
+
+    /// Head-to-head needs every pair in the block to have met twice. Three
+    /// clubs level on 10 points: A has beaten B twice and taken 4 points off
+    /// C, but B and C have met only once, so the block goes by goal
+    /// difference, C (+13), B (+5), A (−1), the reverse of head-to-head.
+    #[test]
+    fn standings_use_goal_difference_when_any_pair_of_a_block_has_met_once() {
+        let clubs = names(&["A", "B", "C", "D", "E", "F"]);
+        let results = HashMap::from([
+            ((0, 1), (2, 0)), // A 2-0 B
+            ((1, 0), (0, 1)), // B 0-1 A
+            ((0, 2), (1, 0)), // A 1-0 C
+            ((2, 0), (0, 0)), // C 0-0 A
+            ((1, 2), (1, 0)), // B 1-0 C, the return still to play
+            ((3, 0), (5, 0)), // D 5-0 A
+            ((1, 3), (3, 0)), // B 3-0 D
+            ((1, 4), (4, 0)), // B 4-0 E
+            ((5, 1), (1, 1)), // F 1-1 B
+            ((2, 3), (5, 0)), // C 5-0 D
+            ((2, 4), (5, 0)), // C 5-0 E
+            ((2, 5), (5, 0)), // C 5-0 F
+        ]);
+        let (records, order) = standings(&clubs, &results);
+
+        assert_eq!(
+            records.iter().map(|r| r.points).collect::<Vec<_>>(),
+            [10, 10, 10, 3, 0, 1]
+        );
+        assert_eq!(
+            records[..3].iter().map(TeamRecord::gd).collect::<Vec<_>>(),
+            [-1, 5, 13]
+        );
+        assert_eq!(order, vec![2, 1, 0, 3, 5, 4]);
+        // Head-to-head over the meetings so far would give A, B, C.
+        let by_head_to_head = rank_table_by(&records, &results, &mut |_| 0);
+        assert_eq!(by_head_to_head[..3], [0, 1, 2]);
+    }
+
+    /// At the season's end every pair has met twice, so the live table is
+    /// `rank_table`'s order, with the names as the tie key. Checked over
+    /// random low-scoring double round-robins, where clubs level on points
+    /// are common and head-to-head often orders them otherwise than goal
+    /// difference would.
+    #[test]
+    fn a_complete_season_is_ranked_as_rank_table_ranks_it() {
+        use rand::rngs::SmallRng;
+        use rand::{Rng, SeedableRng};
+
+        let clubs = names(&[
+            "Trabzonspor",
+            "Çorum",
+            "Göztepe",
+            "Alanyaspor",
+            "İstanbulspor",
+            "Iğdır",
+        ]);
+        let key = name_keys(&clubs);
+        let mut rng = SmallRng::seed_from_u64(4242);
+        let mut head_to_head_mattered = 0;
+        for _ in 0..200 {
+            let mut results = HashMap::new();
+            for home in 0..clubs.len() {
+                for away in 0..clubs.len() {
+                    if home != away {
+                        results.insert((home, away), (rng.gen_range(0..3), rng.gen_range(0..3)));
+                    }
+                }
+            }
+            let (records, order) = standings(&clubs, &results);
+            assert_eq!(order, rank_table_by(&records, &results, &mut |c| key[c]));
+
+            let mut by_goal_difference: Vec<usize> = (0..clubs.len()).collect();
+            by_goal_difference.sort_by_key(|&c| {
+                let r = &records[c];
+                std::cmp::Reverse((r.points, r.gd(), r.gf, key[c]))
+            });
+            if order != by_goal_difference {
+                head_to_head_mattered += 1;
+            }
+        }
+        assert!(head_to_head_mattered >= 20, "{head_to_head_mattered}");
     }
 
     /// No play-off to draw on: clubs no rule separates are listed by name, in
