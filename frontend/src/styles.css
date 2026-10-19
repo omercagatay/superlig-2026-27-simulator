@@ -838,6 +838,23 @@ input {
   font-variant-numeric: tabular-nums;
 }
 
+.facts-note {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* One line per model under "By model"; long lines wrap. */
+.models {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
 .calib {
   display: grid;
   gap: 8px;

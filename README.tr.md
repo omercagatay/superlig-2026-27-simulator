@@ -37,11 +37,11 @@
 Saf Elo bileşeni, puan farkını ve ev sahibi avantajını beklenen gole çevirir:
 
 ```text
-lambda_ev      = 1,35 × 10^(( Elo_ev - Elo_deplasman + 80) / 1600)
-lambda_deplasman = 1,35 × 10^((-Elo_ev + Elo_deplasman - 80) / 1600)
+lambda_ev      = 1,35 × 10^(( Elo_ev - Elo_deplasman + 80) / 1200)
+lambda_deplasman = 1,35 × 10^((-Elo_ev + Elo_deplasman - 80) / 1200)
 ```
 
-Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift devreli fikstürün her iki yarısında da her kulüp kendi sahasında bu avantajı alır. (Dünya Kupası sürümünde bu, kulüp başına sabit bir "ev sahibi ülke" bayrağıydı; ligde bu yapı anlamsız olduğu için maç başına role dönüştürüldü.)
+Ev sahipliği avantajı kulübün değil, **maçın** bir özelliğidir: çift devreli fikstürün her iki yarısında da her kulüp kendi sahasında bu avantajı alır.
 
 Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki modelle harmanlanır:
 
@@ -51,7 +51,26 @@ Varsayılan olarak bu oranlar, gerçek Süper Lig geçmişiyle eğitilmiş iki m
 
 Harmanı değiştirmek için `ENSEMBLE_WEIGHTS` kullanılır; `1,0,0` saf Elo modelini seçer. Dixon–Coles ağırlığı etkinken skorlar onun ortak dağılımından örneklenir.
 
+Harmanlamadan sonra 0,9'un altındaki bir gol beklentisi, 0,9'a olan farkın %70'i kadar yukarı çekilir; favorinin beklentisi de bu göreli artışın yarısı kadar yükselir. Belirgin biçimde güçsüz takımlar, puan farkının öngördüğünden daha sık gol atar. Geriye dönük testte bu düzeltme yalnızca karşılıklı gol tahminini iyileştirir, başka hiçbir şeyi değil (bkz. *Geriye dönük test sonuçları*).
+
 1. Lig'den yükselen kulüplerin (2026-27 için Amedspor ve Çorum) üst lig geçmişi olmadığından Dixon–Coles ve pi-rating bileşenleri onlara lig ortalaması bir profil verir; ayrımı yalnızca Elo puanları yapar.
+
+**Puanlar kesin değildir; simülasyon da bunu hesaba katar.** Simüle edilen her sezonda her kulübün gerçek gücü, güncel puanı çevresindeki bir normal dağılımdan (`RATING_SIGMA`, 75 Elo puanı) bir kez çekilir ve o sezon boyunca sabit kalır. Puanları kesin kabul etmek favorilerin olasılıklarını şişirir, uçları ise fazla inceltir.
+
+Sigma tahminle değil, kalibrasyonla belirlendi. Arena, ayrılmış her sezonu modelin kendi maç olasılıklarıyla yeniden oynatır ve ortaya çıkan puan tablosunun yayılımını gerçeğiyle karşılaştırır:
+
+| | 2024-25 | 2025-26 |
+|---|---:|---:|
+| Oynanan maçlarda liderin puanı | 92 | 77 |
+| Oynanan maçlardaki gerçek puan yayılımı (sd) | 17,3 | 15,2 |
+| Model yayılımı, σ=0 | 13,4 | 13,0 |
+| Model yayılımı, σ=75 | 15,0 | 14,4 |
+
+Bağımsız maç örneklemesi, gücün sezon boyunca sürmesini olduğundan az gösterir; sezon başına ortak bir güç çekilişi bu açığın 2024-25'te yaklaşık beşte ikisini, 2025-26'da üçte ikisini kapatır. Bu çekiliş yalnızca sezon simülasyonunda yapıldığı için tek maç tahminlerine hiçbir maliyeti yoktur. 2024-25 geçmişi sezonun tek hükmen kararını (Galatasaray - Adana Demirspor, 3-0 hükmen) dışarıda bıraktığından bu karşılaştırma bilerek iki tarafta da yalnızca oynanan maçların puanlarını kullanır.
+
+**Bilinen bir sınırlılık:** model 2024-25'te hâlâ fazla dar yayılır; oynanan maçlardan 92 puan toplayan bir lider, sezon başından yapılan yeniden oynatmaların yalnızca yaklaşık %14'ünde çıkar (`examples/backtest.rs` içindeki `EVAL_SEASON_SIM`). Şampiyonluk olasılıklarını "en olası şampiyon kim" sorusunun yanıtı olarak okuyun, şampiyonun toplayacağı puanın kesin bir tahmini olarak değil.
+
+**Puanlar sezonla birlikte değişir.** Elo bileşeni, sonuç geçmişinden hesaplanan bir sezon öncesi puanla başlar ve şimdiye kadar oynanan her maçla, başlama saati sırasıyla ilerletilir: kaybedenden kazanana puan aktaran, `ELO_K` ile ölçeklenen ve gol farkının karekökünü çarpan olarak kullanan bir güncelleme. Puanlar üst üste eklenmez, her seferinde başlangıçtan yeniden hesaplanır; bu yüzden aynı canlı yenilemeyi tekrarlamak hiçbir şeyi değiştirmez. Dixon–Coles ve pi-rating bileşenleri çevrimdışı yeniden kalibre edilene kadar kalibre edildikleri değerlerde kalır.
 
 Elle yapılan değişiklikler ve Kimi senaryoları yalnızca Elo bileşenini günceller. Gömülü Dixon–Coles ve pi-rating parametreleri, modeller açıkça yeniden kalibre edilene kadar değişmez.
 
@@ -67,7 +86,7 @@ Puan durumu şu sırayla belirlenir:
 6. Genel atılan gol
 7. Play-off
 
-İkili maç sonuçları averajdan **önce** gelir; bu, FIFA/UEFA grup aşaması sıralamasından farklıdır ve dönüşümün en kritik ayrıntısıdır.
+İkili maç sonuçları averajdan **önce** gelir; bu, FIFA/UEFA grup aşaması sıralamasından farklıdır.
 
 İkili karşılaştırma, puanı eşit kulüplerden oluşan her blok için **bir kez** uygulanır. Bu turdan sonra hâlâ eşit kalan kulüpler, kalanlar arasında yeni bir mini puan tablosuna değil, doğrudan genel averaja düşer. Yayımlanan kural bu durumu açıkça belirtmediği için bu bir modelleme varsayımıdır ve kendi testiyle korunmaktadır (`head_to_head_is_applied_once_not_recursively`).
 
@@ -75,16 +94,78 @@ Panel ilk iki, üçüncü, dördüncü ve ilk dört gibi kesin lig sıralamalar�
 
 ### Kalibrasyon
 
-Elo sabitleri devralınmaz, gerçek lig verisine karşı doğrulanır:
+Yayındaki model (varsayılan harman, sezon öncesinde, hiç maç oynanmamışken), 2012-13'ten bu yana oynanan her Süper Lig maçıyla karşılaştırılır:
 
-| | Gerçek (14 sezon) | Simülasyon |
+| | Geçmiş (4.588 maç) | Model, maç başına | Model, simüle edilen sezonlar |
+|---|---:|---:|---:|
+| Ev sahibi galibiyeti | %45,4 | %44,9 | — |
+| Beraberlik | %25,9 | %24,8 | %24,4 |
+| Deplasman galibiyeti | %28,8 | %30,4 | — |
+| Maç başına gol | 2,79 | 2,88 | 2,91 |
+| Maç başına ev sahibi golü | 1,57 | 1,63 | — |
+| Maç başına deplasman golü | 1,22 | 1,25 | — |
+
+Ev sahibi galibiyet oranı, geçmişin kendi örnekleme hatası içinde uyuşur. Beraberlikler yaklaşık bir puan eksik tahmin edilir (her sezonun güçlerini de çeken simüle edilmiş sezonlarda 1,4 puan) ve eksik beraberlikler deplasman galibiyeti olarak görünür; goller maç başına yaklaşık 0,1 fazla tahmin edilir. Bunlar bilinen ve henüz giderilmemiş farklardır. `tests/calibration.rs` bugünkü değerleri sabitler; bir değer kayarsa (bir oran bir puandan, gol sayısı maç başına 0,05'ten fazla) ya da bir fark belirtilen bandın dışına çıkarsa derlemeyi düşürür.
+
+### Geriye dönük test sonuçları
+
+`examples/backtest.rs`, 2016-17'den bu yana her sezonu hafta hafta yeniden oynatır ve her maçı yalnızca o tarihten önce bilinenlerle, üretimdeki kurallarla fiyatlar. Geliştirme sezonları modeli kurmak ve ayarlamak için kullanıldı. İki ayrılmış (holdout) sezon bunun dışında tutuldu; yalnızca Ekim 2026 ayarındaki iki karara bilgi verdiler, bu yüzden hiç dokunulmamış değil, az kullanılmış sayılırlar. Yayındaki model:
+
+| | Geliştirme, 2016-17 – 2023-24 | Ayrılmış, 2024-25 ve 2025-26 |
 |---|---:|---:|
-| Maç başına ev sahibi golü | 1,566 | — |
-| Maç başına deplasman golü | 1,222 | — |
-| Ev sahibi galibiyeti | %45,3 | %44,7 |
-| Beraberlik | %25,8 | %24,5 |
+| Maç | <!-- metric:dev_n:,d:tr -->2.717<!-- /metric --> | <!-- metric:hold_n:,d:tr -->647<!-- /metric --> |
+| Sonuç (ev/beraberlik/deplasman) log kaybı | <!-- metric:dev_1x2_ll:.4f:tr -->0,9991<!-- /metric --> | <!-- metric:hold_1x2_ll:.4f:tr -->0,9756<!-- /metric --> |
+| Genel oran tahmininin log kaybı | <!-- metric:dev_1x2_ll_base:.4f:tr -->1,0678<!-- /metric --> | <!-- metric:hold_1x2_ll_base:.4f:tr -->1,0669<!-- /metric --> |
+| Genel oranlara göre beceri: sonuç log kaybı | <!-- metric:dev_1x2_skill:.1%:tr -->%6,4<!-- /metric --> | <!-- metric:hold_1x2_skill:.1%:tr -->%8,6<!-- /metric --> |
+| Beceri: sıralı olasılık skoru (RPS) | <!-- metric:dev_rpss:.1%:tr -->%10,2<!-- /metric --> | <!-- metric:hold_rpss:.1%:tr -->%13,8<!-- /metric --> |
+| Beceri: 3+ gol | <!-- metric:dev_ou25_skill:.1%:tr -->%1,4<!-- /metric --> | <!-- metric:hold_ou25_skill:.1%:tr -->%2,4<!-- /metric --> |
+| Beceri: karşılıklı gol | <!-- metric:dev_btts_skill:.2%:tr -->%0,06<!-- /metric --> | <!-- metric:hold_btts_skill:.2%:tr -->-%0,12<!-- /metric --> |
+| Beraberlik: tahmin / gerçekleşen | <!-- metric:dev_cal_draw_pred:.1%:tr -->%24,6<!-- /metric --> / <!-- metric:dev_cal_draw_obs:.1%:tr -->%25,4<!-- /metric --> | <!-- metric:hold_cal_draw_pred:.1%:tr -->%23,6<!-- /metric --> / <!-- metric:hold_cal_draw_obs:.1%:tr -->%26,1<!-- /metric --> |
 
-Bu değerler birbirinden uzaklaşırsa `tests/calibration.rs` derlemeyi düşürür. Beraberlik oranındaki ~2 puanlık fark, bağımsız Poisson örneklemesinin bilinen bir zayıflığıdır; Dixon–Coles ağırlığı etkinken ρ düzeltmesi bunu telafi eder.
+Log kaybı ne kadar düşükse o kadar iyidir. Beceri, genel oran tahmininin kaybından modelin giderdiği paydır; genel oranlar yalnızca puanlanan sezondan önceki sezonlardan hesaplanır. Model, sonuçlarda ve gol toplamlarında genel oranları açıkça geçer; ama karşılıklı gol tahmini genel orandan daha iyi değildir. Beraberlikler iki dönemde de biraz az tahmin edilir; yukarıdaki kalibrasyon kontrolü de bunu gösterir.
+
+Ekim 2026 ayarı (sezon içinde daha hızlı puan güncellemesi ve güçsüz taraf düzeltmesi), maç maç kendinden önceki modelle karşılaştırıldığında (`examples/compare.rs`; %95 aralıklar, maç günlerinin bütün olarak yeniden örneklenmesiyle):
+
+| Kayıptaki değişim, ayarlı eksi önceki | Geliştirme | Ayrılmış |
+|---|---:|---:|
+| Sonuç log kaybı | −0,0077 [−0,0122; −0,0031] | −0,0066 [−0,0170; +0,0043] |
+| Sıralı olasılık skoru | −0,0023 [−0,0037; −0,0009] | −0,0026 [−0,0056; +0,0005] |
+| Karşılıklı gol log kaybı | −0,0016 [−0,0026; −0,0006] | −0,0044 [−0,0081; −0,0008] |
+
+Geliştirme sezonlarında kazanç sonuçlar, RPS, karşılıklı gol ve tam skor için istatistiksel olarak anlamlıdır. Ayrılmış sezonlarda yalnızca karşılıklı gol anlamlıdır; oradaki sonuç kazancı benzer büyüklüktedir ama <!-- metric:hold_n:,d:tr -->647<!-- /metric --> maçın gürültüsü içinde kalır. Sonuçları iyileştiren, daha hızlı puan güncellemesidir; güçsüz taraf düzeltmesi yalnızca karşılıklı gol tahminini iyileştirir. Ayar geliştirme sezonlarına bakılarak seçildiği için onların aralıkları iyimserdir. Asıl temiz sınav canlı 2026-27 sezonudur.
+
+### Sezon düzeyinde değerlendirme
+
+`examples/season_eval.rs`, sezon tahminlerinin kendisini (sıralama, şampiyonluk, ilk dört, küme düşme ve sezon sonu puanı) puanlar. Her geçmiş sezonu üç noktadan, yani sezon başlamadan önce, üçte biri ve üçte ikisi oynandığında, her seferinde yalnızca o an elde olan bilgiyle yeniden oynatır. <!-- metric:season:dev_n_seasons -->8<!-- /metric --> geliştirme sezonu üzerinden:
+
+| | Sezon öncesi | Üçte biri oynanmışken | Üçte ikisi oynanmışken |
+|---|---:|---:|---:|
+| Sıralama RPS (düşük olan daha iyi) | <!-- metric:season:dev_s0_pos_rps:.4f:tr -->0,1322<!-- /metric --> | <!-- metric:season:dev_s33_pos_rps:.4f:tr -->0,1121<!-- /metric --> | <!-- metric:season:dev_s67_pos_rps:.4f:tr -->0,0646<!-- /metric --> |
+| Şampiyonluk, genel orana göre Brier becerisi | <!-- metric:season:dev_s0_title_bss:.3f:tr -->0,052<!-- /metric --> | <!-- metric:season:dev_s33_title_bss:.3f:tr -->0,307<!-- /metric --> | <!-- metric:season:dev_s67_title_bss:.3f:tr -->0,500<!-- /metric --> |
+| İlk dört, Brier becerisi | <!-- metric:season:dev_s0_top4_bss:.3f:tr -->0,430<!-- /metric --> | <!-- metric:season:dev_s33_top4_bss:.3f:tr -->0,584<!-- /metric --> | <!-- metric:season:dev_s67_top4_bss:.3f:tr -->0,813<!-- /metric --> |
+| Küme düşme, Brier becerisi | <!-- metric:season:dev_s0_rel_bss:.3f:tr -->0,145<!-- /metric --> | <!-- metric:season:dev_s33_rel_bss:.3f:tr -->0,319<!-- /metric --> | <!-- metric:season:dev_s67_rel_bss:.3f:tr -->0,590<!-- /metric --> |
+| Sezon sonu puanı %80'lik aralığın içinde | %<!-- metric:season:dev_s0_cov80_pct:.1f:tr -->70,4<!-- /metric --> | %<!-- metric:season:dev_s33_cov80_pct:.1f:tr -->67,8<!-- /metric --> | %<!-- metric:season:dev_s67_cov80_pct:.1f:tr -->73,0<!-- /metric --> |
+
+Tahminler sezon ilerledikçe iyileşir ama aşırı özgüvenlidir: kulüplerin %80'ini içermesi gereken puan aralıkları yaklaşık %70'ini içerdi; simüle edilen puan tabloları da gerçeklerinden daha az yayılır (standart sapma <!-- metric:season:dev_s0_table_sd_sim:.1f:tr -->13,6<!-- /metric -->–<!-- metric:season:dev_s67_table_sd_sim:.1f:tr -->14,4<!-- /metric --> puan, gerçekte <!-- metric:season:dev_s0_table_sd_actual:.1f:tr -->15,1<!-- /metric -->). Sezon öncesi şampiyonluk tahmini, yalnızca genel oranları kullanmaktan ayırt edilemez (becerisi için %95 aralık: −0,099 ile 0,209, sekiz sezon). Paneldeki aralıkları olması gerekenden biraz dar sayın. İki ayrılmış sezon iki yönü de gösterir ve hiçbir şeyi kesinleştirmez; `RATING_SIGMA` da onların yayılımına göre ayarlandığından (bkz. yukarı) onu bağımsız olarak sınamazlar.
+
+### Model seçimi
+
+Harman keyfî olarak değil, geriye dönük testle seçildi. `cargo run --release --example arena`, aday modelleri iki ayrılmış sezona karşı yarıştırır (2023-24'e kadar kalibre et, 2024-25'te ayarla; 2024-25'e kadar yeniden kalibre et, 2025-26'da değerlendir) ve log kaybı, RPS, Brier ve isabetle puanlar. Test sezonu sıralaması (2025-26, 306 maç, maç başına log kaybı):
+
+| model | log kaybı | RPS |
+|---|---:|---:|
+| Dixon–Coles, 1,5 yıllık yarılanma ömrü | 0,9994 | 0,1954 |
+| lojistik yığın (logistic stack) | 1,0003 | 0,1968 |
+| **harman 0,5/0,3/0,2** | **1,0011** | **0,1965** |
+| harman, doğrulama sezonuna göre ayarlanmış ağırlıklar | 1,0051 | 0,1970 |
+| pi-rating | 1,0061 | 0,1978 |
+| Dixon–Coles, 4 yıllık yarılanma ömrü | 1,0065 | 0,1979 |
+| Elo–Poisson | 1,0122 | 0,1988 |
+| ev sahibi avantajı temel modeli | 1,0866 | 0,2250 |
+
+Arena her sezon için on iki satır yazdırır: dokuz kalibre edilmiş model ve üç temel model; tablo bunlardan bir seçkidir. Kalibre edilen her model temel modelleri açık farkla geçer. Yayındaki harman test sezonunun birincisinin 0,0017 log kaybı gerisindedir, doğrulama sezonunda ise ondan 0,0150 öndedir (0,9978'e karşı 0,9828). Yalnızca doğrulama sezonuna göre ayarlanan ağırlıklar (0,4/0/0,6) o sezonu kazanır ama test sezonunda geride kalır; bu yüzden daha geniş tabanlı 0,5/0,3/0,2 harmanı korunur.
+
+Arena ayrıca, değişkenleri yalnızca önceki sezonlar üzerinde kalibre edilen, sızıntısız ve ileriye doğru ilerleyen çok terimli bir lojistik yığın da kurar. Bu yığın test sezonunda 1,0003 ile harmandan 0,0008 öndedir; ama doğrulama sezonunda 0,9978 ile ondan 0,0150 geridedir. Tek sezonda bu kadar küçük bir üstünlük, yalnızca sonuçlara dayanan değişkenlerle daha basit modelin yerini almayı haklı çıkarmaz; xG ve kadro gibi daha zengin girdiler burada yok.
 
 ## Yerelde çalıştırma
 
@@ -152,7 +233,7 @@ cargo run --release
 ## Panelin kullanımı
 
 1. Sayfa, sunucunun varsayılan tahminiyle açılır (50.000 sezon, tohum 12345). Değiştirmek için simülasyon sayısını ve tohumu seçip **Çalıştır** düğmesine basın. Aynı tohum, aynı yapılandırmayı yeniden üretilebilir kılar.
-2. Beş sayfayı inceleyin: **Özet**, **Maçlar**, **Puan durumu**, **Olasılıklar** ve **Sonuçlar**. İlk maçlar puanlandıktan sonra **Özet** sayfasındaki **Tahmin başarısı** bölümünde **Tahmin geçmişi**'ni açarak puanlanan her maçın dondurulmuş tahminini, sonucuyla yan yana ve haftalara göre gruplanmış olarak görebilirsiniz; birikimli log kaybını genel oranlarla karşılaştıran bir grafik de vardır.
+2. Beş sayfayı inceleyin: **Özet**, **Maçlar**, **Puan durumu**, **Olasılıklar** ve **Sonuçlar**. İlk maçlar puanlandıktan sonra **Özet** sayfasındaki **Tahmin başarısı** bölümü isabet oranını, log kaybını ve genel oranlara göre farkını %95 aralığı ve maç sayısıyla gösterir; aynısını her model sürümü için ayrı ayrı da verir (modelin önceki bir sürümünün yaptığı tahminler, güncel sürümünkülerden ayrı puanlanır). Oradaki **Tahmin geçmişi**'ni açarak puanlanan her maçın dondurulmuş tahminini, sonucu ve tahmini yapan modelle yan yana, haftalara göre gruplanmış olarak görebilirsiniz; birikimli log kaybını genel oranlarla karşılaştıran bir grafik de vardır.
 3. **Maçlar** sayfasında varsaymak istediğiniz sonuçları seçin (en fazla 20, API'nin sınırı) ve **Yeniden hesapla** düğmesine basın.
 4. En güncel TFF sonuçlarını çekip tahmini, maç kartlarını ve isabet görünümünü yeniden hesaplamak için **Canlı veriyi güncelle** düğmesini kullanın. Varsaydığınız sonuçlardan, o arada oynanmış maçlara ait olanlar bir bildirimle kaldırılır.
 5. Doğal dil senaryoları panelin parçası değildir. Bunlar isteğe bağlı bir API uç noktasıdır (`/api/scenario`, aşağıda) ve sunucuda `SCENARIO_ENABLED=1` ile `KIMI_API_KEY` ayarlanmadıkça kapalıdır.
@@ -163,13 +244,13 @@ Simülasyon kuyruğu doluysa (503) sayfa sunucunun istediği kadar, ama her sefe
 
 | Uç nokta | Yöntem | IP başına sınır | Açıklama |
 |---|---|---:|---|
-| `/api/health` | `GET` | — | Servis sürümü, model yapılandırması, son canlı yenileme, `world_version` ve varsayılan tahminin önbellekte olup olmadığı (`forecast_cached`). |
+| `/api/health` | `GET` | — | Servis sürümü, model yapılandırması ve `model_version`, son canlı yenileme, `world_version` ve varsayılan tahminin önbellekte olup olmadığı (`forecast_cached`). |
 | `/api/forecast` | `GET` | 60/dk | Varsayılan tahmin (50.000 sezon, tohum 12345, değişiklik yok): `POST /api/simulate {}` ile aynı JSON; ligin her durumu için bir kez hesaplanır. |
 | `/api/simulate` | `POST` | 30/dk | İsteğe bağlı Elo değişiklikleri ve sabitlenmiş sonuçlarla simülasyon. Aynı istekler, sonuçlar ya da puanlar değişene kadar önbellekten yanıtlanır. |
 | `/api/scenario` | `POST` | 10/dk | İstemi Kimi ile çözümler ve dönen Elo değişiklikleriyle yeniden çalıştırır. `SCENARIO_ENABLED=1` değilse 404 döner. |
 | `/api/refresh` | `POST` | 5/dk | Güncel TFF sonuçlarını çeker ve uygular. |
 | `/api/live` | `GET` | — | Önbellekteki son canlı veri anlık görüntüsünü döndürür. |
-| `/api/accuracy` | `GET` | 30/dk | Modelin, başlama düdüğünden önce dondurulmuş tahminlerine karşı karnesi: isabet oranı, temel orana göre log-loss ve kalibrasyon bantları; ayrıca puanlanan her maç, dondurulmuş tahmini ve kendi log-loss değeriyle. |
+| `/api/accuracy` | `GET` | 30/dk | Modelin, başlama düdüğünden önce dondurulmuş tahminlerine karşı karnesi: isabet oranı, temel orana göre log-loss ve bu farkın %95 aralığı, kalibrasyon bantları; hem toplu hem her model sürümü için ayrı (`by_model`); ayrıca puanlanan her maç, dondurulmuş tahmini, onu yapan model ve kendi log-loss değeriyle. |
 | `/api/upcoming` | `GET` | 30/dk | Gelecek haftanın oynanmamış maçları için ev/beraberlik/deplasman tahminleri. |
 | `/api/matches` | `GET` | 30/dk | 306 maçlık fikstürün tamamı: oynanan maçların gerçek skorları, kalanlar için 1X2 / 2,5 alt-üst / karşılıklı gol olasılıkları ve adil oranlar. |
 
@@ -262,9 +343,21 @@ npm run build
 npm test            # Node.js 22.6+ gerektirir (--experimental-strip-types)
 cd ..
 
-# Fikstür ve geçmiş veri betiklerinin çevrimdışı testleri (ağ gerekmez).
+# Bu README'nin aktardığı değerlendirme rakamları hâlâ kodun ürettiği
+# rakamlar olmalı.
+EVAL_HOLDOUT=1 EVAL_METRICS=/tmp/backtest.json cargo run --release --example backtest
+python3 scripts/check_metrics.py diff /tmp/backtest.json data/metrics/backtest.json
+EVAL_HOLDOUT=1 SEASON_METRICS=/tmp/season.json cargo run --release --example season_eval
+python3 scripts/check_metrics.py diff /tmp/season.json data/metrics/season.json
+
+# Veri betiklerinin ve metrik denetleyicisinin çevrimdışı testleri (ağ
+# gerekmez) ve README'lerle CLAUDE.md'deki her rakamın data/metrics/ ile
+# karşılaştırılması.
 python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/check_metrics.py docs
 ```
+
+*Geriye dönük test sonuçları* ve *Sezon düzeyinde değerlendirme* bölümlerindeki yayındaki modele ait rakamlar bu şekilde denetlenir; ayar karşılaştırması ve sezon aralıkları denetlenmez, çünkü `examples/compare.rs` ve yalnızca yazdırılan aralıklar bir metrik dosyası yazmaz. Bir değişiklik onları oynatırsa depodaki dosyaları `EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json cargo run --release --example backtest` ve `EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json cargo run --release --example season_eval` ile yeniden üretin, ardından aktarılan rakamları güncelleyin.
 
 ## Verileri yenileme
 
@@ -328,14 +421,18 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 │   ├── handlers.rs       # API işleyicileri ve simülasyon kuyruğu
 │   ├── forecast_cache.rs # Lig durumuna göre önbelleğe alınan simülasyon yanıtları
 │   ├── llm.rs            # Kimi senaryo analizi
+│   ├── accuracy.rs       # Dondurulmuş tahmin günlüğünün model sürümüne göre puanlanması
+│   ├── model_version.rs  # Bir tahmini hangi modelin yaptığı ve modelin parmak izi
+│   ├── odds.rs           # API için adil oranlar (1 / p)
 │   ├── models.rs         # API istek ve yanıt tipleri
 │   ├── validation.rs     # İstek doğrulama
 │   └── rate_limit.rs     # IP başına hız sınırı
-├── data/                 # Fikstür, geçmiş sonuçlar, kalibre edilmiş parametreler
+├── data/                 # Fikstür, geçmiş sonuçlar, kalibre edilmiş parametreler, tahmin günlüğü
+│   └── metrics/          # Depodaki geriye dönük test ve sezon değerlendirmesi rakamları
 ├── frontend/             # React ve TypeScript paneli
-├── examples/             # Model kalibrasyon aracı
-├── scripts/              # Veri toplama betikleri ve çevrimdışı testleri
-├── tests/calibration.rs  # Elo sabitlerini gerçek lige karşı korur
+├── examples/             # Kalibrasyon, geriye dönük test, sezon değerlendirmesi, karşılaştırma, tahmin kaydı
+├── scripts/              # Veri toplama betikleri, metrik denetleyicisi ve çevrimdışı testleri
+├── tests/calibration.rs  # Yayındaki harmanı gerçek lige karşı denetler
 ├── .github/workflows/    # CI ve zamanlanmış veri yenilemesi
 └── Dockerfile            # Üretim için çok aşamalı imaj
 ```
@@ -347,4 +444,6 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 - En zayıf modellenen kulüpler yeni yükselenlerdir: Dixon–Coles ve pi-rating bileşenleri için üst lig geçmişleri olmadığından tahminleri tamamen Elo puanlarına dayanır.
 - Yukarıda anlatılan "ikili karşılaştırma bir kez uygulanır" kuralı yayımlanmış bir kural değil, açıkça belirtilmiş bir varsayımdır.
 - Senaryo puanları modelin ürettiği varsayımlardır. Dönen açıklamayı okuyun ve çıktıyı keşif amaçlı değerlendirin.
+- Sezon düzeyindeki aralıklar fazla dardır: geriye dönük testlerde kulüplerin %80'ini içermesi gereken sezon sonu puan aralıkları yaklaşık %70'ini içerdi (bkz. *Sezon düzeyinde değerlendirme*).
+- Beraberlikler biraz az, goller biraz fazla tahmin edilir (bkz. *Kalibrasyon*).
 - Tahmin kalitesi puanlara, geçmiş veri kapsamına, model varsayımlarına ve deneme sayısına bağlıdır.

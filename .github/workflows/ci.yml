@@ -42,6 +42,22 @@ jobs:
       - name: Build release
         run: cargo build --release
 
+      # The committed backtest figures, which the docs quote, must still be
+      # what the code produces. It reuses the release build above; the
+      # example took 9 s to build and 5 s to run locally.
+      - name: Backtest reproduces the committed metrics
+        run: |
+          EVAL_HOLDOUT=1 EVAL_METRICS=/tmp/metrics.json cargo run --release --example backtest
+          python3 scripts/check_metrics.py diff /tmp/metrics.json data/metrics/backtest.json
+
+      # The same for the season evaluation, whose figures the docs quote as
+      # season: markers. About 6 s to run locally on 4 cores; the output does
+      # not depend on the core count.
+      - name: Season evaluation reproduces the committed metrics
+        run: |
+          EVAL_HOLDOUT=1 SEASON_METRICS=/tmp/season.json cargo run --release --example season_eval
+          python3 scripts/check_metrics.py diff /tmp/season.json data/metrics/season.json
+
   msrv:
     runs-on: ubuntu-latest
     steps:
@@ -99,5 +115,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Fetch-script tests (offline)
+      - name: Script tests (offline)
         run: python3 -m unittest discover -s scripts -p "test_*.py" -v
+
+      - name: Docs quote the committed metrics
+        run: python3 scripts/check_metrics.py docs

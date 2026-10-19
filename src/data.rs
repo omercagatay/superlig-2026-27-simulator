@@ -45,7 +45,11 @@ pub const NEW_CLUB_ELO: f64 = 1450.0;
 
 /// Expected goals below `UNDERDOG_PIVOT` are lifted `UNDERDOG_LIFT` of the
 /// way back to it: heavy underdogs score more often than the rating gap
-/// implies. Chosen by walk-forward backtest (`examples/backtest.rs`).
+/// implies. Chosen by walk-forward backtest (`examples/backtest.rs`). Paired
+/// against `EVAL_LIFT=0` (`examples/compare.rs`), it improves the
+/// both-teams-score forecast on the development and holdout seasons alike
+/// and leaves 1X2 and RPS unchanged; the 1X2 gain of the October 2026
+/// tuning is `ELO_K` and `D_DIV`'s.
 pub const UNDERDOG_PIVOT: f64 = 0.9;
 pub const UNDERDOG_LIFT: f64 = 0.7;
 pub const FAV_FOLLOW: f64 = 0.5;

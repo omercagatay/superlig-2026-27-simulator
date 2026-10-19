@@ -12,15 +12,35 @@ import { dateSpan, matchdayLabel, num, pct, shortDate, signed } from "../clubs";
 import {
   byMatchday,
   fill,
+  intervalNote,
+  modelName,
+  modelRows,
   readoutLeft,
   roundTicks,
   runningSeries,
   tickDigits,
   valueTicks,
+  type IntervalWords,
   type MatchdayHistory,
+  type ModelWords,
   type RunningPoint,
 } from "../history";
 import { Bar, ClubName } from "./Common";
+
+type T = ReturnType<typeof useT>;
+
+const intervalWords = (t: T): IntervalWords => ({
+  interval: t("ciInterval"),
+  matches: t("nMatches"),
+  oneMatch: t("oneMatch"),
+});
+
+/** Model names at the start of a line, or mid-sentence. */
+const modelWords = (t: T, inline: boolean): ModelWords => ({
+  current: t(inline ? "modelCurrentInline" : "modelCurrent"),
+  ofMonth: t("modelOfMonth"),
+  unlabelled: t(inline ? "modelUnlabelledInline" : "modelUnlabelled"),
+});
 
 /** How the model did against predictions frozen before kick-off. An empty
  *  log is the honest state early in a season. */
@@ -29,6 +49,9 @@ export function AccuracyPanel({ report }: { report: AccuracyReport }) {
   const { lang } = useLang();
   const band = (from: number, to: number) =>
     lang === "tr" ? `%${from}–${to}` : `${from}–${to}%`;
+  const labels = [report.current_model_version, ...report.by_model.map((s) => s.model_version)];
+  const nameOf = (version: string | null, inline: boolean) =>
+    modelName(version, report.current_model_version, labels, lang, modelWords(t, inline));
 
   return (
     <section>
@@ -52,7 +75,10 @@ export function AccuracyPanel({ report }: { report: AccuracyReport }) {
             </div>
             <div>
               <dt>{t("vsBaseRates")}</dt>
-              <dd>{signed(report.log_loss - report.baseline_log_loss, lang, 3)}</dd>
+              <dd>
+                {signed(report.vs_baseline.mean, lang, 3)}
+                <span className="facts-note">{intervalNote(report.vs_baseline, lang, intervalWords(t))}</span>
+              </dd>
             </div>
           </dl>
           {report.calibration.length > 0 && (
@@ -72,16 +98,37 @@ export function AccuracyPanel({ report }: { report: AccuracyReport }) {
               ))}
             </ul>
           )}
-          <ForecastHistory matches={report.matches} />
+          <h3 className="sub-title">{t("byModel")}</h3>
+          <ul className="models">
+            {modelRows(report).map(({ version, score }) => (
+              <li key={version ?? ""}>
+                {nameOf(version, false)}
+                <span className="muted">
+                  {version && ` ${version}`}
+                  {" · "}
+                  {score
+                    ? [
+                        fill(t("modelVsBase"), { diff: signed(score.vs_baseline.mean, lang, 3) }),
+                        intervalNote(score.vs_baseline, lang, intervalWords(t)),
+                      ].join(" · ")
+                    : t("modelNoneScored")}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <ForecastHistory matches={report.matches} modelOf={(v) => nameOf(v, true)} />
         </>
       )}
     </section>
   );
 }
 
+/** A forecast's model, named for a line of running text. */
+type ModelOf = (version: string | null) => string;
+
 /** Every scored forecast, matchday by matchday, behind a disclosure so the
  *  overview stays short. */
-function ForecastHistory({ matches }: { matches: ScoredMatch[] }) {
+function ForecastHistory({ matches, modelOf }: { matches: ScoredMatch[]; modelOf: ModelOf }) {
   const t = useT();
   const days = byMatchday(matches);
   const points = runningSeries(matches);
@@ -90,13 +137,13 @@ function ForecastHistory({ matches }: { matches: ScoredMatch[] }) {
       <summary>{t("forecastHistory")}</summary>
       {points.length >= 2 && <RunningChart points={points} />}
       {days.map((day) => (
-        <MatchdayBlock key={day.round} day={day} />
+        <MatchdayBlock key={day.round} day={day} modelOf={modelOf} />
       ))}
     </details>
   );
 }
 
-function MatchdayBlock({ day }: { day: MatchdayHistory }) {
+function MatchdayBlock({ day, modelOf }: { day: MatchdayHistory; modelOf: ModelOf }) {
   const t = useT();
   const { lang } = useLang();
   return (
@@ -121,17 +168,18 @@ function MatchdayBlock({ day }: { day: MatchdayHistory }) {
           <span />
         </li>
         {day.matches.map((m) => (
-          <HistoryRow key={`${m.home}-${m.away}`} m={m} />
+          <HistoryRow key={`${m.home}-${m.away}`} m={m} model={modelOf(m.model_version)} />
         ))}
       </ul>
     </section>
   );
 }
 
-/** One frozen forecast against what happened. The outcome that happened is
- *  boxed and bold, the call marked with a tick or a cross, each with text
- *  for screen readers, so nothing rests on colour. */
-function HistoryRow({ m }: { m: ScoredMatch }) {
+/** One frozen forecast against what happened, and the model that made it.
+ *  The outcome that happened is boxed and bold, the call marked with a tick
+ *  or a cross, each with text for screen readers, so nothing rests on
+ *  colour. */
+function HistoryRow({ m, model }: { m: ScoredMatch; model: string }) {
   const t = useT();
   const { lang } = useLang();
   const outcomes = [
@@ -143,7 +191,8 @@ function HistoryRow({ m }: { m: ScoredMatch }) {
     <li className="week-row hist-row">
       <span className="week-match">
         <span className="week-when">
-          {shortDate(m.date, lang)} · {fill(t("forecastMade"), { date: dateSpan([m.logged_at], lang) })}
+          {shortDate(m.date, lang)} · {fill(t("forecastMade"), { date: dateSpan([m.logged_at], lang) })} ·{" "}
+          {model}
         </span>
         <span className="week-teams">
           <ClubName team={m.home} />

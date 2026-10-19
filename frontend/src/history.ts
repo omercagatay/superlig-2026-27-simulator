@@ -1,9 +1,9 @@
 /* Pure helpers behind the forecast history in AccuracyPanel, kept apart from
    React so history.test.mjs tests them directly. */
 
-import type { ScoredMatch } from "./api";
+import type { AccuracyReport, ModelScore, ScoredMatch, VsBaseline } from "./api";
 // With the extension: node's test runner loads this file as it is.
-import { kickoffOrder } from "./clubs.ts";
+import { kickoffOrder, num, signed, type Lang } from "./clubs.ts";
 
 /** One matchday of scored forecasts. */
 export interface MatchdayHistory {
@@ -131,4 +131,77 @@ export function roundTicks(first: number, last: number, width: number, minGap = 
   const ticks: number[] = [];
   for (let r = Math.ceil(first / step) * step; r <= last; r += step) ticks.push(r);
   return ticks.length > 0 ? ticks : [first, last];
+}
+
+/** Translated words for naming a model. */
+export interface ModelWords {
+  /** "Current model", or "current model" mid-sentence. */
+  current: string;
+  /** "{month} model". */
+  ofMonth: string;
+  /** For an entry logged before forecasts were labelled. */
+  unlabelled: string;
+}
+
+const LABEL = /^(\d{4})-(\d{2})([a-z]?)$/;
+
+/** A model's name for people. The running model is the current one; an
+ *  older one is named for the month it shipped ("2026-08" → "August model"),
+ *  with its letter when another older label in `labels` shipped the same
+ *  month ("October model (a)"). Anything else shows as it is. */
+export function modelName(
+  version: string | null,
+  current: string,
+  labels: (string | null)[],
+  lang: Lang,
+  words: ModelWords,
+): string {
+  if (version === null) return words.unlabelled;
+  if (version === current) return words.current;
+  const match = LABEL.exec(version);
+  if (!match) return version;
+  const [, year, month, letter] = match;
+  const name = new Intl.DateTimeFormat(lang === "tr" ? "tr-TR" : "en-GB", { month: "long" }).format(
+    new Date(Number(year), Number(month) - 1, 1),
+  );
+  const base = fill(words.ofMonth, { month: name });
+  const sameMonth = labels.some(
+    (l) => l !== null && l !== version && l !== current && l.slice(0, 7) === version.slice(0, 7),
+  );
+  return sameMonth && letter ? `${base} (${letter})` : base;
+}
+
+/** Translated words for an interval note. */
+export interface IntervalWords {
+  /** "95% CI {lo} to {hi}". */
+  interval: string;
+  /** "{n} matches". */
+  matches: string;
+  /** "1 match". */
+  oneMatch: string;
+}
+
+/** The match count, with the 95% interval before it when there is one:
+ *  "95% CI −0.144 to −0.012 · 63 matches", or "1 match". */
+export function intervalNote(v: VsBaseline, lang: Lang, words: IntervalWords): string {
+  const count = v.n === 1 ? words.oneMatch : fill(words.matches, { n: num(v.n, lang) });
+  if (!v.ci95) return count;
+  const [lo, hi] = v.ci95;
+  return `${fill(words.interval, { lo: signed(lo, lang, 3), hi: signed(hi, lang, 3) })} · ${count}`;
+}
+
+/** The per-model breakdown: the running model first, with `score` null
+ *  while none of its forecasts has been scored, then every other scored
+ *  model in the report's order (newest first). */
+export function modelRows(
+  report: Pick<AccuracyReport, "by_model" | "current_model_version">,
+): { version: string | null; score: ModelScore | null }[] {
+  const current = report.current_model_version;
+  const own = report.by_model.find((s) => s.model_version === current) ?? null;
+  return [
+    { version: current, score: own },
+    ...report.by_model
+      .filter((s) => s.model_version !== current)
+      .map((s) => ({ version: s.model_version, score: s })),
+  ];
 }
