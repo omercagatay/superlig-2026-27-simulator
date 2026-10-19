@@ -1,89 +1,469 @@
-//! Calibration guard: the simulator's scoring and outcome rates must match
-//! the real Süper Lig. These bounds are deliberately loose enough to survive
-//! ordinary model changes and tight enough to catch a mis-scaled Elo term.
+//! Calibration guard for the model that ships: the default blend (Elo 0.5,
+//! Dixon-Coles 0.3, pi-ratings 0.2, built the way `main.rs` builds it) at
+//! preseason, nothing played. It is measured two ways:
+//!
+//! - per fixture: the exact 1X2 split and expected goals that
+//!   `World::fixture_probs` gives each of the 306 fixtures, which is what
+//!   `/api/matches` and the forecast log carry, averaged over the calendar;
+//! - per season: `World::simulate`, which also draws each season's ratings
+//!   around their estimates (`RATING_SIGMA`). The wider spread of strengths
+//!   means fewer draws and more goals than per fixture.
+//!
+//! Both are set against the embedded history: every played Süper Lig match
+//! since 2012-13, the 2022-23 walkovers left out. Where the model stood when
+//! these figures were pinned (`cargo test --test calibration -- --nocapture`
+//! prints the full report):
+//!
+//! - home wins: 44.9% per fixture against 45.4% in the history, inside the
+//!   history's own sampling error (0.7 points);
+//! - draws are under-predicted: 24.8% per fixture and 24.4% in simulated
+//!   seasons against 25.9%. The season shortfall, 1.5 points, is about two
+//!   standard errors of the history (0.65). The missing draws turn up as
+//!   away wins, 30.4% against 28.8%;
+//! - goals are over-predicted: 2.88 expected a match per fixture and 2.91
+//!   in simulated seasons against 2.79 scored, about four and five standard
+//!   errors of the history (0.025) apart.
+//!
+//! Two guards, kept separate:
+//!
+//! 1. `calibration_is_pinned`: today's figures. A rate that moves more than
+//!    a point (so any 2-point shift), or goals that move more than 0.05 a
+//!    match, fail. The simulated figures' Monte Carlo error is under a tenth
+//!    of that. A deliberate change (model constants, a DC refit, new
+//!    history) re-measures and re-pins `LIMITS`, along with the docs that
+//!    quote these numbers.
+//! 2. `calibration_stays_within_its_band_of_the_history`: the gaps above may
+//!    not grow past each figure's band. Home wins may sit 1.5 points either
+//!    side of the history; the draw and goal bands end about half a point
+//!    (0.06 goals) beyond where those gaps stand now, because they are known
+//!    errors, not slack to spend.
+//!
+//! Mean points per club follow from the draw rate alone (each decisive match
+//! hands out 3 points, a draw 2), so they are reported and checked against
+//! that identity rather than pinned. A pure-Elo `World` is not checked:
+//! `ENSEMBLE_WEIGHTS=1,0,0` is an opt-out, not what runs.
 
-use superlig_sim::history;
-use superlig_sim::sim::{SimConfig, World};
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
 
-/// Empirical home/away goal means and outcome split over the historical set.
-fn empirical() -> (f64, f64, f64, f64) {
-    let ms = history::load_history();
-    assert!(!ms.is_empty());
-    let n = ms.len() as f64;
-    let hg: f64 = ms.iter().map(|m| m.home_score as f64).sum::<f64>() / n;
-    let ag: f64 = ms.iter().map(|m| m.away_score as f64).sum::<f64>() / n;
-    let home_wins = ms.iter().filter(|m| m.home_score > m.away_score).count() as f64 / n;
-    let draws = ms.iter().filter(|m| m.home_score == m.away_score).count() as f64 / n;
-    (hg, ag, home_wins * 100.0, draws * 100.0)
+use chrono::Datelike;
+use superlig_sim::history::{self, HistoricalMatch};
+use superlig_sim::sim::{Ensemble, SimConfig, World};
+
+/// `ENSEMBLE_WEIGHTS` when it is unset: the blend production runs.
+const SHIPPED_WEIGHTS: (f64, f64, f64) = (0.5, 0.3, 0.2);
+
+/// Simulated seasons, in batches so the spread of the batch means gives the
+/// Monte Carlo standard error. 2,000 seasons take about a second in a debug
+/// build.
+const SEASON_BATCHES: usize = 10;
+const SEASONS_PER_BATCH: usize = 200;
+const SEED: u64 = 4242;
+
+/// A pinned figure: today's value, how far it may move, and the band its
+/// gap to the history must stay inside. Rates are percentages, goals are
+/// per match.
+struct Limits {
+    name: &'static str,
+    pinned: f64,
+    pin_tol: f64,
+    band: (f64, f64),
 }
 
-/// The model on its own: preseason ratings and nothing played. Results the
-/// shipped calendar has recorded would fix part of the season and make these
-/// checks depend on how far it has got rather than on the model.
-fn preseason_world() -> World {
+const LIMITS: [Limits; 5] = [
+    Limits {
+        name: "fixture home wins %",
+        pinned: 44.86,
+        pin_tol: 1.0,
+        band: (-1.5, 1.5),
+    },
+    Limits {
+        name: "fixture draws %",
+        pinned: 24.78,
+        pin_tol: 1.0,
+        band: (-1.5, 1.5),
+    },
+    Limits {
+        name: "fixture goals",
+        pinned: 2.878,
+        pin_tol: 0.05,
+        band: (-0.15, 0.15),
+    },
+    Limits {
+        name: "season draws %",
+        pinned: 24.40,
+        pin_tol: 1.0,
+        band: (-2.0, 2.0),
+    },
+    Limits {
+        name: "season goals",
+        pinned: 2.915,
+        pin_tol: 0.05,
+        band: (-0.2, 0.2),
+    },
+];
+
+/// One figure as the model gives it and as the league played it.
+struct Figure {
+    name: &'static str,
+    model: f64,
+    /// Monte Carlo standard error; 0 for an exact sum.
+    model_se: f64,
+    history: f64,
+    history_se: f64,
+}
+
+impl Figure {
+    fn gap(&self) -> f64 {
+        self.model - self.history
+    }
+
+    fn limits(&self) -> Option<&'static Limits> {
+        LIMITS.iter().find(|l| l.name == self.name)
+    }
+}
+
+struct Measured {
+    figures: Vec<Figure>,
+    /// The printed table, repeated in every failure message.
+    report: String,
+    /// Mean simulated points per club, and `17 * (3 - draw rate)` from the
+    /// same seasons' draws.
+    season_points: f64,
+    season_points_from_draws: f64,
+}
+
+/// The shipped model on its own: preseason ratings and nothing played.
+/// Results the shipped calendar has recorded would fix part of the season
+/// and make these checks depend on how far it has got.
+fn shipped_preseason_world() -> World {
     let mut w = World::new();
     w.played.clear();
     w.refresh_ratings();
+    let (elo, dc, pi) = SHIPPED_WEIGHTS;
+    w.ensemble = Some(Ensemble::from_embedded_data(elo, dc, pi).expect("embedded ensemble data"));
     w
 }
 
-#[test]
-fn simulated_scoring_matches_the_real_league() {
-    let (emp_hg, emp_ag, emp_home, emp_draw) = empirical();
-    eprintln!(
-        "empirical: home {emp_hg:.3} away {emp_ag:.3} goals; \
-         home wins {emp_home:.1}% draws {emp_draw:.1}%"
-    );
+fn mean(xs: &[f64]) -> f64 {
+    xs.iter().sum::<f64>() / xs.len() as f64
+}
 
-    // A clean World has no ensemble (pure Elo), which is exactly the
-    // component being calibrated here.
-    let w = preseason_world();
-    let cfg = SimConfig {
-        n_sims: 2000,
-        seed: 4242,
-        ..SimConfig::default()
+fn standard_error(xs: &[f64]) -> f64 {
+    let mu = mean(xs);
+    let var = xs.iter().map(|x| (x - mu).powi(2)).sum::<f64>() / (xs.len() - 1) as f64;
+    (var / xs.len() as f64).sqrt()
+}
+
+/// Seasons start in August, which keeps the July 2020 matches in 2019-20.
+fn season_of(m: &HistoricalMatch) -> i32 {
+    if m.date.month() >= 8 {
+        m.date.year()
+    } else {
+        m.date.year() - 1
+    }
+}
+
+/// Measured once and shared: the tests read the same figures.
+fn measured() -> &'static Measured {
+    static MEASURED: OnceLock<Measured> = OnceLock::new();
+    MEASURED.get_or_init(measure)
+}
+
+fn measure() -> Measured {
+    let ms = history::load_history();
+    assert!(!ms.is_empty());
+    let n = ms.len() as f64;
+    let pct =
+        |hit: fn(&HistoricalMatch) -> bool| ms.iter().filter(|m| hit(m)).count() as f64 / n * 100.0;
+    // Binomial sampling error. It is not flattering: the seasons' own draw
+    // rates scatter 2.4 points, as much as 300-odd independent matches would.
+    let pct_se = |p: f64| (p * (100.0 - p) / n).sqrt();
+    let goals: Vec<f64> = ms
+        .iter()
+        .map(|m| f64::from(m.home_score + m.away_score))
+        .collect();
+    let goal_mean = |side: fn(&HistoricalMatch) -> u16| {
+        let g: Vec<f64> = ms.iter().map(|m| f64::from(side(m))).collect();
+        (mean(&g), standard_error(&g))
     };
-    let r = w.simulate(&cfg);
+    let h_home = pct(|m| m.home_score > m.away_score);
+    let h_draw = pct(|m| m.home_score == m.away_score);
+    let h_away = pct(|m| m.home_score < m.away_score);
+    let (h_home_goals, h_home_goals_se) = goal_mean(|m| m.home_score);
+    let (h_away_goals, h_away_goals_se) = goal_mean(|m| m.away_score);
+    let (h_goals, h_goals_se) = (mean(&goals), standard_error(&goals));
 
-    let n_teams = w.teams.len() as f64;
-    let total_goals: f64 = r.gd_sum.iter().map(|g| g.abs()).sum::<f64>();
-    let mean_points = r.points_sum.iter().sum::<f64>() / cfg.n_sims as f64 / n_teams;
-    eprintln!("simulated mean points per club: {mean_points:.2} (gd spread {total_goals:.0})");
+    let mut seasons: BTreeMap<i32, (usize, usize)> = BTreeMap::new();
+    for m in &ms {
+        let s = seasons.entry(season_of(m)).or_default();
+        s.0 += 1;
+        s.1 += usize::from(m.home_score == m.away_score);
+    }
+    let draw_rates: Vec<(i32, f64)> = seasons
+        .iter()
+        .map(|(&s, &(games, draws))| (s, draws as f64 / games as f64 * 100.0))
+        .collect();
+    let low = draw_rates.iter().min_by(|a, b| a.1.total_cmp(&b.1));
+    let high = draw_rates.iter().max_by(|a, b| a.1.total_cmp(&b.1));
+    let (Some(&(low_season, low)), Some(&(high_season, high))) = (low, high) else {
+        panic!("no seasons in the history");
+    };
+    let label = |s: i32| format!("{s}-{:02}", (s + 1) % 100);
+    let mut report = vec![format!(
+        "history: {} played matches over {} seasons, {}..{}; season draw rates \
+         {low:.1}% ({}) to {high:.1}% ({})",
+        ms.len(),
+        seasons.len(),
+        label(*seasons.keys().next().expect("seasons")),
+        label(*seasons.keys().next_back().expect("seasons")),
+        label(low_season),
+        label(high_season),
+    )];
 
-    // Mean points per club over a 34-game season is fixed by the draw rate:
-    // 34 * (3 - draw_rate). A draw rate of 22-30% implies 44.9-47.6 points.
+    let w = shipped_preseason_world();
+
+    // Per fixture: exact sums over each fixture's scoreline table.
+    let (mut home, mut draw, mut away, mut xg_home, mut xg_away) = (0.0, 0.0, 0.0, 0.0, 0.0);
+    for f in &w.fixtures {
+        let p = w.fixture_probs(f.home, f.away);
+        home += p.home_win_pct;
+        draw += p.draw_pct;
+        away += p.away_win_pct;
+        xg_home += p.home_xg;
+        xg_away += p.away_xg;
+    }
+    let k = w.fixtures.len() as f64;
+    let (home, draw, away, xg_home, xg_away) =
+        (home / k, draw / k, away / k, xg_home / k, xg_away / k);
+    assert!((home + draw + away - 100.0).abs() < 1e-6);
+
+    // Per season: the production simulator, batch by batch.
+    let matches = (SEASONS_PER_BATCH * w.fixtures.len()) as f64;
+    let clubs = w.teams.len() as f64;
+    let (mut draws, mut goals_sim, mut points) = (vec![], vec![], vec![]);
+    for b in 0..SEASON_BATCHES {
+        let r = w.simulate(&SimConfig {
+            n_sims: SEASONS_PER_BATCH,
+            seed: SEED + b as u64,
+            ..SimConfig::default()
+        });
+        // Every draw is in both clubs' records, every goal in one club's.
+        draws.push(r.drawn_sum.iter().sum::<f64>() / 2.0 / matches * 100.0);
+        goals_sim.push(r.gf_sum.iter().sum::<f64>() / matches);
+        points.push(r.points_sum.iter().sum::<f64>() / SEASONS_PER_BATCH as f64 / clubs);
+    }
+    // Total points are 3 per match less one per draw; per club over a
+    // 34-game season that is 34 * (3 - d) / 2 = 17 * (3 - d).
+    let per_club = |draw_pct: f64| 17.0 * (3.0 - draw_pct / 100.0);
+
+    let figures = vec![
+        Figure {
+            name: "fixture home wins %",
+            model: home,
+            model_se: 0.0,
+            history: h_home,
+            history_se: pct_se(h_home),
+        },
+        Figure {
+            name: "fixture draws %",
+            model: draw,
+            model_se: 0.0,
+            history: h_draw,
+            history_se: pct_se(h_draw),
+        },
+        Figure {
+            name: "fixture away wins %",
+            model: away,
+            model_se: 0.0,
+            history: h_away,
+            history_se: pct_se(h_away),
+        },
+        Figure {
+            name: "fixture home goals",
+            model: xg_home,
+            model_se: 0.0,
+            history: h_home_goals,
+            history_se: h_home_goals_se,
+        },
+        Figure {
+            name: "fixture away goals",
+            model: xg_away,
+            model_se: 0.0,
+            history: h_away_goals,
+            history_se: h_away_goals_se,
+        },
+        Figure {
+            name: "fixture goals",
+            model: xg_home + xg_away,
+            model_se: 0.0,
+            history: h_goals,
+            history_se: h_goals_se,
+        },
+        Figure {
+            name: "season draws %",
+            model: mean(&draws),
+            model_se: standard_error(&draws),
+            history: h_draw,
+            history_se: pct_se(h_draw),
+        },
+        Figure {
+            name: "season goals",
+            model: mean(&goals_sim),
+            model_se: standard_error(&goals_sim),
+            history: h_goals,
+            history_se: h_goals_se,
+        },
+        Figure {
+            name: "season points per club",
+            model: mean(&points),
+            model_se: standard_error(&points),
+            history: per_club(h_draw),
+            history_se: 17.0 * pct_se(h_draw) / 100.0,
+        },
+    ];
+
+    let (elo, dc, pi) = SHIPPED_WEIGHTS;
+    report.push(format!(
+        "model: elo {elo} / dc {dc} / pi {pi} at preseason; fixture figures are exact \
+         means over the {} fixtures, season figures {} x {} simulated seasons (seed {SEED})",
+        w.fixtures.len(),
+        SEASON_BATCHES,
+        SEASONS_PER_BATCH,
+    ));
+    report.push(format!(
+        "{:<24} {:>8} {:>7} {:>8} {:>7} {:>7} {:>6}   {:<16} band",
+        "", "model", "MC se", "history", "se", "gap", "z", "pinned"
+    ));
+    for f in &figures {
+        let mc = if f.model_se > 0.0 {
+            format!("{:.3}", f.model_se)
+        } else {
+            "exact".to_string()
+        };
+        let (pinned, band) = match f.limits() {
+            Some(l) => (
+                format!("{} ± {}", l.pinned, l.pin_tol),
+                format!("[{:+}, {:+}]", l.band.0, l.band.1),
+            ),
+            None => ("report only".to_string(), String::new()),
+        };
+        let row = format!(
+            "{:<24} {:>8.3} {:>7} {:>8.3} {:>7.3} {:>+7.3} {:>+6.1}   {:<16} {band}",
+            f.name,
+            f.model,
+            mc,
+            f.history,
+            f.history_se,
+            f.gap(),
+            f.gap() / f.model_se.hypot(f.history_se),
+            pinned,
+        );
+        report.push(row.trim_end().to_string());
+    }
+
+    let season_points = mean(&points);
+    let season_points_from_draws = per_club(mean(&draws));
+    report.push(format!(
+        "season points per club {season_points:.3} = 17 x (3 - {:.4}) = \
+         {season_points_from_draws:.3}",
+        mean(&draws) / 100.0
+    ));
+    let report = report.join("\n");
+    eprintln!("{report}");
+    Measured {
+        figures,
+        report,
+        season_points,
+        season_points_from_draws,
+    }
+}
+
+/// Every pinned name is measured, so a renamed figure cannot drop out of
+/// both guards unnoticed.
+fn pinned_figures() -> Vec<(&'static Figure, &'static Limits)> {
+    let m = measured();
+    LIMITS
+        .iter()
+        .map(|l| {
+            let f = m
+                .figures
+                .iter()
+                .find(|f| f.name == l.name)
+                .unwrap_or_else(|| panic!("no measured figure is called {:?}", l.name));
+            (f, l)
+        })
+        .collect()
+}
+
+#[test]
+fn calibration_is_pinned() {
+    let moved: Vec<String> = pinned_figures()
+        .into_iter()
+        .filter(|(f, l)| (f.model - l.pinned).abs() > l.pin_tol)
+        .map(|(f, l)| {
+            format!(
+                "{}: {:.3}, pinned at {} ± {}",
+                f.name, f.model, l.pinned, l.pin_tol
+            )
+        })
+        .collect();
     assert!(
-        (44.0..=48.5).contains(&mean_points),
-        "mean points per club {mean_points:.2} implies an implausible draw rate; \
-         retune BASE/D_DIV/HOME_ADV in src/data.rs"
+        moved.is_empty(),
+        "the shipped model's calibration moved:\n  {}\nIf the change is intended, re-measure \
+         with `cargo test --test calibration -- --nocapture`, re-pin LIMITS in \
+         tests/calibration.rs and update the docs that quote these figures.\n\n{}",
+        moved.join("\n  "),
+        measured().report
     );
 }
 
 #[test]
-fn simulated_match_outcomes_match_the_real_league() {
-    let (_, _, emp_home, emp_draw) = empirical();
-    let w = preseason_world();
+fn calibration_stays_within_its_band_of_the_history() {
+    let outside: Vec<String> = pinned_figures()
+        .into_iter()
+        .filter(|(f, l)| !(l.band.0..=l.band.1).contains(&f.gap()))
+        .map(|(f, l)| {
+            format!(
+                "{}: model {:.3} vs history {:.3}, gap {:+.3} outside [{:+}, {:+}]",
+                f.name,
+                f.model,
+                f.history,
+                f.gap(),
+                l.band.0,
+                l.band.1
+            )
+        })
+        .collect();
+    assert!(
+        outside.is_empty(),
+        "the shipped model has drifted from the real league:\n  {}\nThe bands are \
+         documented in tests/calibration.rs; widening one hides a miscalibration.\n\n{}",
+        outside.join("\n  "),
+        measured().report
+    );
+}
 
-    // Average the exact outcome split over every fixture in the calendar, so
-    // the comparison covers the real distribution of mismatches.
-    let (mut home, mut draw, mut away, mut n) = (0.0, 0.0, 0.0, 0.0);
-    for f in &w.fixtures {
-        let (h, d, a) = w.match_win_probs(f.home, f.away);
-        home += h;
-        draw += d;
-        away += a;
-        n += 1.0;
+#[test]
+fn mean_points_follow_from_the_draw_rate() {
+    let m = measured();
+    assert!(
+        (m.season_points - m.season_points_from_draws).abs() < 1e-9,
+        "mean points per club {:.6} != 17 * (3 - draw rate) = {:.6}",
+        m.season_points,
+        m.season_points_from_draws
+    );
+}
+
+#[test]
+fn the_calibrated_blend_is_the_shipped_default() {
+    if std::env::var_os("ENSEMBLE_WEIGHTS").is_some() {
+        eprintln!("ENSEMBLE_WEIGHTS is set, so the default blend cannot be read; skipped");
+        return;
     }
-    let (home, draw, away) = (home / n, draw / n, away / n);
-    eprintln!("simulated: home {home:.1}% draw {draw:.1}% away {away:.1}%");
-
-    assert!(
-        (home - emp_home).abs() < 7.0,
-        "home win rate {home:.1}% vs empirical {emp_home:.1}% — adjust HOME_ADV"
+    assert_eq!(
+        superlig_sim::ensemble_weights(),
+        SHIPPED_WEIGHTS,
+        "the default ENSEMBLE_WEIGHTS changed: set SHIPPED_WEIGHTS to it and re-pin LIMITS"
     );
-    assert!(
-        (draw - emp_draw).abs() < 7.0,
-        "draw rate {draw:.1}% vs empirical {emp_draw:.1}% — adjust BASE/D_DIV"
-    );
-    assert!((home + draw + away - 100.0).abs() < 1e-6);
 }
