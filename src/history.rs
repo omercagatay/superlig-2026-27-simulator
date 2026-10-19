@@ -99,6 +99,20 @@ struct CsvRow {
 }
 
 fn parse_csv(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
+    let out: Vec<HistoricalMatch> = parse_rows(bytes, min_year)
+        .into_iter()
+        .filter(|m| !is_unplayed_award(m.date, &m.home_team, &m.away_team))
+        .collect();
+    tracing::info!(
+        "Loaded {} historical matches (cutoff {}+)",
+        out.len(),
+        min_year
+    );
+    out
+}
+
+/// Every well-formed CSV row from `min_year` on, unplayed awards included.
+fn parse_rows(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
     let mut rdr = csv::ReaderBuilder::new()
         .flexible(false)
         .has_headers(true)
@@ -118,9 +132,6 @@ fn parse_csv(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
         let Ok(as_) = r.away_score.trim().parse::<u16>() else {
             continue;
         };
-        if is_unplayed_award(date, &r.home_team, &r.away_team) {
-            continue;
-        }
         let neutral = matches!(r.neutral.trim().to_ascii_uppercase().as_str(), "TRUE" | "1");
         out.push(HistoricalMatch {
             date,
@@ -131,11 +142,6 @@ fn parse_csv(bytes: &[u8], min_year: i32) -> Vec<HistoricalMatch> {
             neutral,
         });
     }
-    tracing::info!(
-        "Loaded {} historical matches (cutoff {}+)",
-        out.len(),
-        min_year
-    );
     out
 }
 
@@ -219,9 +225,9 @@ mod tests {
         }
     }
 
-    /// The name-drift regression net. Source display names change over time;
-    /// an unmapped variant sends a real club's history into the bucket,
-    /// silently weakening it. Asserting season coverage makes that loud.
+    /// After the 6 February 2023 earthquake, Hatayspor's and Gaziantep's
+    /// remaining fixtures were awarded, not played. The rows stay in the CSV
+    /// and are dropped at load.
     #[test]
     fn earthquake_walkover_awards_are_not_treated_as_results() {
         let ms = load_history();
@@ -245,20 +251,16 @@ mod tests {
         assert!(ms.iter().filter(after_quake).count() > 100);
     }
 
+    /// The name-drift regression net. Source display names change over time;
+    /// an unmapped variant sends a real club's history into the bucket,
+    /// silently weakening it. Asserting season coverage makes that loud.
     #[test]
     fn every_ever_present_club_has_full_season_coverage() {
         use std::collections::HashSet;
         let ms = load_history();
         let mut seasons: HashMap<&str, HashSet<i32>> = HashMap::new();
         for m in &ms {
-            // The season is named for its starting year. August is the normal
-            // boundary and keeps the pandemic-delayed July 2020 fixtures in
-            // 2019-20.
-            let season = if m.date.month() >= 8 {
-                m.date.year()
-            } else {
-                m.date.year() - 1
-            };
+            let season = season_of(m.date);
             seasons
                 .entry(m.home_team.as_str())
                 .or_default()
@@ -284,9 +286,232 @@ mod tests {
             }
             assert!(
                 seasons.get(name).map_or(0, |s| s.len()) >= 1,
-                "{name} has no history — check ALIASES in scripts/fetch_history.py"
+                "{name} has no history — check the *_ALIASES tables in scripts/fetch_history.py"
             );
         }
+        // One club, two sources: the archive (2020-21..2023-24, spelled
+        // "Karagumruk" there) and TFF (2025-26). Under two names the club
+        // re-entered 2025-26 at NEW_CLUB_ELO. It spent 2024-25 in the 1. Lig.
+        assert_eq!(
+            seasons.get("Karagümrük"),
+            Some(&HashSet::from([2020, 2021, 2022, 2023, 2025]))
+        );
+        assert!(!seasons.contains_key("Karagumruk"));
+    }
+
+    const CSV: &[u8] = include_bytes!("../data/superlig_results.csv");
+
+    /// The season a match belongs to, named for its starting year. August is
+    /// the boundary; it keeps the pandemic-delayed July 2020 fixtures in
+    /// 2019-20.
+    fn season_of(date: NaiveDate) -> i32 {
+        if date.month() >= 8 {
+            date.year()
+        } else {
+            date.year() - 1
+        }
+    }
+
+    /// Clubs in each top-flight season, by starting year.
+    const CLUBS_PER_SEASON: &[(i32, usize)] = &[
+        (2012, 18),
+        (2013, 18),
+        (2014, 18),
+        (2015, 18),
+        (2016, 18),
+        (2017, 18),
+        (2018, 18),
+        (2019, 18),
+        (2020, 21),
+        (2021, 20),
+        (2022, 19),
+        (2023, 20),
+        (2024, 19),
+        (2025, 18),
+    ];
+
+    /// Fixtures a season of the CSV lacks on purpose, as (season, home, away,
+    /// why). Any other missing or repeated pair fails the round-robin test.
+    const NOT_IN_CSV: &[(i32, &str, &str, &str)] = &[(
+        2024,
+        "Galatasaray",
+        "Ad. Demirspor",
+        "2025-02-09: Adana Demirspor left the pitch in the first half and the \
+         TFF awarded the match 3-0. The score was not decided on the pitch, \
+         so fetch_history.py's EXCLUDED_AWARDS keeps it out of the CSV.",
+    )];
+
+    /// 2022-23 earthquake walkovers: in the CSV, dropped at load by
+    /// `is_unplayed_award` (Hatayspor 15, Gaziantep 14; they had already met).
+    const QUAKE_WALKOVERS: usize = 29;
+
+    /// Every ordered pair of a season's clubs not met exactly once (a club
+    /// never meets itself), as (season, home, away, times met), sorted.
+    fn round_robin_gaps(rows: &[HistoricalMatch]) -> Vec<(i32, String, String, usize)> {
+        use std::collections::{BTreeMap, BTreeSet};
+        let mut seasons: BTreeMap<i32, HashMap<(&str, &str), usize>> = BTreeMap::new();
+        for m in rows {
+            *seasons
+                .entry(season_of(m.date))
+                .or_default()
+                .entry((m.home_team.as_str(), m.away_team.as_str()))
+                .or_default() += 1;
+        }
+        let mut gaps = Vec::new();
+        for (&season, met) in &seasons {
+            let clubs: BTreeSet<&str> = met.keys().flat_map(|&(h, a)| [h, a]).collect();
+            for &h in &clubs {
+                for &a in &clubs {
+                    let n = met.get(&(h, a)).copied().unwrap_or(0);
+                    if n != usize::from(h != a) {
+                        gaps.push((season, h.to_string(), a.to_string(), n));
+                    }
+                }
+            }
+        }
+        gaps
+    }
+
+    /// Every season of the CSV is a full double round-robin: each club hosts
+    /// every other club exactly once, bar `NOT_IN_CSV`. The 2024-25 season
+    /// once lacked three whole matchdays and nothing noticed.
+    #[test]
+    fn every_season_is_a_complete_double_round_robin() {
+        let rows = parse_rows(CSV, 0);
+        let lines = std::str::from_utf8(CSV)
+            .expect("UTF-8")
+            .lines()
+            .skip(1)
+            .filter(|l| !l.trim().is_empty())
+            .count();
+        assert_eq!(rows.len(), lines, "a CSV row did not parse");
+
+        let mut clubs: HashMap<i32, std::collections::HashSet<&str>> = HashMap::new();
+        for m in &rows {
+            let season = clubs.entry(season_of(m.date)).or_default();
+            season.insert(m.home_team.as_str());
+            season.insert(m.away_team.as_str());
+        }
+        let mut found: Vec<(i32, usize)> = clubs.iter().map(|(&s, c)| (s, c.len())).collect();
+        found.sort_unstable();
+        assert_eq!(found, CLUBS_PER_SEASON, "seasons or club counts changed");
+
+        let mut expected: Vec<(i32, String, String, usize)> = NOT_IN_CSV
+            .iter()
+            .map(|&(s, h, a, _)| (s, h.to_string(), a.to_string(), 0))
+            .collect();
+        expected.sort();
+        assert_eq!(round_robin_gaps(&rows), expected);
+    }
+
+    /// What the model trains on: the CSV minus exactly the earthquake
+    /// walkovers, each a 3-0 to the opponent of the withdrawn club.
+    #[test]
+    fn loading_drops_exactly_the_earthquake_walkovers() {
+        let raw = parse_rows(CSV, CUTOFF_YEAR);
+        let withdrawn = |t: &str| matches!(t, "Hatayspor" | "Gaziantep");
+        let dropped: Vec<&HistoricalMatch> = raw
+            .iter()
+            .filter(|m| is_unplayed_award(m.date, &m.home_team, &m.away_team))
+            .collect();
+        assert_eq!(dropped.len(), QUAKE_WALKOVERS);
+        for m in &dropped {
+            assert_eq!(season_of(m.date), 2022);
+            let awarded = if withdrawn(&m.home_team) {
+                (0, 3)
+            } else {
+                (3, 0)
+            };
+            assert_eq!(
+                (m.home_score, m.away_score),
+                awarded,
+                "{} {} v {}",
+                m.date,
+                m.home_team,
+                m.away_team
+            );
+        }
+
+        let loaded = load_history();
+        assert_eq!(loaded.len(), raw.len() - QUAKE_WALKOVERS);
+        let mut expected: Vec<(i32, String, String, usize)> = NOT_IN_CSV
+            .iter()
+            .map(|&(s, h, a, _)| (s, h.to_string(), a.to_string(), 0))
+            .chain(
+                dropped
+                    .iter()
+                    .map(|m| (2022, m.home_team.clone(), m.away_team.clone(), 0)),
+            )
+            .collect();
+        expected.sort();
+        assert_eq!(round_robin_gaps(&loaded), expected);
+    }
+
+    /// Names that fold together but are different clubs: Gaziantep FK (the
+    /// former Gaziantep Büyükşehir Belediyespor, 2019-20 on) and Gaziantepspor
+    /// (to 2016-17, since dissolved).
+    const DISTINCT_LOOKALIKES: &[[&str; 2]] = &[["Gaziantep", "Gaziantepspor"]];
+
+    /// A club name with case, Turkish letters, accents, punctuation, spaces
+    /// and a trailing "spor" (which sources add or drop) removed.
+    fn fold(name: &str) -> String {
+        let mut out = String::new();
+        // 'İ' lowercases to 'i' plus a combining dot, which is not
+        // alphanumeric and so drops out below.
+        for c in name.chars().flat_map(char::to_lowercase) {
+            let c = match c {
+                'ç' => 'c',
+                'ğ' => 'g',
+                'ı' | 'î' | 'ï' | 'í' => 'i',
+                'ö' | 'ô' | 'ó' => 'o',
+                'ş' => 's',
+                'ü' | 'û' | 'ú' => 'u',
+                'â' | 'á' | 'à' | 'ä' => 'a',
+                'é' | 'è' | 'ê' | 'ë' => 'e',
+                c => c,
+            };
+            if c.is_alphanumeric() {
+                assert!(
+                    c.is_ascii_alphanumeric(),
+                    "{name}: teach fold() to plain {c:?} so its look-alikes are found"
+                );
+                out.push(c);
+            }
+        }
+        match out.strip_suffix("spor") {
+            Some(stem) if !stem.is_empty() => stem.to_string(),
+            _ => out,
+        }
+    }
+
+    /// The Karagumruk/Karagümrük class of bug: one club under two spellings
+    /// is two clubs to the ratings. History names and the current clubs must
+    /// not collide once folded, unless listed as distinct clubs.
+    #[test]
+    fn no_two_club_names_fold_together() {
+        use std::collections::{BTreeMap, BTreeSet};
+        assert_eq!(fold("Karagümrük"), fold("Karagumruk"));
+        assert_eq!(fold("İstanbulspor"), fold("Istanbul"));
+        assert_eq!(fold("Ad. Demirspor"), fold("Ad Demir"));
+
+        let rows = parse_rows(CSV, 0);
+        let names = rows
+            .iter()
+            .flat_map(|m| [m.home_team.as_str(), m.away_team.as_str()])
+            .chain(crate::data::clubs());
+        let mut by_key: BTreeMap<String, BTreeSet<&str>> = BTreeMap::new();
+        for name in names {
+            by_key.entry(fold(name)).or_default().insert(name);
+        }
+        let allowed: BTreeSet<BTreeSet<&str>> = DISTINCT_LOOKALIKES
+            .iter()
+            .map(|pair| pair.iter().copied().collect())
+            .collect();
+        let collisions: BTreeSet<BTreeSet<&str>> =
+            by_key.into_values().filter(|n| n.len() > 1).collect();
+        // Equality, not a subset: a listed pair that no longer collides is a
+        // stale entry.
+        assert_eq!(collisions, allowed, "one club under two spellings?");
     }
 
     #[test]
