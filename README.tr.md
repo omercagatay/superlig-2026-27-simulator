@@ -55,7 +55,7 @@ Harmanlamadan sonra 0,9'un altındaki bir gol beklentisi, 0,9'a olan farkın %70
 
 1. Lig'den yükselen kulüplerin (2026-27 için Amedspor ve Çorum) üst lig geçmişi olmadığından Dixon–Coles ve pi-rating bileşenleri onlara lig ortalaması bir profil verir; ayrımı yalnızca Elo puanları yapar.
 
-**Puanlar kesin değildir; simülasyon da bunu hesaba katar.** Simüle edilen her sezonda her kulübün gerçek gücü, güncel puanı çevresindeki bir normal dağılımdan (`RATING_SIGMA`, 75 Elo puanı) bir kez çekilir ve o sezon boyunca sabit kalır. Puanları kesin kabul etmek favorilerin olasılıklarını şişirir, uçları ise fazla inceltir.
+**Puanlar kesin değildir; simülasyon da bunu hesaba katar.** Simüle edilen her sezonda her kulübün gerçek gücü, güncel Elo puanı çevresindeki bir normal dağılımdan (`RATING_SIGMA`, 75 Elo puanı) bir kez çekilir ve o sezon boyunca sabit kalır. Puanları kesin kabul etmek favorilerin olasılıklarını şişirir, uçları ise fazla inceltir.
 
 Sigma tahminle değil, kalibrasyonla belirlendi. Arena, ayrılmış her sezonu modelin kendi maç olasılıklarıyla yeniden oynatır ve ortaya çıkan puan tablosunun yayılımını gerçeğiyle karşılaştırır:
 
@@ -66,13 +66,13 @@ Sigma tahminle değil, kalibrasyonla belirlendi. Arena, ayrılmış her sezonu m
 | Model yayılımı, σ=0 | 13,4 | 13,0 |
 | Model yayılımı, σ=75 | 15,0 | 14,4 |
 
-Bağımsız maç örneklemesi, gücün sezon boyunca sürmesini olduğundan az gösterir; sezon başına ortak bir güç çekilişi bu açığın 2024-25'te yaklaşık beşte ikisini, 2025-26'da üçte ikisini kapatır. Bu çekiliş yalnızca sezon simülasyonunda yapıldığı için tek maç tahminlerine hiçbir maliyeti yoktur. 2024-25 geçmişi sezonun tek hükmen kararını (Galatasaray - Adana Demirspor, 3-0 hükmen) dışarıda bıraktığından bu karşılaştırma bilerek iki tarafta da yalnızca oynanan maçların puanlarını kullanır.
+Bağımsız maç örneklemesi, gücün sezon boyunca sürmesini olduğundan az gösterir; sezon başına ortak bir güç çekilişi bu açığın 2024-25'te yaklaşık beşte ikisini, 2025-26'da üçte ikisini kapatır. Bu çekiliş yalnızca sezon simülasyonunda yapıldığı için tek maç tahminlerine hiçbir maliyeti yoktur. 2024-25 geçmişi sezonun tek hükmen kararını (Galatasaray - Adana Demirspor, 3-0 hükmen) dışarıda bıraktığından bu karşılaştırma bilerek iki tarafta da yalnızca oynanan maçların puanlarını kullanır. Arena bu çekilişi her maçın galibiyet/mağlubiyet oranlarına uygular; simülatör ise onu Elo puanlarına ekler, yani mekanizma farklıdır. Simülatörün kendi ürettiğini *Sezon düzeyinde değerlendirme* denetler.
 
 **Bilinen bir sınırlılık:** model 2024-25'te hâlâ fazla dar yayılır; oynanan maçlardan 92 puan toplayan bir lider, sezon başından yapılan yeniden oynatmaların yalnızca yaklaşık %14'ünde çıkar (`examples/backtest.rs` içindeki `EVAL_SEASON_SIM`). Şampiyonluk olasılıklarını "en olası şampiyon kim" sorusunun yanıtı olarak okuyun, şampiyonun toplayacağı puanın kesin bir tahmini olarak değil.
 
 **Puanlar sezonla birlikte değişir.** Elo bileşeni, sonuç geçmişinden hesaplanan bir sezon öncesi puanla başlar ve şimdiye kadar oynanan her maçla, başlama saati sırasıyla ilerletilir: kaybedenden kazanana puan aktaran, `ELO_K` ile ölçeklenen ve gol farkının karekökünü çarpan olarak kullanan bir güncelleme. Puanlar üst üste eklenmez, her seferinde başlangıçtan yeniden hesaplanır; bu yüzden aynı canlı yenilemeyi tekrarlamak hiçbir şeyi değiştirmez. Dixon–Coles ve pi-rating bileşenleri çevrimdışı yeniden kalibre edilene kadar kalibre edildikleri değerlerde kalır.
 
-Elle yapılan değişiklikler ve Kimi senaryoları yalnızca Elo bileşenini günceller. Gömülü Dixon–Coles ve pi-rating parametreleri, modeller açıkça yeniden kalibre edilene kadar değişmez.
+**Değişiklikler modelin tamamını etkiler.** Elle yapılan bir değişiklik ya da bir Kimi senaryosu bir kulüp için bir puan ister; bu puanın kulübün güncel Elo puanından farkı, aynı Elo farkının Elo bileşenini kaydırdığı gibi, kulübün bütün maçlarındaki harmanlanmış gol beklentisini kaydırır; böylece Dixon–Coles ve pi-rating bileşenleri de onu izler. Değişiklikler eskiden yalnızca Elo bileşenini değiştirdiği için yaklaşık yarı güçte etki ederdi. Sezon öncesinde +50 puan, bir kulübün beklenen sezon puanını artık ortalama yaklaşık 5,5 değiştirir (20.000 simüle edilmiş sezon; önceden yaklaşık 2,8). Kayma güçsüz taraf düzeltmesinden sonra uygulandığından, aynı puana çekilen iki kulübün tahmini aynı çıkmayabilir. Gömülü Dixon–Coles ve pi-rating parametrelerinin kendisi, modeller açıkça yeniden kalibre edilene kadar değişmez.
 
 ### Sıralama kuralları
 
@@ -121,8 +121,10 @@ Ev sahibi galibiyet oranı, geçmişin kendi örnekleme hatası içinde uyuşur.
 | Beceri: 3+ gol | <!-- metric:dev_ou25_skill:.1%:tr -->%1,4<!-- /metric --> | <!-- metric:hold_ou25_skill:.1%:tr -->%2,4<!-- /metric --> |
 | Beceri: karşılıklı gol | <!-- metric:dev_btts_skill:.2%:tr -->%0,06<!-- /metric --> | <!-- metric:hold_btts_skill:.2%:tr -->-%0,12<!-- /metric --> |
 | Beraberlik: tahmin / gerçekleşen | <!-- metric:dev_cal_draw_pred:.1%:tr -->%24,6<!-- /metric --> / <!-- metric:dev_cal_draw_obs:.1%:tr -->%25,4<!-- /metric --> | <!-- metric:hold_cal_draw_pred:.1%:tr -->%23,6<!-- /metric --> / <!-- metric:hold_cal_draw_obs:.1%:tr -->%26,1<!-- /metric --> |
+| Maç başına gol: tahmin / atılan | <!-- metric:dev_goals_pred:.2f:tr -->2,86<!-- /metric --> / <!-- metric:dev_goals_obs:.2f:tr -->2,82<!-- /metric --> | <!-- metric:hold_goals_pred:.2f:tr -->2,98<!-- /metric --> / <!-- metric:hold_goals_obs:.2f:tr -->2,80<!-- /metric --> |
+| Karşılıklı gol: tahmin / gerçekleşen | <!-- metric:dev_btts_pred:.1%:tr -->%54,8<!-- /metric --> / <!-- metric:dev_btts_obs:.1%:tr -->%56,1<!-- /metric --> | <!-- metric:hold_btts_pred:.1%:tr -->%55,2<!-- /metric --> / <!-- metric:hold_btts_obs:.1%:tr -->%55,6<!-- /metric --> |
 
-Log kaybı ne kadar düşükse o kadar iyidir. Beceri, genel oran tahmininin kaybından modelin giderdiği paydır; genel oranlar yalnızca puanlanan sezondan önceki sezonlardan hesaplanır. Model, sonuçlarda ve gol toplamlarında genel oranları açıkça geçer; ama karşılıklı gol tahmini genel orandan daha iyi değildir. Beraberlikler iki dönemde de biraz az tahmin edilir; yukarıdaki kalibrasyon kontrolü de bunu gösterir.
+Log kaybı ne kadar düşükse o kadar iyidir. Beceri, genel oran tahmininin kaybından modelin giderdiği paydır; genel oranlar yalnızca puanlanan sezondan önceki sezonlardan hesaplanır. Model, sonuçlarda ve gol toplamlarında genel oranları açıkça geçer; ama karşılıklı gol tahmini genel orandan daha iyi değildir. Beraberlikler iki dönemde de biraz az tahmin edilir; yukarıdaki kalibrasyon kontrolü de bunu gösterir. Goller biraz fazla, karşılıklı gol ise biraz az tahmin edilir; yani model golleri iki taraf arasında olması gerekenden daha dengesiz paylaştırır.
 
 Ekim 2026 ayarı (sezon içinde daha hızlı puan güncellemesi ve güçsüz taraf düzeltmesi), maç maç kendinden önceki modelle karşılaştırıldığında (`examples/compare.rs`; %95 aralıklar, maç günlerinin bütün olarak yeniden örneklenmesiyle):
 
@@ -133,6 +135,8 @@ Ekim 2026 ayarı (sezon içinde daha hızlı puan güncellemesi ve güçsüz tar
 | Karşılıklı gol log kaybı | −0,0016 [−0,0026; −0,0006] | −0,0044 [−0,0081; −0,0008] |
 
 Geliştirme sezonlarında kazanç sonuçlar, RPS, karşılıklı gol ve tam skor için istatistiksel olarak anlamlıdır. Ayrılmış sezonlarda yalnızca karşılıklı gol anlamlıdır; oradaki sonuç kazancı benzer büyüklüktedir ama <!-- metric:hold_n:,d:tr -->647<!-- /metric --> maçın gürültüsü içinde kalır. Sonuçları iyileştiren, daha hızlı puan güncellemesidir; güçsüz taraf düzeltmesi yalnızca karşılıklı gol tahminini iyileştirir. Ayar geliştirme sezonlarına bakılarak seçildiği için onların aralıkları iyimserdir. Asıl temiz sınav canlı 2026-27 sezonudur.
+
+Sonraki bir taramada geliştirme sezonlarında 202 ayar denendi (genel gol düzeyi, az gollü skor düzeltmesi ve 0,1'lik adımlarla her harman ağırlığı); yayına alınmaya değer bir şey çıkmadı. En iyi ayar sonuç log kaybını −0,0006 [−0,0015; +0,0003] değiştirdi, yani gürültü içinde kaldı; ayar, puanlandığı sezon görülmeden seçildiğinde ise kazanç kayboldu (+0,0002). Golleri aşağı ölçeklemek gol toplamlarındaki farkı kapatır ama karşılıklı gol tahminine zarar verir ve sezondan sezona tutmaz. Daha güçlü bir az gollü skor düzeltmesi, gol toplamlarını oynatmadan beraberlikleri %25,3'e çıkarırdı; ama onun kazancı da o kadar küçüktür (−0,0003 [−0,0010; +0,0003]). Hiçbir ayar karşılıklı gol tahminine beceri kazandırmaz.
 
 ### Sezon düzeyinde değerlendirme
 
@@ -145,8 +149,11 @@ Geliştirme sezonlarında kazanç sonuçlar, RPS, karşılıklı gol ve tam skor
 | İlk dört, Brier becerisi | <!-- metric:season:dev_s0_top4_bss:.3f:tr -->0,430<!-- /metric --> | <!-- metric:season:dev_s33_top4_bss:.3f:tr -->0,584<!-- /metric --> | <!-- metric:season:dev_s67_top4_bss:.3f:tr -->0,813<!-- /metric --> |
 | Küme düşme, Brier becerisi | <!-- metric:season:dev_s0_rel_bss:.3f:tr -->0,145<!-- /metric --> | <!-- metric:season:dev_s33_rel_bss:.3f:tr -->0,319<!-- /metric --> | <!-- metric:season:dev_s67_rel_bss:.3f:tr -->0,590<!-- /metric --> |
 | Sezon sonu puanı %80'lik aralığın içinde | %<!-- metric:season:dev_s0_cov80_pct:.1f:tr -->70,4<!-- /metric --> | %<!-- metric:season:dev_s33_cov80_pct:.1f:tr -->67,8<!-- /metric --> | %<!-- metric:season:dev_s67_cov80_pct:.1f:tr -->73,0<!-- /metric --> |
+| Sezon sonu puanı, puan cinsinden CRPS (düşük olan daha iyi) | <!-- metric:season:dev_s0_pts_crps:.2f:tr -->6,18<!-- /metric --> | <!-- metric:season:dev_s33_pts_crps:.2f:tr -->5,04<!-- /metric --> | <!-- metric:season:dev_s67_pts_crps:.2f:tr -->2,93<!-- /metric --> |
 
 Tahminler sezon ilerledikçe iyileşir ama aşırı özgüvenlidir: kulüplerin %80'ini içermesi gereken puan aralıkları yaklaşık %70'ini içerdi; simüle edilen puan tabloları da gerçeklerinden daha az yayılır (standart sapma <!-- metric:season:dev_s0_table_sd_sim:.1f:tr -->13,6<!-- /metric -->–<!-- metric:season:dev_s67_table_sd_sim:.1f:tr -->14,4<!-- /metric --> puan, gerçekte <!-- metric:season:dev_s0_table_sd_actual:.1f:tr -->15,1<!-- /metric -->). Sezon öncesi şampiyonluk tahmini, yalnızca genel oranları kullanmaktan ayırt edilemez (becerisi için %95 aralık: −0,099 ile 0,209, sekiz sezon). Paneldeki aralıkları olması gerekenden biraz dar sayın. İki ayrılmış sezon iki yönü de gösterir ve hiçbir şeyi kesinleştirmez; `RATING_SIGMA` da onların yayılımına göre ayarlandığından (bkz. yukarı) onu bağımsız olarak sınamazlar.
+
+CRPS, her kulübün sezon sonu puanı için tahmin edilen dağılımın tamamını puan cinsinden puanlar (tek bir sayıdan oluşan bir tahminde düz ıska olurdu) ve aralıkları yalnızca ıskaların gerektirdiği yerde genişletmeyi ödüllendirir. Aralıkları genişletmek denendi ama yayına alınmadı. Sezon başına güç çekilişini yalnızca Elo puanlarına değil modelin tamamına uygulamak, geliştirme sezonlarını nominal kapsamaya getirdi (%80'lik aralıklar kulüplerin %79,6–82,9'unu içerdi; anlık görüntü başına 5.000 sezonluk çalıştırmalarla) ve sıralama RPS'ini 8 sezonun 7'sinde iyileştirdi. Ayrılmış sezonlar puanlanmadan önce yazılan bir kurala göre, oradaki sezon sonu puanı CRPS'i ya da sıralama RPS'i kötüleşmedikçe bu yöntem benimsenecekti; ikisi de kötüleşti: sezonun üçte biri oynandıktan sonra, yayındaki tahminlerin fazla dar olmadığı yerde, aralıkları fazla genişletti. Bu yüzden simülatör değişmedi. İki sezon pek az şeyi kesinleştirir; asıl temiz sınav canlı 2026-27 sezonudur.
 
 ### Model seçimi
 
@@ -262,6 +269,8 @@ Gelecek hafta (`/api/upcoming` ve fikstürdeki `current_round`), bugün ya da so
 
 API CORS başlığı göndermez: panel aynı kökenden sunulur, Vite geliştirme sunucusu da `/api` isteklerini yönlendirir.
 
+`/api/simulate` ayrıca `what_if` kabul eder: oynanmamış maçlar için en fazla 20 sabitlenmiş sonuç, örneğin `[{"home":"Gaziantep","away":"Galatasaray","outcome":"home"}]`. Sabitlenen skor değil *sonuçtur*: skor, modelin o maç için skor olasılıklarından, sabitlenen sonuçla sınırlanarak çekilir; böylece averaj gerçekçi kalır. Sabitlenen sonuç, aynı gerçek sonucun yapacağı gibi simüle edilen sezonun Elo puanlarını da günceller ve sezon başlama saati sırasıyla oynanır; böylece yalnızca sonraki maçlar bundan etkilenir. 19 Ekim 2026 fikstüründe (50.000 sezon), 9. haftadaki Galatasaray - Fenerbahçe maçında Fenerbahçe galibiyetini sabitlemek Galatasaray'ın şampiyonluk olasılığını %59,1'den %32,1'e düşürür; bu, maçı gerçek bir 1-2 (%34,5) ile 1-3 (%29,8) olarak girmenin arasındadır. Oynanmış ya da var olmayan bir maçı sabitlemek sessizce yok sayılmaz, hata döner.
+
 Simülasyon istekleri 100–200.000 deneme kabul eder. Senaryo istemleri 2.000 karakterle, Elo değişiklikleri tanınan kulüp adlarıyla ve 1.200–2.000 aralığıyla, LLM senaryolarının döndürdüğü puan değişiklikleri ±150 ile, istek gövdeleri 1 MiB ile sınırlıdır. Senaryonun analiz metni 600 karakterle sınırlıdır. LLM çağrısı başarısız olursa istemci genel bir HTTP 502 alır; ayrıntılar yalnızca sunucu günlüğüne yazılır.
 
 ### Varsayılan tahmin
@@ -280,7 +289,7 @@ curl -X POST http://localhost:3000/api/simulate \
 
 ### Elle puan değişikliğiyle simülasyon
 
-`elo_overrides` fark değil, yerine geçecek mutlak puanları içerir.
+`elo_overrides` fark değil, istenen puanları içerir. Her biri, kulübün güncel Elo puanından farkı olarak modelin tamamına uygulanır (bkz. *Model nasıl çalışıyor*); Elo puanlarının kendisi değiştirilmez.
 
 ```bash
 curl -X POST http://localhost:3000/api/simulate \
@@ -444,6 +453,6 @@ Veri kaynaklarına dair bilinmesi gereken ayrıntılar:
 - En zayıf modellenen kulüpler yeni yükselenlerdir: Dixon–Coles ve pi-rating bileşenleri için üst lig geçmişleri olmadığından tahminleri tamamen Elo puanlarına dayanır.
 - Yukarıda anlatılan "ikili karşılaştırma bir kez uygulanır" kuralı yayımlanmış bir kural değil, açıkça belirtilmiş bir varsayımdır.
 - Senaryo puanları modelin ürettiği varsayımlardır. Dönen açıklamayı okuyun ve çıktıyı keşif amaçlı değerlendirin.
-- Sezon düzeyindeki aralıklar fazla dardır: geriye dönük testlerde kulüplerin %80'ini içermesi gereken sezon sonu puan aralıkları yaklaşık %70'ini içerdi (bkz. *Sezon düzeyinde değerlendirme*).
+- Sezon düzeyindeki aralıklar fazla dardır: geriye dönük testlerde kulüplerin %80'ini içermesi gereken sezon sonu puan aralıkları yaklaşık %70'ini içerdi. Güç çekilişini modelin tamamına uygulamak bunu geliştirme sezonlarında düzeltti ama ayrılmış sezonları kötüleştirdi; bu yüzden yayına alınmadı (bkz. *Sezon düzeyinde değerlendirme*).
 - Beraberlikler biraz az, goller biraz fazla tahmin edilir (bkz. *Kalibrasyon*).
 - Tahmin kalitesi puanlara, geçmiş veri kapsamına, model varsayımlarına ve deneme sayısına bağlıdır.
