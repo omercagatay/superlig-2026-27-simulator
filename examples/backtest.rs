@@ -17,13 +17,37 @@
 //! Overrides (probe knobs; production values in brackets):
 //!   EVAL_SEASONS=2017,2018  season end years to score [dev set]
 //!   EVAL_REFIT=season|week  when Dixon-Coles/pi see new results [season]
-//!   EVAL_W=0.5,0.3,0.2      blend weights elo,dc,pi
+//!   EVAL_W=0.5,0.3,0.2      blend weights elo,dc,pi [0.5,0.3,0.2, the
+//!                           `ENSEMBLE_WEIGHTS` default]: three non-negative
+//!                           numbers, normalized on use, so 5,3,2 is the
+//!                           same blend. Dixon-Coles and pi are fitted every
+//!                           season whatever their weight; a weight of 0
+//!                           only leaves their λs out. As in production, a
+//!                           Dixon-Coles weight of 0 also sets ρ to 0 (no
+//!                           low-score correction) unless EVAL_RHO is set
 //!   EVAL_HL=1460            Dixon-Coles half-life in days
 //!   EVAL_K=20               in-season Elo K [data::ELO_K]
 //!   EVAL_K_PRE=20           preseason track K [data::PRESEASON_K]
-//!   EVAL_HA=80              Elo home advantage (update and λ)
-//!   EVAL_DDIV=1600          Elo→goals scale
-//!   EVAL_BASE=1.35          Elo→goals base rate
+//!   EVAL_HA=80              Elo home advantage (in-season update and λ;
+//!                           the preseason track keeps data::HOME_ADV)
+//!   EVAL_DDIV=1600          Elo→goals scale [data::D_DIV]
+//!   EVAL_BASE=1.35          Elo→goals base rate [data::BASE]. It scales the
+//!                           Elo component's λs only, before blending and
+//!                           the lift; Dixon-Coles and pi λs are untouched,
+//!                           so in the blend it moves goals by about w_elo
+//!                           times as much as the same EVAL_GOALS would
+//!   EVAL_GOALS=0.95         multiply both λs after the underdog lift, then
+//!                           clamp them to [0.15, 5], as `blend_lambdas`
+//!                           clamps [1: no scaling]
+//!   EVAL_RHO=-0.1|fit       the Dixon-Coles ρ of the score table [the
+//!                           season's fitted ρ while Dixon-Coles has weight,
+//!                           else 0, as `sim::score_rho`]. A number is used
+//!                           for every match whatever the weights, including
+//!                           a Dixon-Coles weight of 0; `fit` uses the
+//!                           season's fitted ρ even at a Dixon-Coles weight
+//!                           of 0, which separates dropping Dixon-Coles' λs
+//!                           from dropping its low-score correction. The
+//!                           score table clamps ρ to ±0.4
 //!   EVAL_PROMO=1450         Elo of a club never seen before [data::NEW_CLUB_ELO]
 //!   EVAL_REGRESS=0          preseason pull towards the league mean, 0..1
 //!   EVAL_PROMO_REL=-60      promoted clubs start at last season's league
@@ -57,6 +81,18 @@
 //! by Newton's method with a free intercept (1 is calibrated; below 1, the
 //! forecasts spread too wide), with its standard error.
 //!
+//! Last comes calibration in the large: `_goals_pred` is the mean of
+//! λ_home + λ_away as priced (after blend, lift, EVAL_GOALS and the clamp;
+//! the ρ correction leaves a score table's mean goals unchanged, so this is
+//! the table's mean up to its 10-goal truncation) against `_goals_obs`, the
+//! mean goals scored; `_ou25_pred`/`_btts_pred` are the mean forecast
+//! P(3+ goals) and P(both score) against `_ou25_obs`/`_btts_obs`, how often
+//! each happened.
+//!
+//! Each season's line also gives `dc_rho`, the ρ of its season-start
+//! Dixon-Coles fit (what production's rule prices with while Dixon-Coles has
+//! weight), and its mean λ total against the goals scored.
+//!
 //! Run: cargo run --release --example backtest
 
 use std::collections::{HashMap, HashSet};
@@ -72,9 +108,9 @@ use superlig_sim::sim::{self, Ensemble, FixtureDate, LeagueFixture, World};
 const DEV: std::ops::RangeInclusive<i32> = 2017..=2024;
 const HOLDOUT: [i32; 2] = [2025, 2026];
 
-fn env_f(key: &str, default: f64) -> f64 {
-    std::env::var(key)
-        .ok()
+/// A knob's value from `var`, or `default` when it is not set.
+fn env_f(var: &impl Fn(&str) -> Option<String>, key: &str, default: f64) -> f64 {
+    var(key)
         .map(|v| {
             v.parse()
                 .unwrap_or_else(|_| panic!("{key}={v} is not a number"))
@@ -96,17 +132,21 @@ struct Cfg {
     promo_rel: Option<f64>,
     regress: f64,
     lift: Lift,
+    rho: Rho,
     /// True when every Elo knob is at its production value, so the shared
     /// production functions are called rather than the local variants.
     production_elo: bool,
 }
 
-/// The underdog lift applied after blending (`sim::blend_lambdas`).
+/// What `sim::blend_lambdas` does after blending: the underdog lift, then
+/// (a backtest knob, 1 in production) a scale on both λs, then the clamp.
 #[derive(Clone, Copy, PartialEq)]
 struct Lift {
     pivot: f64,
     lift: f64,
     follow: f64,
+    /// `EVAL_GOALS`: both λs are multiplied by this before the clamp.
+    goals: f64,
 }
 
 impl Lift {
@@ -114,6 +154,7 @@ impl Lift {
         pivot: data::UNDERDOG_PIVOT,
         lift: data::UNDERDOG_LIFT,
         follow: data::FAV_FOLLOW,
+        goals: 1.0,
     };
 
     /// Production's `sim::blend_lambdas` at production values, otherwise
@@ -125,7 +166,8 @@ impl Lift {
         self.blend_local(elo, e, home, away)
     }
 
-    /// `sim::blend_lambdas`, operation for operation, with this lift.
+    /// `sim::blend_lambdas`, operation for operation, with this lift and
+    /// goal scale (multiplying by 1 is exact, so a scale of 1 changes nothing).
     fn blend_local(
         self,
         (lh_elo, la_elo): (f64, f64),
@@ -159,58 +201,113 @@ impl Lift {
         } else {
             (hi_new, lo_new)
         };
-        (lh.clamp(0.15, 5.0), la.clamp(0.15, 5.0))
+        (
+            (lh * self.goals).clamp(0.15, 5.0),
+            (la * self.goals).clamp(0.15, 5.0),
+        )
+    }
+}
+
+/// The ρ of the score table (`EVAL_RHO`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Rho {
+    /// Production's `sim::score_rho`: the season's fitted ρ while
+    /// Dixon-Coles has weight, else 0.
+    Production,
+    /// The season's fitted ρ whatever the weights (`EVAL_RHO=fit`).
+    Fitted,
+    /// This ρ for every match.
+    Fixed(f64),
+}
+
+impl Rho {
+    fn parse(v: Option<&str>) -> Self {
+        match v.map(str::trim) {
+            None => Rho::Production,
+            Some("fit") => Rho::Fitted,
+            Some(x) => {
+                let r: f64 = x
+                    .parse()
+                    .unwrap_or_else(|_| panic!("EVAL_RHO={x} is neither a number nor `fit`"));
+                assert!(r.is_finite(), "EVAL_RHO={x} is not finite");
+                Rho::Fixed(r)
+            }
+        }
+    }
+
+    fn value(self, e: &Ensemble) -> f64 {
+        match self {
+            Rho::Production => sim::score_rho(Some(e)).unwrap_or(0.0),
+            Rho::Fitted => e.dc.rho,
+            Rho::Fixed(r) => r,
+        }
     }
 }
 
 impl Cfg {
     fn from_env() -> Self {
-        let holdout = std::env::var("EVAL_HOLDOUT").is_ok_and(|v| v == "1");
-        let seasons = match std::env::var("EVAL_SEASONS") {
-            Ok(s) => s
+        Self::from_vars(|key| std::env::var(key).ok())
+    }
+
+    /// The configuration the `EVAL_*` variables `var` returns describe.
+    fn from_vars(var: impl Fn(&str) -> Option<String>) -> Self {
+        let holdout = var("EVAL_HOLDOUT").is_some_and(|v| v == "1");
+        let seasons = match var("EVAL_SEASONS") {
+            Some(s) => s
                 .split(',')
                 .map(|y| y.trim().parse().expect("season year"))
                 .collect(),
-            Err(_) => DEV
+            None => DEV
                 .chain(if holdout { HOLDOUT.to_vec() } else { vec![] })
                 .collect(),
         };
-        let w: Vec<f64> = std::env::var("EVAL_W")
-            .unwrap_or_else(|_| "0.5,0.3,0.2".into())
+        let w: Vec<f64> = var("EVAL_W")
+            .unwrap_or_else(|| "0.5,0.3,0.2".into())
             .split(',')
             .map(|x| x.trim().parse().expect("weight"))
             .collect();
-        let refit = std::env::var("EVAL_REFIT").unwrap_or_else(|_| "season".into());
+        assert!(
+            w.len() == 3
+                && w.iter().all(|x| x.is_finite() && *x >= 0.0)
+                && w.iter().sum::<f64>() > 0.0,
+            "EVAL_W takes three non-negative weights elo,dc,pi with a positive sum, got {w:?}"
+        );
+        let goals = env_f(&var, "EVAL_GOALS", 1.0);
+        assert!(
+            goals.is_finite() && goals > 0.0,
+            "EVAL_GOALS={goals} must be positive"
+        );
+        let refit = var("EVAL_REFIT").unwrap_or_else(|| "season".into());
         assert!(
             refit == "season" || refit == "week",
             "EVAL_REFIT must be season|week"
         );
         let (k, home_adv, d_div, base) = (
-            env_f("EVAL_K", data::ELO_K),
-            env_f("EVAL_HA", data::HOME_ADV),
-            env_f("EVAL_DDIV", data::D_DIV),
-            env_f("EVAL_BASE", data::BASE),
+            env_f(&var, "EVAL_K", data::ELO_K),
+            env_f(&var, "EVAL_HA", data::HOME_ADV),
+            env_f(&var, "EVAL_DDIV", data::D_DIV),
+            env_f(&var, "EVAL_BASE", data::BASE),
         );
         Cfg {
             seasons,
             weekly_refit: refit == "week",
             w: (w[0], w[1], w[2]),
-            half_life: env_f("EVAL_HL", 1460.0),
+            half_life: env_f(&var, "EVAL_HL", 1460.0),
             k,
-            k_pre: env_f("EVAL_K_PRE", data::PRESEASON_K),
+            k_pre: env_f(&var, "EVAL_K_PRE", data::PRESEASON_K),
             home_adv,
             d_div,
             base,
-            promo: env_f("EVAL_PROMO", data::NEW_CLUB_ELO),
-            promo_rel: std::env::var("EVAL_PROMO_REL")
-                .ok()
-                .map(|v| v.parse().expect("EVAL_PROMO_REL")),
-            regress: env_f("EVAL_REGRESS", 0.0),
+            promo: env_f(&var, "EVAL_PROMO", data::NEW_CLUB_ELO),
+            promo_rel: var("EVAL_PROMO_REL").map(|v| v.parse().expect("EVAL_PROMO_REL")),
+            regress: env_f(&var, "EVAL_REGRESS", 0.0),
             lift: Lift {
-                pivot: env_f("EVAL_PIVOT", data::UNDERDOG_PIVOT),
-                lift: env_f("EVAL_LIFT", data::UNDERDOG_LIFT),
-                follow: env_f("EVAL_FOLLOW", data::FAV_FOLLOW),
+                pivot: env_f(&var, "EVAL_PIVOT", data::UNDERDOG_PIVOT),
+                lift: env_f(&var, "EVAL_LIFT", data::UNDERDOG_LIFT),
+                follow: env_f(&var, "EVAL_FOLLOW", data::FAV_FOLLOW),
+                goals,
             },
+            rho: Rho::parse(var("EVAL_RHO").as_deref()),
             production_elo: k == data::ELO_K
                 && home_adv == data::HOME_ADV
                 && d_div == data::D_DIV
@@ -362,6 +459,15 @@ struct Acc {
     base_btts: f64,
     /// Every match's home/draw/away forecast and outcome, for calibration.
     outcomes: Vec<([f64; 3], usize)>,
+    /// Calibration in the large: summed λ_home + λ_away and goals scored,
+    /// summed P(3+ goals) and matches with 3+, summed P(both score) and
+    /// matches where both did.
+    lam: f64,
+    goals: usize,
+    p_over: f64,
+    over: usize,
+    p_both: f64,
+    both: usize,
 }
 
 impl Acc {
@@ -378,6 +484,12 @@ impl Acc {
         self.base_ou += o.base_ou;
         self.base_btts += o.base_btts;
         self.outcomes.extend_from_slice(&o.outcomes);
+        self.lam += o.lam;
+        self.goals += o.goals;
+        self.p_over += o.p_over;
+        self.over += o.over;
+        self.p_both += o.p_both;
+        self.both += o.both;
     }
 
     /// The loss lines, `(key, value)` as printed.
@@ -428,6 +540,28 @@ impl Acc {
             out.push((format!("{prefix}_cal_{name}_slope_se"), format!("{se:.3}")));
         }
         out
+    }
+
+    /// Calibration in the large: mean forecast against mean outcome for
+    /// goals, 3+ goals and both scoring.
+    fn in_the_large(&self, prefix: &str) -> Vec<(String, String)> {
+        let n = self.n as f64;
+        [
+            ("goals", self.lam, self.goals),
+            ("ou25", self.p_over, self.over),
+            ("btts", self.p_both, self.both),
+        ]
+        .into_iter()
+        .flat_map(|(name, pred, obs)| {
+            [
+                (format!("{prefix}_{name}_pred"), format!("{:.4}", pred / n)),
+                (
+                    format!("{prefix}_{name}_obs"),
+                    format!("{:.4}", obs as f64 / n),
+                ),
+            ]
+        })
+        .collect()
     }
 }
 
@@ -641,6 +775,7 @@ fn main() {
         let scored = cfg.seasons.contains(&year);
         let idx = index_for(&season);
         let mut ens = scored.then(|| fit_ensemble(&cfg, &before_season, &idx, season_start));
+        let season_rho = ens.as_ref().map_or(f64::NAN, |e| e.dc.rho);
         let base = scored.then(|| BaseRates::from_matches(&before_season));
         if let (Some(e), Ok(n)) = (ens.as_ref(), std::env::var("EVAL_SEASON_SIM")) {
             season_sim(
@@ -675,7 +810,7 @@ fn main() {
                     let (h, a) = (idx.canonical(&m.home_team), idx.canonical(&m.away_team));
                     let (rh, ra) = (elo_in[&m.home_team], elo_in[&m.away_team]);
                     let (lh, la) = cfg.lift.blend(cfg.elo_lambdas(rh, ra), e, h, a);
-                    let rho = sim::score_rho(Some(e)).unwrap_or(0.0);
+                    let rho = cfg.rho.value(e);
                     let p = sim::probs_from_lambdas(lh, la, rho);
                     let p3 = [
                         p.home_win_pct / 100.0,
@@ -711,6 +846,12 @@ fn main() {
                         base_ou: nll(if over { base.over } else { 1.0 - base.over }),
                         base_btts: nll(if both { base.btts } else { 1.0 - base.btts }),
                         outcomes: vec![(p3, o)],
+                        lam: lh + la,
+                        goals: hs + as_,
+                        p_over: pov,
+                        over: usize::from(over),
+                        p_both: pbtts,
+                        both: usize::from(both),
                     });
                     if let Some((_, s)) = dump.as_mut() {
                         let gh = games.get(m.home_team.as_str()).copied().unwrap_or(0);
@@ -752,7 +893,7 @@ fn main() {
 
         if scored {
             println!(
-                "season {}-{:02}: n={} 1x2_ll={:.4} rps={:.4} ou25_ll={:.4} btts_ll={:.4} score_ll={:.4} acc={:.3}",
+                "season {}-{:02}: n={} 1x2_ll={:.4} rps={:.4} ou25_ll={:.4} btts_ll={:.4} score_ll={:.4} acc={:.3} dc_rho={:.4} goals={:.3}/{:.3}",
                 year - 1,
                 year % 100,
                 acc.n,
@@ -761,7 +902,10 @@ fn main() {
                 acc.ou / acc.n as f64,
                 acc.btts / acc.n as f64,
                 acc.score / acc.n as f64,
-                acc.hits as f64 / acc.n as f64
+                acc.hits as f64 / acc.n as f64,
+                season_rho,
+                acc.lam / acc.n as f64,
+                acc.goals as f64 / acc.n as f64,
             );
             if HOLDOUT.contains(&year) {
                 hold.add(&acc);
@@ -780,6 +924,9 @@ fn main() {
     }
     for (acc, prefix) in sets.iter().filter(|(acc, _)| acc.n > 0) {
         summary.extend(acc.evidence(prefix));
+    }
+    for (acc, prefix) in sets.iter().filter(|(acc, _)| acc.n > 0) {
+        summary.extend(acc.in_the_large(prefix));
     }
     for (key, value) in &summary {
         println!("{key}={value}");
@@ -834,6 +981,152 @@ mod tests {
         }
         let (lh, la) = Lift::PRODUCTION.blend((0.3, 2.9), &elo_only, 0, 1);
         assert!(lh > 0.3 && la > 2.9, "production lifts both: {lh}, {la}");
+    }
+
+    /// With no variable set the backtest is production: its weights, its Elo
+    /// functions, no goal scale and production's ρ rule.
+    #[test]
+    fn no_knob_is_production() {
+        let cfg = Cfg::from_vars(|_| None);
+        assert_eq!(cfg.w, superlig_sim::model_version::DEFAULT_ENSEMBLE_WEIGHTS);
+        assert!(cfg.production_elo);
+        assert!(cfg.lift == Lift::PRODUCTION);
+        assert_eq!(cfg.rho, Rho::Production);
+        assert_eq!(cfg.seasons, DEV.collect::<Vec<_>>());
+    }
+
+    /// `EVAL_BASE` scales the Elo λs; at its production value it keeps
+    /// production's functions, and the local ones it switches to are
+    /// production's at production values.
+    #[test]
+    fn eval_base_scales_the_elo_lambdas_only() {
+        let one = |key: &'static str, value: String| {
+            Cfg::from_vars(move |k| (k == key).then(|| value.clone()))
+        };
+        assert!(one("EVAL_BASE", data::BASE.to_string()).production_elo);
+        let local = Cfg {
+            production_elo: false,
+            ..Cfg::from_vars(|_| None)
+        };
+        let lower = one("EVAL_BASE", "1.3".into());
+        assert!(!lower.production_elo);
+        for (rh, ra) in [(1500.0, 1500.0), (1700.0, 1400.0), (1350.0, 1820.5)] {
+            assert_eq!(local.elo_lambdas(rh, ra), sim::elo_lambdas(rh, ra));
+            let (ph, pa) = sim::elo_lambdas(rh, ra);
+            let (lh, la) = lower.elo_lambdas(rh, ra);
+            assert!((lh / ph - 1.3 / data::BASE).abs() < 1e-12);
+            assert!((la / pa - 1.3 / data::BASE).abs() < 1e-12);
+            for (hs, as_) in [(0, 0), (3, 1), (0, 4)] {
+                let d = sim::elo_delta(rh, ra, hs, as_);
+                assert_eq!(local.elo_delta(data::ELO_K, rh, ra, hs, as_), d);
+                assert_eq!(lower.elo_delta(data::ELO_K, rh, ra, hs, as_), d);
+            }
+        }
+    }
+
+    /// `EVAL_W` weights are normalized on use.
+    #[test]
+    fn eval_w_is_normalized() {
+        let cfg = Cfg::from_vars(|k| (k == "EVAL_W").then(|| " 5, 3 ,2".to_string()));
+        assert_eq!(cfg.w, (5.0, 3.0, 2.0));
+        let scaled = Ensemble::from_embedded_data(5.0, 3.0, 2.0).expect("embedded ensemble");
+        let shipped = Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("embedded ensemble");
+        for elo in [(0.3, 2.9), (1.35, 1.35), (2.4, 0.5)] {
+            let (a, b) = (
+                Lift::PRODUCTION.blend(elo, &scaled, 3, 17),
+                Lift::PRODUCTION.blend(elo, &shipped, 3, 17),
+            );
+            assert!((a.0 - b.0).abs() < 1e-12 && (a.1 - b.1).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "three non-negative weights")]
+    fn eval_w_needs_three_weights() {
+        Cfg::from_vars(|k| (k == "EVAL_W").then(|| "0.6,0.4".to_string()));
+    }
+
+    #[test]
+    fn the_goal_scale_multiplies_both_lambdas_before_the_clamp() {
+        let elo_only = Ensemble::from_embedded_data(1.0, 0.0, 0.0).expect("embedded ensemble");
+        let shipped = Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("embedded ensemble");
+        let scaled = Lift {
+            goals: 0.9,
+            ..Lift::PRODUCTION
+        };
+        for e in [&elo_only, &shipped] {
+            for elo in [(0.3, 2.9), (2.4, 0.5), (1.2, 1.1)] {
+                let (ph, pa) = Lift::PRODUCTION.blend(elo, e, 3, 17);
+                assert_eq!(scaled.blend(elo, e, 3, 17), (ph * 0.9, pa * 0.9));
+            }
+        }
+        // Scaled first, then clamped: 5.4 · 0.95 is clamped to 5, where
+        // clamping first would give 4.75, and 0.15 · 0.95 back up to 0.15.
+        let no_lift = Lift {
+            lift: 0.0,
+            goals: 0.95,
+            ..Lift::PRODUCTION
+        };
+        assert_eq!(no_lift.blend((0.15, 5.4), &elo_only, 0, 1), (0.15, 5.0));
+    }
+
+    #[test]
+    fn rho_follows_production_unless_set() {
+        let with_dc = Ensemble::from_embedded_data(0.5, 0.3, 0.2).expect("embedded ensemble");
+        let without_dc = Ensemble::from_embedded_data(0.7, 0.0, 0.3).expect("embedded ensemble");
+        let fitted = with_dc.dc.rho;
+        assert_ne!(fitted, 0.0);
+        assert_eq!(Rho::parse(None), Rho::Production);
+        assert_eq!(Rho::Production.value(&with_dc), fitted);
+        assert_eq!(Rho::Production.value(&without_dc), 0.0);
+        assert_eq!(Rho::parse(Some("fit")), Rho::Fitted);
+        assert_eq!(Rho::Fitted.value(&without_dc), fitted);
+        assert_eq!(Rho::parse(Some("-0.09")).value(&without_dc), -0.09);
+        assert_eq!(Rho::parse(Some(" 0 ")).value(&with_dc), 0.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "neither a number nor `fit`")]
+    fn a_rho_that_is_not_a_number_is_refused() {
+        Rho::parse(Some("dc"));
+    }
+
+    /// Mean forecast against mean outcome, summed across `add`.
+    #[test]
+    fn calibration_in_the_large_by_hand() {
+        let mut acc = Acc::default();
+        acc.add(&Acc {
+            n: 3,
+            lam: 8.0,
+            goals: 9,
+            p_over: 1.6,
+            over: 2,
+            p_both: 1.2,
+            both: 1,
+            ..Acc::default()
+        });
+        acc.add(&Acc {
+            n: 1,
+            lam: 3.0,
+            goals: 1,
+            p_over: 0.6,
+            over: 1,
+            p_both: 0.6,
+            both: 0,
+            ..Acc::default()
+        });
+        let expected: Vec<(String, String)> = [
+            ("dev_goals_pred", "2.7500"),
+            ("dev_goals_obs", "2.5000"),
+            ("dev_ou25_pred", "0.5500"),
+            ("dev_ou25_obs", "0.7500"),
+            ("dev_btts_pred", "0.4500"),
+            ("dev_btts_obs", "0.2500"),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v.to_string()))
+        .collect();
+        assert_eq!(acc.in_the_large("dev"), expected);
     }
 
     #[test]
