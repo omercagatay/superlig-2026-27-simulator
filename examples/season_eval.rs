@@ -7,8 +7,10 @@
 //! For every scored season and three snapshots of it (nothing played, a third
 //! and two thirds of its fixtures played) it rebuilds the `World` production
 //! would have held on that date and replays the rest of the season
-//! `SEASON_SIMS` times with `World::simulate_one`, the production simulator
-//! (`data::RATING_SIGMA` drawn per trial, the shipped ensemble):
+//! `SEASON_SIMS` times with `World::simulate_one_dispersed`, the production
+//! simulator (`sim::Dispersion::PRODUCTION`: a `data::RATING_SIGMA` shock on
+//! the Elo ratings drawn per trial, the shipped ensemble) unless the
+//! dispersion knobs below say otherwise:
 //!   - clubs and fixtures are the season's own, from the embedded history;
 //!   - results dated before the snapshot are `played`, the rest simulated;
 //!   - ratings are production's: `sim::preseason_ratings_with` over every
@@ -21,7 +23,11 @@
 //! A snapshot cuts on a date boundary: with `k` = a third (two thirds) of the
 //! season's fixtures, everything dated before fixture `k`'s date is played.
 //! Fixtures are taken in date order, so a postponed match counts when it was
-//! actually played.
+//! actually played. The history has no rounds; the `World` numbers them by
+//! cutting the date-ordered season into runs of clubs / 2 fixtures (a club
+//! rests each round when the league is odd), and only `SEASON_DRIFT` reads
+//! them, as the points its random-walk steps fall on. Kick-off order, date
+//! first, is date order either way.
 //!
 //! Outcomes are the official final tables, ranked by `league::rank_table`.
 //! Results awarded off the pitch count, as they did in the standings: the
@@ -68,6 +74,13 @@
 //!   pts_rmse      root mean square error of the forecast's mean points
 //!   pts_err_ratio pts_rmse / pts_sd_pred: 1 when the spread matches the
 //!                 errors, above 1 when the forecast is too narrow
+//!   pts_crps      continuous ranked probability score of final points, in
+//!                 points: Σ_k (F(k) − 1{y ≤ k})² over integers k, F the
+//!                 simulated CDF of the club's points and y what it got
+//!                 (0 for a certain, right forecast; for a point forecast,
+//!                 its absolute error). A proper score of the whole points
+//!                 distribution, so it rewards spread only where the errors
+//!                 need it, which coverage and PIT cannot tell
 //!   table_sd_*    SD of final points across a table, simulated (mean over
 //!                 trials) and actual: the spread `examples/arena.rs` tunes
 //!                 `RATING_SIGMA` on
@@ -87,6 +100,17 @@
 //!   SEASON_METRICS=path.json write the pooled point estimates as JSON
 //!                           ({set}_{snapshot}_{metric}, sorted keys, each
 //!                           value as printed; counts are integers)
+//! Dispersion knobs (`sim::Dispersion`; the defaults are production's, and
+//! with all four at their defaults the run is production's draw for draw):
+//!   SEASON_SIGMA=75         SD of each club's per-season strength offset,
+//!                           in Elo points [data::RATING_SIGMA]
+//!   SEASON_SHOCK=elo|blend  where offsets act: added to the Elo ratings
+//!                           (production), or on the blended, lifted λ pair
+//!                           as an Elo gap acts on the Elo component [elo]
+//!   SEASON_HOT_K=0          hot simulation: K of the Elo update after every
+//!                           simulated result (production's rule; 0 is cold)
+//!   SEASON_DRIFT=0          SD, in Elo points, of each club's random-walk
+//!                           step before every round still to be played
 //!
 //! Run: cargo run --release --example season_eval
 //! (seconds: dev and holdout at the defaults take about 5 s on 4 cores)
@@ -101,7 +125,9 @@ use superlig_sim::dixoncoles;
 use superlig_sim::history::{self, HistoricalMatch, TeamIndex};
 use superlig_sim::league::{self, TeamRecord};
 use superlig_sim::piratings::PiRatings;
-use superlig_sim::sim::{self, Ensemble, FixtureDate, LeagueFixture, SeasonResult, World};
+use superlig_sim::sim::{
+    self, Dispersion, Ensemble, FixtureDate, LeagueFixture, SeasonResult, ShockOn, World,
+};
 
 const DEV: std::ops::RangeInclusive<i32> = 2017..=2024;
 const HOLDOUT: [i32; 2] = [2025, 2026];
@@ -223,6 +249,25 @@ fn quantile(sorted: &[i64], q: f64) -> i64 {
 fn central_interval(sorted: &[i64], share: f64) -> (i64, i64) {
     let tail = (1.0 - share) / 2.0;
     (quantile(sorted, tail), quantile(sorted, 1.0 - tail))
+}
+
+/// Continuous ranked probability score of an integer outcome `y` against a
+/// forecast sample (`sorted` ascending), in its own units:
+/// Σ_k (F(k) − 1{y ≤ k})² over the integers, F the sample's CDF. Outside
+/// the span of the sample and `y` every term is 0.
+fn crps(sorted: &[i64], y: i64) -> f64 {
+    let n = sorted.len() as f64;
+    let (lo, hi) = (sorted[0].min(y), sorted[sorted.len() - 1].max(y));
+    let mut at_most = 0;
+    let mut total = 0.0;
+    for k in lo..hi {
+        while at_most < sorted.len() && sorted[at_most] <= k {
+            at_most += 1;
+        }
+        let gap = at_most as f64 / n - if y <= k { 1.0 } else { 0.0 };
+        total += gap * gap;
+    }
+    total
 }
 
 /// Mean and population SD.
@@ -498,11 +543,14 @@ fn world_on(season: &Season, elo: &[f64], ensemble: Option<&Ensemble>, cut: Naiv
     let mut fixtures = Vec::with_capacity(season.rows.len());
     let mut dates = Vec::with_capacity(season.rows.len());
     let mut played = HashMap::new();
-    for m in &season.rows {
+    // No rounds in the history: runs of clubs / 2 fixtures in date order
+    // stand in for them (see the file header). They never decrease in date
+    // order, so `refresh_ratings`' walk is the date order it was.
+    let per_round = (season.teams.len() / 2).max(1);
+    for (k, m) in season.rows.iter().enumerate() {
         let (home, away) = (idx[&m.home_team], idx[&m.away_team]);
-        // No rounds in the history; `refresh_ratings` then walks by date.
         fixtures.push(LeagueFixture {
-            round: 1,
+            round: u8::try_from(k / per_round + 1).expect("fewer than 256 rounds"),
             home,
             away,
         });
@@ -566,6 +614,8 @@ struct Row {
     closed80: bool,
     mean_pts: f64,
     sd_pts: f64,
+    /// `crps` of the club's final points.
+    crps: f64,
 }
 
 /// One season at one snapshot.
@@ -582,12 +632,13 @@ struct Scored {
 
 /// Production's seeding (`World::simulate`): trial `i` is seeded with
 /// `seed + i·2654435761`.
-fn simulate(world: &World, n_sims: usize, seed: u64) -> Vec<SeasonResult> {
+fn simulate(world: &World, n_sims: usize, seed: u64, disp: &Dispersion) -> Vec<SeasonResult> {
+    let nothing_pinned = HashMap::new();
     (0..n_sims)
         .into_par_iter()
         .map(|i| {
             let mut rng = SmallRng::seed_from_u64(seed.wrapping_add(i as u64 * 2_654_435_761));
-            world.simulate_one(&mut rng)
+            world.simulate_one_dispersed(&mut rng, &nothing_pinned, disp)
         })
         .collect()
 }
@@ -635,6 +686,7 @@ fn score(
             };
             let as_f64: Vec<f64> = pts.iter().map(|&p| p as f64).collect();
             let (mean_pts, sd_pts) = mean_sd(&as_f64);
+            let crps = crps(pts, x);
             Row {
                 club: season.teams[c].clone(),
                 actual_pos: pos,
@@ -660,6 +712,7 @@ fn score(
                 closed80: covers(0.8),
                 mean_pts,
                 sd_pts,
+                crps,
             }
         })
         .collect();
@@ -675,8 +728,9 @@ fn score(
 }
 
 /// Pooled metrics, in this order, with the digits they are printed to.
-const METRICS: [(&str, usize); 22] = [
+const METRICS: [(&str, usize); 23] = [
     ("pos_rps", 4),
+    ("pts_crps", 3),
     ("title_brier", 4),
     ("title_ll", 4),
     ("title_bss", 3),
@@ -742,6 +796,7 @@ fn metrics(seasons: &[&Scored]) -> Metrics {
     let k = seasons.len() as f64;
     [
         mean(&|r| r.rps),
+        mean(&|r| r.crps),
         title_b,
         title_ll,
         title_bss,
@@ -809,6 +864,54 @@ fn json_number(x: f64, digits: usize) -> serde_json::Value {
     serde_json::from_str(&printed).unwrap_or(serde_json::Value::Null)
 }
 
+/// The `sim::Dispersion` the `SEASON_SIGMA`, `SEASON_SHOCK`,
+/// `SEASON_HOT_K` and `SEASON_DRIFT` knobs ask for; production's where unset.
+fn dispersion_from_env() -> Dispersion {
+    let production = Dispersion::PRODUCTION;
+    let shock_on = match std::env::var("SEASON_SHOCK").as_deref() {
+        Err(_) => production.shock_on,
+        Ok("elo") => ShockOn::Elo,
+        Ok("blend") => ShockOn::Blend,
+        Ok(v) => panic!("SEASON_SHOCK={v}: use elo or blend"),
+    };
+    let disp = Dispersion {
+        sigma: env_num("SEASON_SIGMA", production.sigma),
+        shock_on,
+        hot_k: env_num("SEASON_HOT_K", production.hot_k),
+        drift: env_num("SEASON_DRIFT", production.drift),
+    };
+    for (key, value) in [
+        ("SEASON_SIGMA", disp.sigma),
+        ("SEASON_HOT_K", disp.hot_k),
+        ("SEASON_DRIFT", disp.drift),
+    ] {
+        assert!(
+            value.is_finite() && value >= 0.0,
+            "{key}={value} must be finite and non-negative"
+        );
+    }
+    disp
+}
+
+/// The dispersion as the header prints it.
+fn describe(d: &Dispersion) -> String {
+    let shock = match d.shock_on {
+        ShockOn::Elo => "elo",
+        ShockOn::Blend => "blend",
+    };
+    format!(
+        "sigma {} on {shock}, hot K {}, drift {}{}",
+        d.sigma,
+        d.hot_k,
+        d.drift,
+        if *d == Dispersion::PRODUCTION {
+            " (production)"
+        } else {
+            ""
+        }
+    )
+}
+
 fn main() {
     let started = std::time::Instant::now();
     let n_sims: usize = env_num("SEASON_SIMS", 2000);
@@ -834,6 +937,7 @@ fn main() {
         Ok("drop") => false,
         Ok(v) => panic!("SEASON_AWARDS={v}: use count or drop"),
     };
+    let disp = dispersion_from_env();
 
     let training = history::load_history_with_cutoff(history::CUTOFF_YEAR);
     let official = official_rows();
@@ -842,16 +946,16 @@ fn main() {
 
     let (w_elo, w_dc, w_pi) = superlig_sim::ensemble_weights();
     println!(
-        "season_eval: World::simulate_one, {n_sims} seasons per snapshot, seed {seed}, {} threads",
+        "season_eval: World::simulate_one_dispersed, {n_sims} seasons per snapshot, seed {seed}, {} threads",
         rayon::current_num_threads()
     );
     println!(
-        "model: Elo K {} (preseason K {}, new club {}), RATING_SIGMA {}, weights elo/dc/pi {w_elo}/{w_dc}/{w_pi}, Dixon-Coles and pi fit before each season",
+        "model: Elo K {} (preseason K {}, new club {}), weights elo/dc/pi {w_elo}/{w_dc}/{w_pi}, Dixon-Coles and pi fit before each season",
         data::ELO_K,
         data::PRESEASON_K,
         data::NEW_CLUB_ELO,
-        data::RATING_SIGMA
     );
+    println!("dispersion: {}", describe(&disp));
     let mut awarded_by_season: BTreeMap<i32, usize> = BTreeMap::new();
     for m in &awarded {
         *awarded_by_season
@@ -896,7 +1000,7 @@ fn main() {
         for (si, &(_, share)) in SNAPSHOTS.iter().enumerate() {
             let world = world_on(season, &elo, Some(&ensemble), snapshot_cut(season, share));
             let base = seed.wrapping_add(year as u64 * 10 + si as u64);
-            let trials = simulate(&world, n_sims, base);
+            let trials = simulate(&world, n_sims, base, &disp);
             scored.push(score(
                 season,
                 si,
@@ -918,19 +1022,20 @@ fn main() {
             share * 100.0
         );
         println!(
-            "{:<8} {:>5} {:>3} {:>8} {:>7} {:>8} {:>7} {:>7} {:>7} {:>6} {:>6} {:>6} {:>7} {:>6} {:>13}",
-            "season", "clubs", "rel", "played", "pos_rps", "title_br", "top4_br", "rel_br",
+            "{:<8} {:>5} {:>3} {:>8} {:>7} {:>6} {:>8} {:>7} {:>7} {:>7} {:>6} {:>6} {:>6} {:>7} {:>6} {:>13}",
+            "season", "clubs", "rel", "played", "pos_rps", "crps", "title_br", "top4_br", "rel_br",
             "p_champ", "pit_sd", "cov50", "cov80", "sd_pred", "rmse", "table_sd s/a"
         );
         for s in scored.iter().filter(|s| s.snapshot == si) {
             let m = metrics(&[s]);
             println!(
-                "{:<8} {:>5} {:>3} {:>8} {:>7.4} {:>8.4} {:>7.4} {:>7.4} {:>7.3} {:>6.3} {:>6.1} {:>6.1} {:>7.2} {:>6.2} {:>13}",
+                "{:<8} {:>5} {:>3} {:>8} {:>7.4} {:>6.3} {:>8.4} {:>7.4} {:>7.4} {:>7.3} {:>6.3} {:>6.1} {:>6.1} {:>7.2} {:>6.2} {:>13}",
                 season_name(s.year),
                 s.rows.len(),
                 s.relegation,
                 format!("{}/{}", s.played, all[&s.year].rows.len()),
                 get(&m, "pos_rps"),
+                get(&m, "pts_crps"),
                 get(&m, "title_brier"),
                 get(&m, "top4_brier"),
                 get(&m, "rel_brier"),
@@ -1051,12 +1156,12 @@ fn main() {
     }
     if let Ok(path) = std::env::var("SEASON_DUMP") {
         let mut s = String::from(
-            "season,snapshot,club,clubs,played,relegation,actual_pos,actual_pts,mean_pts,sd_pts,p_title,p_top4,p_rel,pit,rps\n",
+            "season,snapshot,club,clubs,played,relegation,actual_pos,actual_pts,mean_pts,sd_pts,p_title,p_top4,p_rel,pit,rps,pts_crps\n",
         );
         for sc in &scored {
             for r in &sc.rows {
                 s.push_str(&format!(
-                    "{},{},{},{},{},{},{},{},{:.3},{:.3},{:.5},{:.5},{:.5},{:.5},{:.5}\n",
+                    "{},{},{},{},{},{},{},{},{:.3},{:.3},{:.5},{:.5},{:.5},{:.5},{:.5},{:.5}\n",
                     season_name(sc.year),
                     SNAPSHOTS[sc.snapshot].0,
                     r.club,
@@ -1071,7 +1176,8 @@ fn main() {
                     r.top4.p,
                     r.rel.p,
                     r.pit,
-                    r.rps
+                    r.rps,
+                    r.crps
                 ));
             }
         }
@@ -1196,7 +1302,71 @@ mod tests {
             closed80: false,
             mean_pts: 0.0,
             sd_pts: 0.0,
+            crps: 0.0,
         }
+    }
+
+    #[test]
+    fn crps_is_the_absolute_error_of_a_point_forecast() {
+        assert_eq!(crps(&[50], 50), 0.0);
+        assert_eq!(crps(&[50, 50, 50], 53), 3.0);
+        assert_eq!(crps(&[50], 46), 4.0);
+        // Half the weight on the outcome, half one point above it.
+        assert_eq!(crps(&[40, 41], 40), 0.25);
+        assert_eq!(crps(&[40, 41], 41), 0.25);
+    }
+
+    /// For an integer outcome the sum over integer thresholds is the
+    /// sample's E|X − y| − E|X − X'| / 2, the energy form of the CRPS.
+    #[test]
+    fn crps_matches_its_energy_form() {
+        let mut rng = SmallRng::seed_from_u64(3);
+        let mut sample: Vec<i64> = (0..300)
+            .map(|_| season_points(&mut rng, 0.4, 0.3))
+            .collect();
+        sample.sort_unstable();
+        let n = sample.len() as f64;
+        for y in [10, 38, 45, 52, 90] {
+            let to_y = sample.iter().map(|&x| (x - y).abs() as f64).sum::<f64>() / n;
+            let spread = sample
+                .iter()
+                .flat_map(|&a| sample.iter().map(move |&b| (a - b).abs() as f64))
+                .sum::<f64>()
+                / (n * n);
+            let energy = to_y - spread / 2.0;
+            assert!((crps(&sample, y) - energy).abs() < 1e-9, "y {y}");
+        }
+    }
+
+    /// A proper score: over outcomes drawn from the forecast's own
+    /// distribution, the forecast beats both a narrower and a wider one
+    /// with the same centre.
+    #[test]
+    fn crps_prefers_the_spread_the_outcomes_have() {
+        let mut rng = SmallRng::seed_from_u64(11);
+        let mut sample: Vec<i64> = (0..2000)
+            .map(|_| season_points(&mut rng, 0.4, 0.3))
+            .collect();
+        sample.sort_unstable();
+        let centre = sample[sample.len() / 2];
+        let scaled = |f: f64| {
+            let mut v: Vec<i64> = sample
+                .iter()
+                .map(|&x| centre + ((x - centre) as f64 * f).round() as i64)
+                .collect();
+            v.sort_unstable();
+            v
+        };
+        let (narrow, wide) = (scaled(0.5), scaled(1.8));
+        let outcomes: Vec<i64> = (0..2000)
+            .map(|_| season_points(&mut rng, 0.4, 0.3))
+            .collect();
+        let mean = |forecast: &[i64]| {
+            outcomes.iter().map(|&y| crps(forecast, y)).sum::<f64>() / outcomes.len() as f64
+        };
+        let right = mean(&sample);
+        assert!(mean(&narrow) > right * 1.05, "narrow {}", mean(&narrow));
+        assert!(mean(&wide) > right * 1.05, "wide {}", mean(&wide));
     }
 
     #[test]
