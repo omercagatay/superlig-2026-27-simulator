@@ -113,10 +113,10 @@
 //!                           update formula, `elo_delta_k`, with this K; 0 is
 //!                           cold). The win expectancy is taken from rating
 //!                           plus offset, so the update does not compound the
-//!                           shock, but under SEASON_SHOCK=elo it still pulls
-//!                           the trial's Elo towards the blend's view: a
-//!                           shift of the mean forecast (CLAUDE.md,
-//!                           "Season-level evaluation")
+//!                           shock, but it still pulls the trial's Elo
+//!                           towards the blend's view: a shift of the mean
+//!                           forecast, measured under SEASON_SHOCK=elo
+//!                           (CLAUDE.md, "Season-level evaluation")
 //!   SEASON_DRIFT=0          SD, in Elo points, of each club's random-walk
 //!                           step before every round still to be played
 //!

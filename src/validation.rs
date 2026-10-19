@@ -4,9 +4,10 @@ use crate::sim::World;
 
 const MIN_SIMS: usize = 100;
 const MAX_SIMS: usize = 200_000;
-/// ClubElo's club scale is compressed relative to international Elo: the
-/// 2026-27 Süper Lig spans roughly 1509-1779. These bounds leave room for
-/// large scenario swings in both directions without admitting nonsense.
+/// The 2026-27 preseason ratings (`sim::preseason_ratings`) run from about
+/// 1420 to 1855. These bounds leave room for large scenario swings in both
+/// directions without admitting nonsense; a scenario change that would
+/// cross them is clamped to them (`scenario_overrides`).
 const MIN_ELO: f64 = 1200.0;
 const MAX_ELO: f64 = 2000.0;
 /// Scenario prompts are forwarded verbatim to the paid LLM API, so cap them

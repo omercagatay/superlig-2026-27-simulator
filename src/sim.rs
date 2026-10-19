@@ -609,10 +609,11 @@ pub struct Dispersion {
     /// Where the random offsets (shock and drift) act.
     pub shock_on: ShockOn,
     /// Hot simulation: when positive, every simulated or pinned result
-    /// updates the trial's Elo ratings with `elo_delta_k(hot_k, ..)`, so
-    /// later fixtures of the trial see them, as production's walk-forward
-    /// would once those results were real. 0 is a cold simulation, where
-    /// only pinned results update the ratings, with production's `elo_delta`.
+    /// updates the trial's Elo ratings with `elo_delta_k(hot_k, ..)`
+    /// (production's update formula with this K, its expectancy taken from
+    /// rating plus offset), so later fixtures of the trial see them. 0 is a
+    /// cold simulation, where only pinned results update the ratings, with
+    /// production's `elo_delta`.
     pub hot_k: f64,
     /// Within-season random walk: when positive, every club's offset takes
     /// an independent N(0, drift) step, in Elo points, before each round
@@ -1076,15 +1077,14 @@ impl World {
         let (h, a) = (f.home, f.away);
         if disp.hot_k > 0.0 {
             // Every result, pinned or not, with the hot rule alone. The win
-            // expectancy is the one the match was drawn with: rating plus
-            // offset (shock, drift and any override). The update is then
-            // noise around the strength the trial committed to, which is
-            // what a hot simulation adds. Taking it from the rating alone
-            // would let results drawn at rating + offset pull the rating
-            // towards that, so later in a season λ would carry the offset up
-            // to twice over: a compounded shock, not in-season learning.
-            // (Production's margin multiplier still gives favourites a small
-            // upward drift, as it does in the real walk.)
+            // expectancy is taken from rating plus offset (shock, drift and
+            // any override): taken from the rating alone, results drawn at
+            // rating + offset would pull the rating towards that, and later
+            // in a season λ would carry the offset up to twice over. The
+            // update is still not zero-mean noise: results come from the
+            // blended λ but are scored against Elo's logistic expectancy, so
+            // it also pulls the trial's Elo towards the blend's view, a shift
+            // of the mean forecast (CLAUDE.md, "Season-level evaluation").
             Some(elo_delta_k(
                 disp.hot_k,
                 elo[h] + (shock[h] + self.offset[h]),

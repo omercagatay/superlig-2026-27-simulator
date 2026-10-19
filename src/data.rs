@@ -28,8 +28,8 @@ pub const ELO_DIV: f64 = 400.0;
 /// model's λs. `examples/season_eval.rs` finds the development seasons'
 /// forecasts over-confident under this shock; the same 75 on the whole
 /// model (`sim::ShockOn::Blend`) fixed them there but failed the holdout
-/// check registered before it was run, so production keeps this one
-/// (CLAUDE.md, "Season-level evaluation"). Costs nothing per analytic match
+/// check (a rule written down before the holdout run, committed after it),
+/// so production keeps this one (CLAUDE.md, "Season-level evaluation"). Costs nothing per analytic match
 /// forecast; only season simulation draws it.
 pub const RATING_SIGMA: f64 = 75.0;
 
