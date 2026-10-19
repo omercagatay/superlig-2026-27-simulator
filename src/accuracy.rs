@@ -81,8 +81,15 @@ pub struct CalibrationBucket {
 /// nothing?" reference. Matches the empirical rates in `tests/calibration.rs`.
 const BASE_RATES: [f64; 3] = [0.454, 0.256, 0.290];
 
+/// The shipped log. It is embedded at build time, so a log that does not
+/// parse is a broken build, not an empty history: failing here keeps
+/// `/api/accuracy` from quietly reporting nothing scored.
+/// `logged_forecasts_are_well_formed` catches it before it ships.
 fn load_log() -> Vec<LoggedForecast> {
-    serde_json::from_str(include_str!("../data/forecast_log.json")).unwrap_or_default()
+    serde_json::from_str(include_str!("../data/forecast_log.json")).expect(
+        "data/forecast_log.json is embedded at build time and must parse; \
+         restore it from git rather than shipping an empty accuracy report",
+    )
 }
 
 /// Score every logged forecast whose fixture has since been played.
@@ -415,15 +422,31 @@ mod tests {
         assert_eq!(low.actual_pct, 0.0);
     }
 
-    /// The log is only meaningful if predictions predate results — a forecast
-    /// written for an already-played match would flatter the model.
+    /// The shipped log must parse and hold entries: it has had predictions
+    /// since before the first matchday, so an empty one is a lost log, not an
+    /// early season. Parsed here with an explicit unwrap rather than through
+    /// `load_log`, so a failure names the JSON error. The log is only
+    /// meaningful if predictions predate results — a forecast written after
+    /// its match date would flatter the model.
     #[test]
     fn logged_forecasts_are_well_formed() {
-        for f in load_log() {
+        let log: Vec<LoggedForecast> =
+            serde_json::from_str(include_str!("../data/forecast_log.json")).unwrap();
+        assert!(!log.is_empty(), "data/forecast_log.json has no entries");
+        assert_eq!(load_log().len(), log.len());
+        for f in &log {
             let sum = f.home_pct + f.draw_pct + f.away_pct;
             assert!((sum - 100.0).abs() < 1e-6, "{} v {}: {sum}", f.home, f.away);
             assert_eq!(f.date.len(), 10);
             assert_eq!(f.logged_at.len(), 10);
+            assert!(
+                f.logged_at <= f.date,
+                "{} v {} logged {} for {}",
+                f.home,
+                f.away,
+                f.logged_at,
+                f.date
+            );
             assert!((1..=crate::data::N_ROUNDS as u8).contains(&f.round));
         }
     }
