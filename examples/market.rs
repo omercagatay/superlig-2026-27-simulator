@@ -42,7 +42,8 @@
 //! Output, after the inputs and the conventions, per set (`dev`, `hold`):
 //!   - the set line: matches joined, dates, seasons and what was left out;
 //!   - the book: Bet365's mean 1X2 and over/under margin (B − 1), mean Shin
-//!     z, and how many best-price books needed the proportional stand-in;
+//!     z, and how many best-price books needed the proportional stand-in,
+//!     1X2 and over/under apart, with the 1X2 count per season;
 //!   - for each market line (`b365 shin`, the primary, then `b365 prop`,
 //!     `max shin`, `max prop`) and aspect (1X2 log-loss, RPS, over/under
 //!     2.5 log-loss): the model's mean loss, the line's, model − market, a
@@ -58,7 +59,13 @@
 //!     (2020-21..2024-25 ran 36 to 40 games a club), with each band's share
 //!     of the set's summed gap. A match's matchday is 1 + the two clubs'
 //!     mean league games before it (the dump's `gp_h`, `gp_a`, counted in
-//!     date order), rounded down;
+//!     date order), rounded down. Then the contrast of early against late:
+//!     the mean gap after matchday 10 minus the mean gap in matchdays 1-10,
+//!     with the same date-block bootstrap (each draw's two band means over
+//!     the rows it picked) and a season-cluster t interval (the cluster-
+//!     robust standard error of a difference of two ratio means, by
+//!     linearization; with one row per band and season it is the plain
+//!     paired t across seasons);
 //!   - dev only, forecast encompassing: w in p = (1 − w) · market + w · model
 //!     (1X2, primary market) fitted by maximum likelihood on [0, 1], with a
 //!     95% season-cluster bootstrap interval (whole dev seasons resampled;
@@ -69,9 +76,18 @@
 //!     the model adds information the market lacks).
 //!
 //! Then the live season: the frozen forecasts of played 2026-27 fixtures
-//! that have Bet365 odds: n, the model labels, the model's and the
-//! market's mean 1X2 log-loss and model − market with a 95% normal
-//! interval that treats matches as independent.
+//! that have Bet365 odds: n, how many scored forecasts have no odds row and
+//! how many odds rows have no frozen forecast (fixtures played before the
+//! log began, or never logged), the model labels, the age gap (each pair's
+//! odds date, the match date the odds row carries, minus the forecast's
+//! `logged_at`, in days: a forecast frozen days before the market's
+//! pre-match price knew less, which handicaps the model), the model's and
+//! the market's mean 1X2 log-loss and model − market with a 95% normal
+//! interval that treats matches as independent. A live odds row whose
+//! fixture the shipped calendar has not played yet is skipped and counted
+//! (the archive can run ahead of the committed calendar until
+//! `scripts/fetch_fixtures.py` runs); one whose score differs from a
+//! recorded result, or whose pair is not a 2026-27 fixture, is an error.
 //!
 //! `MARKET_METRICS=path.json` also writes the point estimates as one JSON
 //! object, keys sorted, at their printed precision (as `EVAL_METRICS`
@@ -79,11 +95,16 @@
 //! `_{model,market}_{1x2_ll,rps,ou25_ll}` and `_diff_*` (model − primary
 //! market); `_{b365_prop,max_shin,max_prop}_{aspect}` for the check lines;
 //! `_b365_margin`, `_b365_ou_margin`, `_shin_z`, `_shin_z_ou`,
-//! `_max_book_le1`; `_cal_{home,draw,away,over}_{model,market,obs}`;
+//! `_max_book_le1_1x2`, `_max_book_le1_ou` (best-price books at or below
+//! 1); `_cal_{home,draw,away,over}_{model,market,obs}`;
 //! `_md{01_10,11_22,23_end}_{n,model_1x2_ll,market_1x2_ll,diff_1x2_ll}`
 //! and `_gap_share` (the band's share of the set's summed model − market);
+//! `_md11_end_{n,diff_1x2_ll}` (everything after matchday 10) and
+//! `_md_late_minus_early_1x2_ll` (that mean gap minus matchdays 1-10's);
 //! `dev_pool_w`, `dev_pool_1x2_ll`, `hold_pool_1x2_ll`,
-//! `hold_pool_diff_1x2_ll`; `live_n`, `live_{model,market,diff}_1x2_ll`.
+//! `hold_pool_diff_1x2_ll`; `live_n`, `live_{model,market,diff}_1x2_ll`,
+//! `live_no_odds`, `live_no_forecast`, `live_unplayed` and
+//! `live_age_days_{min,median,max}`.
 //! data/metrics/market.json is this file for the production dump and the
 //! odds as pinned on 2026-10-19. CI cannot regenerate it: the odds are not
 //! committed and fetching them needs the network. So CI does not diff it;
@@ -105,7 +126,8 @@ use superlig_sim::data;
 mod stats;
 
 use stats::{
-    blocks_by, bootstrap_ci, dm_t, interval_text, quantile, season_label, season_t_cis, SplitMix64,
+    blocks_by, bootstrap_ci, dm_t, interval_text, quantile, season_label, season_t_cis, t975,
+    SplitMix64,
 };
 
 /// The season end years `examples/backtest.rs` holds out.
@@ -417,8 +439,9 @@ struct Joined {
     /// Bet365's 1X2 and over/under books and Shin z's.
     book: (f64, f64),
     z: (f64, f64),
-    /// Best-price books (1X2, over/under) Shin could not solve.
-    max_le1: usize,
+    /// Whether Shin could not solve the best-price 1X2 and over/under books
+    /// (at or below 1), so proportional stood in.
+    max_le1: (bool, bool),
 }
 
 /// What the join left out of one set, by reason.
@@ -477,7 +500,7 @@ fn joined(row: &DumpRow, odds: &OddsRow) -> Joined {
         ],
         book: (book(&b365), book(&b365_ou)),
         z: (z, z_ou),
-        max_le1: usize::from(z_max.is_none()) + usize::from(z_max_ou.is_none()),
+        max_le1: (z_max.is_none(), z_max_ou.is_none()),
     }
 }
 
@@ -635,9 +658,17 @@ fn fit_pool(pairs: &[(f64, f64)]) -> f64 {
     fit_weight(|w| pool_slope(pairs, w))
 }
 
-/// 95% season-cluster bootstrap interval of the pool weight: each draw
-/// takes as many seasons as there are, with replacement, and refits.
+/// 95% season-cluster bootstrap interval of the pool weight, from
+/// `pool_draws`.
 fn pool_bootstrap(seasons: &[Vec<(f64, f64)>], resamples: usize, seed: u64) -> (f64, f64) {
+    let draws = pool_draws(seasons, resamples, seed);
+    (quantile(&draws, 0.025), quantile(&draws, 0.975))
+}
+
+/// The season-cluster bootstrap's draws of the pool weight, sorted: each
+/// draw takes as many seasons as there are, with replacement, and refits
+/// on them, a season drawn twice counting twice.
+fn pool_draws(seasons: &[Vec<(f64, f64)>], resamples: usize, seed: u64) -> Vec<f64> {
     let mut rng = SplitMix64(seed);
     let mut draws = Vec::with_capacity(resamples);
     let mut counts = vec![0usize; seasons.len()];
@@ -656,7 +687,112 @@ fn pool_bootstrap(seasons: &[Vec<(f64, f64)>], resamples: usize, seed: u64) -> (
         }));
     }
     draws.sort_by(f64::total_cmp);
-    (quantile(&draws, 0.025), quantile(&draws, 0.975))
+    draws
+}
+
+/// One block's sums for an early-against-late contrast: the summed model −
+/// market and the row count of the early band, then of the late band.
+type BandSums = ((f64, usize), (f64, usize));
+
+/// Per key, in key order, the early and late band sums of rows
+/// `(key, late, model − market)`.
+fn band_blocks<K: Ord>(rows: impl Iterator<Item = (K, bool, f64)>) -> Vec<BandSums> {
+    let mut by_key: BTreeMap<K, BandSums> = BTreeMap::new();
+    for (key, late, d) in rows {
+        let block = by_key.entry(key).or_insert(((0.0, 0), (0.0, 0)));
+        let band = if late { &mut block.1 } else { &mut block.0 };
+        band.0 += d;
+        band.1 += 1;
+    }
+    by_key.into_values().collect()
+}
+
+/// The early and late band sums of `blocks`, added up.
+fn band_totals(blocks: impl IntoIterator<Item = BandSums>) -> BandSums {
+    blocks
+        .into_iter()
+        .fold(((0.0, 0), (0.0, 0)), |(e, l), (be, bl)| {
+            ((e.0 + be.0, e.1 + be.1), (l.0 + bl.0, l.1 + bl.1))
+        })
+}
+
+/// The late band's mean minus the early band's, `None` when either band is
+/// empty.
+fn contrast_of(((se, ne), (sl, nl)): BandSums) -> Option<f64> {
+    (ne > 0 && nl > 0).then(|| sl / nl as f64 - se / ne as f64)
+}
+
+/// 95% percentile interval of the contrast with blocks resampled as
+/// `bootstrap_ci` resamples them: each draw picks as many blocks as there
+/// are, with replacement, and takes each band's mean over all the rows of
+/// the blocks it picked. A draw without a row of one band is drawn again.
+/// `None` when either band is empty.
+fn contrast_bootstrap(blocks: &[BandSums], resamples: usize, seed: u64) -> Option<(f64, f64)> {
+    contrast_of(band_totals(blocks.iter().copied()))?;
+    let mut rng = SplitMix64(seed);
+    let mut draws = Vec::with_capacity(resamples);
+    while draws.len() < resamples {
+        let picked = (0..blocks.len()).map(|_| blocks[rng.below(blocks.len())]);
+        if let Some(c) = contrast_of(band_totals(picked)) {
+            draws.push(c);
+        }
+    }
+    draws.sort_by(f64::total_cmp);
+    Some((quantile(&draws, 0.025), quantile(&draws, 0.975)))
+}
+
+/// 95% season-cluster t interval of the contrast m_L − m_E (m = S / N, a
+/// band's summed difference over its rows), from per-season band sums. Its
+/// cluster-robust standard error, by linearization, is
+/// √(G / (G − 1) · Σ u_g²) with u_g = (S_Lg − m_L N_Lg) / N_L −
+/// (S_Eg − m_E N_Eg) / N_E, and the quantile t's with G − 1 degrees of
+/// freedom: `season_t_ci` for a difference of two means. `None` for fewer
+/// than two seasons or an empty band.
+fn contrast_season_t(seasons: &[BandSums]) -> Option<(f64, f64)> {
+    if seasons.len() < 2 {
+        return None;
+    }
+    let total = band_totals(seasons.iter().copied());
+    let c = contrast_of(total)?;
+    let ((se, ne), (sl, nl)) = total;
+    let (me, ml, ne, nl) = (se / ne as f64, sl / nl as f64, ne as f64, nl as f64);
+    let ss: f64 = seasons
+        .iter()
+        .map(|&((s_e, n_e), (s_l, n_l))| {
+            let u = (s_l - ml * n_l as f64) / nl - (s_e - me * n_e as f64) / ne;
+            u * u
+        })
+        .sum();
+    let g = seasons.len() as f64;
+    let half = t975(seasons.len() - 1) * (g / (g - 1.0) * ss).sqrt();
+    Some((c - half, c + half))
+}
+
+/// Late against early: each band's mean model − market and row count, their
+/// difference, its date-block bootstrap and season-cluster t intervals.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Contrast {
+    early: (f64, usize),
+    late: (f64, usize),
+    diff: f64,
+    boot: (f64, f64),
+    season_t: Option<(f64, f64)>,
+}
+
+/// The contrast of `(season, date, late, model − market)` rows; `None`
+/// when either band is empty.
+fn band_contrast(rows: &[(i32, &str, bool, f64)], resamples: usize, seed: u64) -> Option<Contrast> {
+    let dates = band_blocks(rows.iter().map(|r| (r.1, r.2, r.3)));
+    let seasons = band_blocks(rows.iter().map(|r| (r.0, r.2, r.3)));
+    let total = band_totals(dates.iter().copied());
+    let ((se, ne), (sl, nl)) = total;
+    Some(Contrast {
+        diff: contrast_of(total)?,
+        early: (se / ne as f64, ne),
+        late: (sl / nl as f64, nl),
+        boot: contrast_bootstrap(&dates, resamples, seed)?,
+        season_t: contrast_season_t(&seasons),
+    })
 }
 
 /// The pooled 1X2 forecast's probabilities.
@@ -763,17 +899,45 @@ impl Report {
         let margin = mean(&|m| m.book.0) - 1.0;
         let margin_ou = mean(&|m| m.book.1) - 1.0;
         let (z, z_ou) = (mean(&|m| m.z.0), mean(&|m| m.z.1));
-        let le1: usize = matches.iter().map(|m| m.max_le1).sum();
+        let le1 = matches.iter().filter(|m| m.max_le1.0).count();
+        let le1_ou = matches.iter().filter(|m| m.max_le1.1).count();
         self.line(format!(
-            "  Bet365 margin: 1X2 {:.2}%, over/under {:.2}%; mean Shin z: 1X2 {z:.4}, over/under {z_ou:.4}; best-price books at or below 1 (proportional stand-in): {le1}",
+            "  Bet365 margin: 1X2 {:.2}%, over/under {:.2}%; mean Shin z: 1X2 {z:.4}, over/under {z_ou:.4}",
             100.0 * margin,
             100.0 * margin_ou
+        ));
+        self.line(format!(
+            "  best-price books at or below 1 (proportional stand-in): 1X2 {le1} of {} ({:.1}%), over/under {le1_ou} ({:.1}%)",
+            matches.len(),
+            100.0 * le1 as f64 / n,
+            100.0 * le1_ou as f64 / n
+        ));
+        let mut by_season: BTreeMap<i32, (usize, usize)> = BTreeMap::new();
+        for m in matches {
+            let s = by_season.entry(m.season).or_default();
+            s.0 += usize::from(m.max_le1.0);
+            s.1 += 1;
+        }
+        let each: Vec<String> = by_season
+            .iter()
+            .map(|(s, (le1, n))| {
+                format!(
+                    "{} {le1}/{n} ({:.1}%)",
+                    season_label(*s),
+                    100.0 * *le1 as f64 / *n as f64
+                )
+            })
+            .collect();
+        self.line(format!(
+            "  best-price 1X2 books at or below 1 by season: {}",
+            each.join(", ")
         ));
         self.metric(format!("{name}_b365_margin"), format!("{margin:.4}"));
         self.metric(format!("{name}_b365_ou_margin"), format!("{margin_ou:.4}"));
         self.metric(format!("{name}_shin_z"), format!("{z:.4}"));
         self.metric(format!("{name}_shin_z_ou"), format!("{z_ou:.4}"));
-        self.metric(format!("{name}_max_book_le1"), le1.to_string());
+        self.metric(format!("{name}_max_book_le1_1x2"), le1.to_string());
+        self.metric(format!("{name}_max_book_le1_ou"), le1_ou.to_string());
 
         self.line(format!(
             "  {:<10} {:<8} {:>8} {:>8} {:>9}   {:<22} {:>6}   {}",
@@ -896,6 +1060,42 @@ impl Report {
                 format!("{:.5}", l.diff[0]),
             );
         }
+
+        // Does the gap open after matchday 10? Test early against late, not
+        // each band against 0.
+        let rows: Vec<(i32, &str, bool, f64)> = matches
+            .iter()
+            .map(|m| {
+                let loss = |f: &Forecast| f.losses(m.outcome, m.over)[0];
+                (
+                    m.season,
+                    m.date.as_str(),
+                    band(m.matchday) > 0,
+                    loss(&m.model) - loss(&m.lines[0]),
+                )
+            })
+            .collect();
+        if let Some(c) = band_contrast(&rows, resamples, seed) {
+            let interval = format!("[{:+.5}, {:+.5}]", c.boot.0, c.boot.1);
+            self.line(format!(
+                "    after matchday 10 minus 1-10: {:+.5} (n {}) - {:+.5} (n {}) = {:+.5}   {interval:<22}   season t {}",
+                c.late.0,
+                c.late.1,
+                c.early.0,
+                c.early.1,
+                c.diff,
+                interval_text(c.season_t)
+            ));
+            self.metric(format!("{name}_md11_end_n"), c.late.1.to_string());
+            self.metric(
+                format!("{name}_md11_end_diff_1x2_ll"),
+                format!("{:.5}", c.late.0),
+            );
+            self.metric(
+                format!("{name}_md_late_minus_early_1x2_ll"),
+                format!("{:.5}", c.diff),
+            );
+        }
     }
 
     /// Forecast encompassing: the pool weight fitted on dev, then the pool
@@ -960,56 +1160,91 @@ impl Report {
     }
 }
 
-/// One live match: the frozen forecast, the primary market's, the outcome
-/// and the label of the model that made the forecast.
+/// One live match: the frozen forecast, the primary market's, the outcome,
+/// the label of the model that made the forecast and the age gap: the odds
+/// row's date (the match date) minus the forecast's `logged_at`, in days.
 #[derive(Debug, Clone, PartialEq)]
 struct LiveMatch {
     model: [f64; 3],
     market: [f64; 3],
     outcome: usize,
     label: String,
+    age_days: i64,
+}
+
+/// The live join: the matches with a frozen forecast, a result and Bet365
+/// odds, and what it could not pair.
+#[derive(Debug, Clone, PartialEq)]
+struct LiveJoin {
+    matches: Vec<LiveMatch>,
+    /// Scored log entries (played fixtures) without Bet365 odds.
+    no_odds: usize,
+    /// Odds rows of played fixtures without a log entry (played before the
+    /// log began, or never logged).
+    no_forecast: usize,
+    /// Odds rows whose fixture the calendar has not played yet, skipped.
+    unplayed: Vec<String>,
+}
+
+/// Days from `earlier` to `later`, both `YYYY-MM-DD`.
+fn days_between(earlier: &str, later: &str) -> Result<i64, String> {
+    let day = |s: &str| {
+        chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+            .map_err(|_| format!("`{s}` is not a YYYY-MM-DD date"))
+    };
+    Ok((day(later)? - day(earlier)?).num_days())
 }
 
 /// Join the forecast log to played fixtures and live odds rows by ordered
-/// pair. Returns the matches with all three, and the number of scored log
-/// entries without Bet365 odds. A score that disagrees with the calendar or
-/// a pair logged or priced twice is an error.
+/// pair. An odds row whose fixture the calendar has not played yet is
+/// skipped and listed (the archive can run ahead of the committed
+/// calendar). A score that disagrees with the calendar, an odds row that is
+/// not a 2026-27 fixture, a pair logged or priced twice or a date that does
+/// not parse is an error.
 fn join_live(
     log: &[LoggedForecast],
     fixtures: &[data::Fixture],
     odds: &[OddsRow],
-) -> Result<(Vec<LiveMatch>, usize), String> {
-    let played: HashMap<(&str, &str), (u32, u32)> = fixtures
+) -> Result<LiveJoin, String> {
+    let calendar: HashMap<(&str, &str), Option<(u32, u32)>> = fixtures
         .iter()
-        .filter_map(|f| {
-            let score = (u32::from(f.home_score?), u32::from(f.away_score?));
-            Some(((f.home.as_str(), f.away.as_str()), score))
+        .map(|f| {
+            let score = f
+                .home_score
+                .zip(f.away_score)
+                .map(|(h, a)| (u32::from(h), u32::from(a)));
+            ((f.home.as_str(), f.away.as_str()), score)
         })
         .collect();
     let mut priced: HashMap<(&str, &str), &OddsRow> = HashMap::new();
+    let mut unplayed = Vec::new();
+    let mut odds_pairs: HashSet<(&str, &str)> = HashSet::new();
     for o in odds {
         let pair = (o.home.as_str(), o.away.as_str());
-        if priced.insert(pair, o).is_some() {
+        if !odds_pairs.insert(pair) {
             return Err(format!("live odds have {} v {} twice", o.home, o.away));
         }
-        match played.get(&pair) {
-            Some(&score) if score == o.score => {}
-            Some(&(h, a)) => {
+        match calendar.get(&pair) {
+            Some(Some(score)) if *score == o.score => {
+                priced.insert(pair, o);
+            }
+            Some(Some((h, a))) => {
                 return Err(format!(
                     "{} v {}: live odds {}-{}, calendar {h}-{a}",
                     o.home, o.away, o.score.0, o.score.1
                 ))
             }
+            Some(None) => unplayed.push(format!("{} v {}", o.home, o.away)),
             None => {
                 return Err(format!(
-                    "live odds for {} v {}, which the calendar has not played",
+                    "live odds for {} v {}, which is not a 2026-27 fixture",
                     o.home, o.away
                 ))
             }
         }
     }
     let mut seen: HashSet<(&str, &str)> = HashSet::new();
-    let (mut out, mut no_odds) = (Vec::new(), 0);
+    let (mut matches, mut no_odds) = (Vec::new(), 0);
     for f in log {
         let pair = (f.home.as_str(), f.away.as_str());
         if !seen.insert(pair) {
@@ -1018,11 +1253,11 @@ fn join_live(
                 f.home, f.away
             ));
         }
-        let Some(&score) = played.get(&pair) else {
+        let Some(&Some(score)) = calendar.get(&pair) else {
             continue;
         };
-        match priced.get(&pair).and_then(|o| o.b365) {
-            Some(b365) => out.push(LiveMatch {
+        match priced.get(&pair).and_then(|o| o.b365.map(|b| (o, b))) {
+            Some((o, b365)) => matches.push(LiveMatch {
                 model: [f.home_pct, f.draw_pct, f.away_pct].map(|p| p / 100.0),
                 market: shin(b365)
                     .expect("parse_odds refuses Bet365 books at or below 1")
@@ -1032,21 +1267,56 @@ fn join_live(
                     .model_version
                     .clone()
                     .unwrap_or_else(|| "unlabelled".into()),
+                age_days: days_between(&f.logged_at, &o.date)
+                    .map_err(|e| format!("{} v {}: {e}", f.home, f.away))?,
             }),
             None => no_odds += 1,
         }
     }
-    Ok((out, no_odds))
+    let no_forecast = priced.keys().filter(|pair| !seen.contains(*pair)).count();
+    Ok(LiveJoin {
+        matches,
+        no_odds,
+        no_forecast,
+        unplayed,
+    })
 }
 
 impl Report {
-    fn live(&mut self, matches: &[LiveMatch], no_odds: usize, last_odds: Option<&str>) {
+    fn live(&mut self, join: &LiveJoin, last_odds: Option<&str>) {
+        let matches = &join.matches;
         let n = matches.len();
         self.line(format!(
-            "\nlive 2026-27: {n} played fixtures with a frozen forecast and Bet365 odds ({no_odds} scored forecasts have no odds row; the archive's 2026-27 rows end on {})",
+            "\nlive 2026-27: {n} played fixtures with a frozen forecast and Bet365 odds; {} scored forecasts have no odds row, {} odds rows have no frozen forecast (played before the log began, or never logged); the archive's 2026-27 rows end on {}",
+            join.no_odds,
+            join.no_forecast,
             last_odds.unwrap_or("-")
         ));
+        if !join.unplayed.is_empty() {
+            self.line(format!(
+                "  {} live odds rows skipped, their fixtures not yet played in the shipped calendar (run scripts/fetch_fixtures.py): {}",
+                join.unplayed.len(),
+                join.unplayed.join(", ")
+            ));
+        }
         self.metric("live_n".into(), n.to_string());
+        self.metric("live_no_odds".into(), join.no_odds.to_string());
+        self.metric("live_no_forecast".into(), join.no_forecast.to_string());
+        self.metric("live_unplayed".into(), join.unplayed.len().to_string());
+        if n == 0 {
+            return;
+        }
+        let mut ages: Vec<f64> = matches.iter().map(|m| m.age_days as f64).collect();
+        ages.sort_by(f64::total_cmp);
+        let median = quantile(&ages, 0.5);
+        self.line(format!(
+            "  age gap, odds date (the match date) minus the forecast's logged_at: {} to {} days, median {median:.1}",
+            ages[0],
+            ages[n - 1]
+        ));
+        self.metric("live_age_days_min".into(), ages[0].to_string());
+        self.metric("live_age_days_median".into(), format!("{median:.1}"));
+        self.metric("live_age_days_max".into(), ages[n - 1].to_string());
         if n < 2 {
             return;
         }
@@ -1155,8 +1425,7 @@ fn main() {
     let (matches, left) = join(&dump, &odds).unwrap_or_else(|e| fail(e));
     let log: Vec<LoggedForecast> = serde_json::from_str(&read(FORECAST_LOG_PATH))
         .unwrap_or_else(|e| fail(format!("{FORECAST_LOG_PATH}: {e}")));
-    let (live, no_odds) =
-        join_live(&log, &data::fixtures(), &live_odds).unwrap_or_else(|e| fail(e));
+    let live = join_live(&log, &data::fixtures(), &live_odds).unwrap_or_else(|e| fail(e));
 
     let mut report = Report {
         out: String::new(),
@@ -1194,7 +1463,7 @@ fn main() {
     report.set("hold", &hold, left[1], rows(true));
     report.encompassing(&dev, &hold);
     let last_odds = live_odds.iter().map(|o| o.date.as_str()).max();
-    report.live(&live, no_odds, last_odds);
+    report.live(&live, last_odds);
     print!("{}", report.out);
 
     if let Ok(path) = std::env::var("MARKET_METRICS") {
@@ -1267,8 +1536,21 @@ mod tests {
         assert_eq!(shin([2.1, 3.6, 4.5]), None);
         let (p, z) = shin_or_proportional([2.1, 3.6, 4.5]);
         assert_eq!((p, z), (proportional([2.1, 3.6, 4.5]), None));
-        // Every real Bet365 book in the archive lies between these.
-        for odds in [[1.25, 6.0, 11.0], [2.6, 3.1, 2.8], [1.05, 13.0, 34.0]] {
+        // Books of 1.046, 1.057, 1.113 and 1.139, even matches and heavy
+        // favourites, just spanning the archive's Bet365 1X2 books (1.0485
+        // to 1.137 on 2026-10-19).
+        let books = [
+            [2.55, 3.3, 2.85],
+            [1.08, 12.0, 21.0],
+            [1.15, 6.0, 13.0],
+            [2.2, 3.0, 2.85],
+        ];
+        let sums: Vec<f64> = books
+            .iter()
+            .map(|o| o.iter().map(|x| 1.0 / x).sum())
+            .collect();
+        assert!(sums[0] < 1.0485 && sums[3] > 1.137, "{sums:?}");
+        for odds in books {
             let (p, z) = shin(odds).expect("a book above 1");
             assert!(close(p.iter().sum::<f64>(), 1.0, 1e-12) && z > 0.0 && z < 0.1);
         }
@@ -1308,6 +1590,228 @@ mod tests {
         );
     }
 
+    /// Market (0.6, 0.2, 0.2) and model (0.2, 0.2, 0.6), a season's
+    /// outcomes split home/draw/away.
+    fn split_season(h: usize, d: usize, a: usize) -> Vec<(f64, f64)> {
+        let (market, model) = ([0.6, 0.2, 0.2], [0.2, 0.2, 0.6]);
+        [(0, h), (1, d), (2, a)]
+            .iter()
+            .flat_map(|&(o, n)| std::iter::repeat_n((market[o], model[o]), n))
+            .collect()
+    }
+
+    /// Seasons that disagree. A (6/2/2) alone gives w = 0 and C (4/2/4)
+    /// w = 0.5. A draw of two seasons is AA (w 0, chance 1/4), AC or CA
+    /// (1/2: their union, 10/4/6, peaks where 10 · 0.4 / (0.6 − 0.4 w) =
+    /// 6 · 0.4 / (0.2 + 0.4 w), at w = 0.25) or CC (w 0.5, 1/4): the
+    /// interval is [0, 0.5], the median 0.25.
+    ///
+    /// A season drawn twice counts twice: with [A, A, B], B (2/2/6) alone
+    /// at w = 1, each pick is B with chance 1/3, and k picks of B give
+    /// k = 0: w 0 (8/27); k = 1: A A B, 14/6/10, w = 1/3 (12/27); k = 2:
+    /// A B B, 10/6/14, w = 2/3 (6/27); k = 3: w 1 (1/27). Counting each
+    /// drawn season once would put k = 1 and 2 both at A ∪ B's w = 0.5.
+    #[test]
+    fn the_pool_bootstrap_on_seasons_that_disagree() {
+        let (a, b, c) = (
+            split_season(6, 2, 2),
+            split_season(2, 2, 6),
+            split_season(4, 2, 4),
+        );
+        assert!(close(
+            fit_pool(&[a.clone(), c.clone()].concat()),
+            0.25,
+            1e-12
+        ));
+        let (lo, hi) = pool_bootstrap(&[a.clone(), c.clone()], 4000, 11);
+        assert!(close(lo, 0.0, 1e-9) && close(hi, 0.5, 1e-9), "[{lo}, {hi}]");
+        let draws = pool_draws(&[a.clone(), c], 4000, 11);
+        assert!(close(quantile(&draws, 0.5), 0.25, 1e-9));
+
+        let draws = pool_draws(&[a.clone(), a, b], 5400, 5);
+        let share = |w: f64| {
+            draws.iter().filter(|&&d| close(d, w, 1e-9)).count() as f64 / draws.len() as f64
+        };
+        for (w, chance) in [(0.0, 8.0), (1.0 / 3.0, 12.0), (2.0 / 3.0, 6.0), (1.0, 1.0)] {
+            // Five binomial standard errors at most.
+            assert!(close(share(w), chance / 27.0, 0.035), "w {w}: {}", share(w));
+        }
+    }
+
+    /// (0.6, 0.3, 0.1), cumulative 0.6 and 0.9: a home win scores
+    /// ((0.6 − 1)² + (0.9 − 1)²) / 2 = 0.085, a draw (0.6² + (0.9 − 1)²) / 2
+    /// = 0.185, an away win (0.6² + 0.9²) / 2 = 0.585.
+    #[test]
+    fn rps_by_hand() {
+        let p = [0.6, 0.3, 0.1];
+        for (o, expected) in [(0, 0.085), (1, 0.185), (2, 0.585)] {
+            assert!(close(rps(p, o), expected, 1e-12), "{o}: {}", rps(p, o));
+        }
+        assert_eq!(rps([0.0, 1.0, 0.0], 1), 0.0);
+    }
+
+    fn report(resamples: usize) -> Report {
+        Report {
+            out: String::new(),
+            summary: Vec::new(),
+            resamples,
+            seed: 7,
+        }
+    }
+
+    fn metric<'a>(r: &'a Report, key: &str) -> Option<&'a str> {
+        r.summary
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// A joined match the market and the model priced as given, every line
+    /// the market's.
+    fn priced(
+        season: i32,
+        date: String,
+        outcome: usize,
+        market: [f64; 3],
+        model: [f64; 3],
+    ) -> Joined {
+        let f = |p3| Forecast { p3, p_over: 0.5 };
+        Joined {
+            season,
+            date,
+            matchday: 1,
+            outcome,
+            over: false,
+            model: f(model),
+            lines: [f(market); 4],
+            book: (1.05, 1.05),
+            z: (0.02, 0.02),
+            max_le1: (false, false),
+        }
+    }
+
+    /// `Report::encompassing` pairs each match as (market, model): outcomes
+    /// as the market says give w = 0, and the pool is the market on the
+    /// holdout too; as the model says, w = 1. The pairs taken the other way
+    /// round would give 1 and 0.
+    #[test]
+    fn the_encompassing_fit_weighs_the_model() {
+        let (market, model) = ([0.6, 0.2, 0.2], [0.2, 0.2, 0.6]);
+        let set = |seasons: &[i32], split: [usize; 3]| -> Vec<Joined> {
+            let mut out = Vec::new();
+            for &s in seasons {
+                let outcomes = (0..3).flat_map(|o| std::iter::repeat_n(o, split[o]));
+                for (i, o) in outcomes.enumerate() {
+                    let date = format!("{}-09-{:02}", s - 1, i + 1);
+                    out.push(priced(s, date, o, market, model));
+                }
+            }
+            out
+        };
+        for (split, w) in [([6, 2, 2], "0.000"), ([2, 2, 6], "1.000")] {
+            let dev = set(&[2017, 2018, 2019], split);
+            let hold = set(&[2025, 2026], split);
+            let mut r = report(50);
+            r.encompassing(
+                &dev.iter().collect::<Vec<_>>(),
+                &hold.iter().collect::<Vec<_>>(),
+            );
+            assert_eq!(metric(&r, "dev_pool_w"), Some(w));
+            let hold_diff: f64 = metric(&r, "hold_pool_diff_1x2_ll")
+                .expect("written")
+                .parse()
+                .expect("a number");
+            // At w = 0 the pool is the market: no difference.
+            assert_eq!(hold_diff.abs() < 1e-9, w == "0.000", "{hold_diff}");
+        }
+    }
+
+    /// The set report counts the best-price stand-ins of the two markets
+    /// apart: in `odds`, every 1X2 book but the third match's is at or
+    /// below 1, and only the third match's over/under book.
+    #[test]
+    fn the_set_report_counts_stand_in_books_by_market() {
+        let (joined, left) = try_join(&dump(20), &odds(20, |l| l)).expect("same matches");
+        let dev: Vec<&Joined> = joined.iter().filter(|m| m.season == 2017).collect();
+        let mut r = report(50);
+        r.set("dev", &dev, left[0], 20);
+        assert_eq!(metric(&r, "dev_max_book_le1_1x2"), Some("19"));
+        assert_eq!(metric(&r, "dev_max_book_le1_ou"), Some("1"));
+        assert!(
+            r.out.contains("1X2 19 of 20 (95.0%), over/under 1 (5.0%)"),
+            "{}",
+            r.out
+        );
+        assert!(
+            r.out.contains("by season: 2016-17 19/20 (95.0%)"),
+            "{}",
+            r.out
+        );
+        // Matchdays 1 to 20: ten in each half of the contrast.
+        assert_eq!(metric(&r, "dev_md11_end_n"), Some("10"));
+        assert!(metric(&r, "dev_md_late_minus_early_1x2_ll").is_some());
+    }
+
+    /// Three seasons, each with a match in matchdays 1-10 and one after,
+    /// gaps (early, late) (0.1, 0.3), (0.2, 0.5), (0.6, 0.7): late 0.5
+    /// minus early 0.3 = 0.2. With one row per band and season the
+    /// linearized cluster-robust interval is the paired t across seasons:
+    /// the differences (0.2, 0.3, 0.1) have SD 0.1, so 0.2 ± t(2) 4.3027 ·
+    /// 0.1 / √3 = 0.2 ± 0.248416. (Early and late deviations correlate
+    /// here, so a sign error in the linearization would show.)
+    #[test]
+    fn the_band_contrast_by_hand() {
+        let rows = [
+            (2017, "2016-09-01", false, 0.1),
+            (2017, "2017-03-01", true, 0.3),
+            (2018, "2017-09-01", false, 0.2),
+            (2018, "2018-03-01", true, 0.5),
+            (2019, "2018-09-01", false, 0.6),
+            (2019, "2019-03-01", true, 0.7),
+        ];
+        let c = band_contrast(&rows, 1000, 9).expect("both bands");
+        assert_eq!((c.early.1, c.late.1), (3, 3));
+        assert!(close(c.early.0, 0.3, 1e-12) && close(c.late.0, 0.5, 1e-12));
+        assert!(close(c.diff, 0.2, 1e-12));
+        let (lo, hi) = c.season_t.expect("three seasons");
+        let half = 4.3027 * 0.1 / 3f64.sqrt();
+        assert!(
+            close(lo, 0.2 - half, 1e-12) && close(hi, 0.2 + half, 1e-12),
+            "[{lo}, {hi}]"
+        );
+
+        // A date's matches move together in the bootstrap. Two dates, each
+        // with an early and a late match: (0.0, 0.0) and (0.4, 0.4). Every
+        // draw's two band means are equal, whatever it picks.
+        let together = [
+            (2017, "2016-09-01", false, 0.0),
+            (2017, "2016-09-01", true, 0.0),
+            (2017, "2016-09-08", false, 0.4),
+            (2017, "2016-09-08", true, 0.4),
+        ];
+        let c = band_contrast(&together, 1000, 9).expect("both bands");
+        assert_eq!((c.diff, c.boot), (0.0, (0.0, 0.0)));
+        assert_eq!(c.season_t, None);
+        // (0.0, 0.4) and (0.2, 0.2): the first date twice gives 0.4, the
+        // second twice 0, one of each 0.3 − 0.1 = 0.2; the interval spans
+        // [0, 0.4].
+        let apart = [
+            (2017, "2016-09-01", false, 0.0),
+            (2017, "2016-09-01", true, 0.4),
+            (2017, "2016-09-08", false, 0.2),
+            (2017, "2016-09-08", true, 0.2),
+        ];
+        let c = band_contrast(&apart, 1000, 9).expect("both bands");
+        assert!(close(c.diff, 0.2, 1e-12));
+        assert!(
+            close(c.boot.0, 0.0, 1e-12) && close(c.boot.1, 0.4, 1e-12),
+            "{:?}",
+            c.boot
+        );
+        // No late match: nothing to contrast.
+        assert_eq!(band_contrast(&rows[..1], 10, 9), None);
+    }
+
     #[test]
     fn matchday_bands() {
         assert_eq!(matchday((0, 0)), 1);
@@ -1320,29 +1824,56 @@ mod tests {
     const DUMP_HEADER: &str = "season,date,home,away,hs,as,p1,px,p2,pover25,pbtts,pscore,lh,la,elo_h,elo_a,gp_h,gp_a,promo_h,promo_a\n";
     const ODDS_HEADER: &str = "season,date,home,away,hs,as,b365_h,b365_d,b365_a,max_h,max_d,max_a,b365_over25,b365_under25,max_over25,max_under25\n";
 
-    /// A dump of `n` matches a season in 2016-17 and 2024-25, every one
-    /// 1-0 at home on its own date.
+    /// The third match of each season, `H2 v A2`, ends 2-1; every other
+    /// one 1-0.
+    fn score(i: usize) -> &'static str {
+        if i == 2 {
+            "2,1"
+        } else {
+            "1,0"
+        }
+    }
+
+    /// A dump of `n` matches a season in 2016-17 and 2024-25, each on its
+    /// own date, all won at home (`score`), over 2.5 at 0.4.
     fn dump(n: usize) -> String {
         let mut s = String::from(DUMP_HEADER);
         for (year, start) in [(2017, "2016"), (2025, "2024")] {
             for i in 0..n {
                 s.push_str(&format!(
-                    "{year},{start}-09-{:02},H{i},A{i},1,0,0.5,0.3,0.2,0.4,0.5,0.1,1.5,1.0,1500.0,1500.0,{i},{i},0,0\n",
-                    i + 1
+                    "{year},{start}-09-{:02},H{i},A{i},{},0.5,0.3,0.2,0.4,0.5,0.1,1.5,1.0,1500.0,1500.0,{i},{i},0,0\n",
+                    i + 1,
+                    score(i)
                 ));
             }
         }
         s
     }
 
+    /// Best prices of every match but the third: a 1X2 book of 0.986, at or
+    /// below 1 (proportional stands in), and an over/under book of 1.013.
+    const MAX_1X2: [f64; 3] = [2.0, 3.6, 4.8];
+    const MAX_OU: [f64; 2] = [2.0, 1.95];
+    /// The third match's: a 1X2 book of 1.016 and an over/under book of
+    /// 0.964, the other way round.
+    const MAX_1X2_THIRD: [f64; 3] = [1.95, 3.5, 4.6];
+    const MAX_OU_THIRD: [f64; 2] = [2.1, 2.05];
+
     /// The odds rows for `dump(n)`, `edit` applied to each line.
     fn odds(n: usize, edit: impl Fn(String) -> String) -> String {
+        let text = |p: &[f64]| p.iter().map(f64::to_string).collect::<Vec<_>>().join(",");
         let mut s = String::from(ODDS_HEADER);
         for (label, start) in [("2016-17", "2016"), ("2024-25", "2024")] {
             for i in 0..n {
+                let (max, max_ou) = if i == 2 {
+                    (text(&MAX_1X2_THIRD), text(&MAX_OU_THIRD))
+                } else {
+                    (text(&MAX_1X2), text(&MAX_OU))
+                };
                 s.push_str(&edit(format!(
-                    "{label},{start}-09-{:02},H{i},A{i},1,0,1.9,3.4,4.5,2.0,3.6,4.8,1.9,1.9,2.0,1.95\n",
-                    i + 1
+                    "{label},{start}-09-{:02},H{i},A{i},{},1.9,3.4,4.5,{max},1.9,1.9,{max_ou}\n",
+                    i + 1,
+                    score(i)
                 )));
             }
         }
@@ -1372,6 +1903,27 @@ mod tests {
             shin([1.9, 3.4, 4.5]).expect("book above 1").0
         );
         assert!(close(m.lines[0].p_over, 0.5, 1e-12));
+        // The best-price lines: Shin's (proportional where the book is at or
+        // below 1), then proportional.
+        let shin_ou = shin(MAX_OU).expect("book above 1").0;
+        assert_eq!(m.lines[2].p3, proportional(MAX_1X2));
+        assert_eq!(m.lines[2].p_over, shin_ou[0]);
+        assert_eq!(m.lines[3].p3, proportional(MAX_1X2));
+        assert_eq!(m.lines[3].p_over, proportional(MAX_OU)[0]);
+        assert!(m.lines[2].p_over != m.lines[3].p_over);
+        assert_eq!(m.max_le1, (true, false));
+        // The third match, 2-1: over 2.5 happened, and its best books are
+        // the other way round.
+        let m = &joined[2];
+        assert_eq!((m.outcome, m.over), (0, true));
+        assert_eq!(m.model.losses(m.outcome, m.over)[2], nll(0.4));
+        assert_eq!(joined[3].model.losses(0, false)[2], nll(0.6));
+        let shin_1x2 = shin(MAX_1X2_THIRD).expect("book above 1").0;
+        assert_eq!(m.lines[2].p3, shin_1x2);
+        assert_eq!(m.lines[2].p_over, proportional(MAX_OU_THIRD)[0]);
+        assert_eq!(m.lines[3].p3, proportional(MAX_1X2_THIRD));
+        assert!(m.lines[2].p3 != m.lines[3].p3);
+        assert_eq!(m.max_le1, (false, true));
         // One holdout match without odds of twenty is 5%, still allowed.
         let one_short = odds(20, |l| {
             if l.contains("2024-09-01") {
@@ -1448,7 +2000,7 @@ mod tests {
             date: "2026-08-15".into(),
             kickoff: None,
         };
-        let logged = |home: &str, away: &str| LoggedForecast {
+        let logged = |home: &str, away: &str, at: &str| LoggedForecast {
             round: 1,
             date: "2026-08-15".into(),
             home: home.into(),
@@ -1456,27 +2008,91 @@ mod tests {
             home_pct: 50.0,
             draw_pct: 30.0,
             away_pct: 20.0,
-            logged_at: "2026-08-10".into(),
+            logged_at: at.into(),
             model_version: Some("2026-08".into()),
         };
         let fixtures = [
             fixture("A", "B", Some((0, 0))),
             fixture("C", "D", Some((2, 1))),
             fixture("E", "F", None),
+            fixture("G", "H", Some((1, 1))),
+            fixture("I", "J", Some((0, 2))),
+            fixture("K", "L", Some((3, 0))),
         ];
-        let log = [logged("A", "B"), logged("C", "D"), logged("E", "F")];
-        let text = format!(
-            "{ODDS_HEADER}2026-27,2026-08-15,A,B,0,0,1.9,3.4,4.5,2.0,3.6,4.8,1.9,1.9,2.0,1.95\n"
+        // C v D has no odds row; G v H no forecast (played before the log
+        // began); E v F's odds are ahead of the calendar.
+        let log = [
+            logged("A", "B", "2026-08-10"),
+            logged("C", "D", "2026-08-10"),
+            logged("E", "F", "2026-08-10"),
+            logged("I", "J", "2026-08-13"),
+            logged("K", "L", "2026-08-04"),
+        ];
+        let row = |pair: &str, score: &str| {
+            format!("2026-27,2026-08-15,{pair},{score},1.9,3.4,4.5,2.0,3.6,4.8,1.9,1.9,2.0,1.95\n")
+        };
+        let rows = [
+            row("A,B", "0,0"),
+            row("E,F", "1,0"),
+            row("G,H", "1,1"),
+            row("I,J", "0,2"),
+            row("K,L", "3,0"),
+        ];
+        let odds_text = |rows: &[String]| {
+            parse_odds(&format!("{ODDS_HEADER}{}", rows.concat())).expect("parses")
+        };
+        let join = join_live(&log, &fixtures, &odds_text(&rows)).expect("joins");
+        let (live, unplayed) = (&join.matches, vec!["E v F".to_string()]);
+        assert_eq!(
+            (live.len(), join.no_odds, join.no_forecast, &join.unplayed),
+            (3, 1, 1, &unplayed)
         );
-        let (live, no_odds) =
-            join_live(&log, &fixtures, &parse_odds(&text).expect("parses")).expect("joins");
-        assert_eq!((live.len(), no_odds), (1, 1));
         assert_eq!((live[0].outcome, live[0].label.as_str()), (1, "2026-08"));
         assert_eq!(live[0].model, [0.5, 0.3, 0.2]);
-        let wrong = parse_odds(&text.replace(",0,0,1.9", ",1,0,1.9")).expect("parses");
-        assert!(join_live(&log, &fixtures, &wrong)
-            .unwrap_err()
-            .contains("calendar 0-0"));
+        // Odds date (the match date) minus logged_at.
+        let ages: Vec<i64> = live.iter().map(|m| m.age_days).collect();
+        assert_eq!(ages, vec![5, 2, 11]);
+        let mut r = report(10);
+        r.live(&join, Some("2026-08-31"));
+        for (key, value) in [
+            ("live_n", "3"),
+            ("live_no_odds", "1"),
+            ("live_no_forecast", "1"),
+            ("live_unplayed", "1"),
+            ("live_age_days_min", "2"),
+            ("live_age_days_median", "5.0"),
+            ("live_age_days_max", "11"),
+        ] {
+            assert_eq!(metric(&r, key), Some(value), "{key}");
+        }
+        assert!(
+            r.out.contains(
+                "1 scored forecasts have no odds row, 1 odds rows have no frozen forecast"
+            ),
+            "{}",
+            r.out
+        );
+        assert!(
+            r.out.contains("1 live odds rows skipped") && r.out.contains(": E v F"),
+            "{}",
+            r.out
+        );
+        assert!(r.out.contains("2 to 11 days, median 5.0"), "{}", r.out);
+
+        // A score that differs from the calendar's, a pair that is not a
+        // fixture and a pair priced twice (even one not yet played) fail.
+        let mut wrong = rows.clone();
+        wrong[0] = row("A,B", "1,0");
+        let err = join_live(&log, &fixtures, &odds_text(&wrong)).unwrap_err();
+        assert!(err.contains("calendar 0-0"), "{err}");
+        let mut stranger = rows.to_vec();
+        stranger.push(row("X,Y", "1,0"));
+        let err = join_live(&log, &fixtures, &odds_text(&stranger)).unwrap_err();
+        assert!(err.contains("not a 2026-27 fixture"), "{err}");
+        let mut twice = rows.to_vec();
+        twice.push(row("E,F", "1,0"));
+        let err = join_live(&log, &fixtures, &odds_text(&twice)).unwrap_err();
+        assert!(err.contains("E v F twice"), "{err}");
     }
 
     #[test]

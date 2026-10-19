@@ -25,7 +25,11 @@ history match the archive lacks is allowed only inside the archive's known
 
 2026-27 rows are reconciled against the played results in
 data/fixtures_2026_27.json and written to a file of their own, for the live
-comparison with data/forecast_log.json.
+comparison with data/forecast_log.json.  Run scripts/fetch_fixtures.py first:
+an archive row whose fixture the committed calendar does not yet show as
+played is skipped, with a note on stderr and a count, so the live comparison
+is complete only once the calendar has caught up with the archive.  A row
+whose score disagrees with a recorded result still stops the run.
 
 Provenance is pinned as in fetch_history.py: ODDS_SLICE_SHA256 is the SHA-256
 of the archive rows of 2016-17..2025-26 (after the aliases, odds normalised
@@ -333,14 +337,25 @@ def reconcile_history(
     return Reconciled(rows, counts, missing, walkovers, date_differences)
 
 
+class LiveReconciled(NamedTuple):
+    rows: list[OddsRow]
+    date_differences: list[tuple[OddsRow, str]]
+    # Archive rows whose fixture the committed calendar has not played yet:
+    # skipped, not written (run fetch_fixtures.py first).
+    unplayed: list[OddsRow]
+
+
 def reconcile_live(
     archive: Sequence[OddsRow], fixtures: dict[tuple[str, str], Played | None]
-) -> tuple[list[OddsRow], list[tuple[OddsRow, str]]]:
+) -> LiveReconciled:
     """2026-27 archive rows matched to played fixtures: same ordered pair and
     score, dates at most MAX_DATE_SKEW_DAYS apart; the fixture's date is
-    written.  Any row that does not match fails."""
+    written.  A row whose fixture the calendar has not played yet is skipped
+    and returned in `unplayed` (the calendar lags the archive until
+    fetch_fixtures.py runs); any other row that does not match fails."""
     problems: list[str] = []
     rows: list[OddsRow] = []
+    unplayed: list[OddsRow] = []
     seen: set[tuple[str, str]] = set()
     date_differences: list[tuple[OddsRow, str]] = []
     for row in archive:
@@ -355,7 +370,7 @@ def reconcile_live(
             continue
         played = fixtures[pair]
         if played is None:
-            problems.append(f"archive {label} has a score, the fixture list none")
+            unplayed.append(row)
         elif (played.hs, played.as_) != (row.hs, row.as_):
             problems.append(
                 f"{label}: archive {row.hs}-{row.as_}, fixture list {played.hs}-{played.as_}"
@@ -369,7 +384,8 @@ def reconcile_live(
     if problems:
         raise RuntimeError("2026-27 archive odds and fixture list disagree:\n  " + "\n  ".join(problems))
     rows.sort(key=lambda r: (r.date, r.home, r.away))
-    return rows, date_differences
+    unplayed.sort(key=lambda r: (r.date, r.home, r.away))
+    return LiveReconciled(rows, date_differences, unplayed)
 
 
 def coverage_lines(rows: Sequence[OddsRow], history: Counter[int]) -> list[str]:
@@ -430,12 +446,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     check_digest(digest, ODDS_SLICE_SHA256, "archive odds slice", "scripts/fetch_odds.py")
     result = reconcile_history(archive, history_matches(HISTORY, seasons))
-    live, live_moved = reconcile_live(
+    live = reconcile_live(
         parse_archive_odds(text, range(LIVE_SEASON, LIVE_SEASON + 1), LIVE_ALIASES),
         fixture_results(FIXTURES),
     )
 
-    for row, other in result.date_differences + live_moved:
+    for row, other in result.date_differences + live.date_differences:
         print(
             f"  date differs for {row.home} v {row.away}: archive {row.date}, "
             f"written {other}",
@@ -450,14 +466,21 @@ def main(argv: Sequence[str] | None = None) -> None:
     print("coverage (complete odds / history matches):", file=sys.stderr)
     for line in coverage_lines(result.rows, result.history):
         print(line, file=sys.stderr)
-    n_live = sum(r.complete(MARKETS["b365 1x2"]) for r in live)
+    n_live = sum(r.complete(MARKETS["b365 1x2"]) for r in live.rows)
     print(
-        f"  {season_label(LIVE_SEASON)} (live, not pinned): {len(live)} played matches, "
-        f"{n_live} with Bet365 1X2",
+        f"  {season_label(LIVE_SEASON)} (live, not pinned): {len(live.rows)} played matches, "
+        f"{n_live} with Bet365 1X2; {len(live.unplayed)} archive rows skipped, their "
+        f"fixtures not yet played in {FIXTURES.relative_to(ROOT)}",
         file=sys.stderr,
     )
+    for row in live.unplayed:
+        print(
+            f"  skipped {row.date} {row.home} v {row.away} ({row.hs}-{row.as_}): not played "
+            f"in the committed calendar; run scripts/fetch_fixtures.py first",
+            file=sys.stderr,
+        )
 
-    for rows, path in ((result.rows, OUT), (live, LIVE_OUT)):
+    for rows, path in ((result.rows, OUT), (live.rows, LIVE_OUT)):
         write_csv(rows, path)
         print(
             f"wrote {len(rows)} rows to {path.relative_to(ROOT)} "

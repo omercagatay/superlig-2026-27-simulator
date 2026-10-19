@@ -108,10 +108,13 @@ class Parse(unittest.TestCase):
             text = archive_csv([("T1", "2016-08-19", GS, FB, "1", "0", *prices)])
             with self.subTest(prices=prices), self.assertRaisesRegex(RuntimeError, market):
                 fo.parse_archive_odds(text, range(2016, 2026))
-        # The two near-equal over/under rows of the real archive pass.
-        near_equal = (*PRICES[:6], "1.54", "1.54", "1.59", "1.65")
-        fo.parse_archive_odds(archive_csv([("T1", "2018-09-28", GS, FB, "1", "0", *near_equal)]),
-                              range(2016, 2026))
+        # Near-equal over and under prices (synthetic; two archive rows carry
+        # such a pair upstream): a Bet365 over/under book of 1.29, above any
+        # 1X2 book's range but inside the over/under one, so the row passes.
+        near_equal = (*PRICES[:6], "1.55", "1.55", "1.60", "1.66")
+        (row,) = fo.parse_archive_odds(
+            archive_csv([("T1", "2016-08-19", GS, FB, "1", "0", *near_equal)]), range(2016, 2026))
+        self.assertEqual((row.odds["b365_over25"], row.odds["b365_under25"]), ("1.55", "1.55"))
 
 
 class Digest(unittest.TestCase):
@@ -131,6 +134,34 @@ class Digest(unittest.TestCase):
     def test_digest_mismatch_names_this_script(self):
         with self.assertRaisesRegex(RuntimeError, "Re-verify.*scripts/fetch_odds.py"):
             fo.check_digest("b" * 64, "a" * 64, "archive odds slice", "scripts/fetch_odds.py")
+
+
+class HistoryMatches(unittest.TestCase):
+    HEADER = "date,home_team,away_team,home_score,away_score,tournament,city,country,neutral\n"
+
+    def history(self, *lines):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp)
+        path = tmp / "superlig_results.csv"
+        path.write_text(self.HEADER + "".join(f"{l},Super Lig,,Turkey,False\n" for l in lines),
+                        encoding="utf-8")
+        return path
+
+    def test_matches_by_season_and_ordered_pair(self):
+        path = self.history(f"2016-08-19,{GS},{FB},1,0", f"2017-03-01,{FB},{GS},2,2",
+                            f"2017-08-20,{GS},{FB},3,1", "2023-03-01,Hatayspor,Konyaspor,0,3")
+        self.assertEqual(fo.history_matches(path, range(2016, 2023)), {
+            2016: {(GS, FB): played("2016-08-19", 1, 0), (FB, GS): played("2017-03-01", 2, 2)},
+            2017: {(GS, FB): played("2017-08-20", 3, 1)},
+        })
+
+    def test_a_pair_twice_in_a_season_fails(self):
+        path = self.history(f"2016-08-19,{GS},{FB},1,0", f"2017-03-01,{GS},{FB},2,2")
+        with self.assertRaisesRegex(RuntimeError, f"history: {GS} v {FB} twice in 2016-17"):
+            fo.history_matches(path, range(2016, 2026))
+        # The same pair in two seasons is two matches, not a duplicate.
+        path = self.history(f"2016-08-19,{GS},{FB},1,0", f"2017-08-20,{GS},{FB},2,2")
+        self.assertEqual(sorted(fo.history_matches(path, range(2016, 2026))), [2016, 2017])
 
 
 class ReconcileHistory(unittest.TestCase):
@@ -175,20 +206,33 @@ class ReconcileLive(unittest.TestCase):
     fixtures = {(GS, "Çorum"): played("2026-08-14", 2, 2), (FB, GS): None}
 
     def test_played_fixtures_match(self):
-        rows, moved = fo.reconcile_live([odds_row("2026-08-15", GS, "Çorum", 2, 2)], self.fixtures)
-        self.assertEqual([r.date for r in rows], ["2026-08-14"])
-        self.assertEqual(len(moved), 1)
+        result = fo.reconcile_live([odds_row("2026-08-15", GS, "Çorum", 2, 2)], self.fixtures)
+        self.assertEqual([r.date for r in result.rows], ["2026-08-14"])
+        self.assertEqual(len(result.date_differences), 1)
+        self.assertEqual(result.unplayed, [])
+
+    def test_a_fixture_the_calendar_has_not_played_is_skipped(self):
+        # The archive can run ahead of the committed calendar until
+        # fetch_fixtures.py runs: the row is skipped and reported, not fatal.
+        ahead = odds_row("2026-09-01", FB, GS, 1, 0)
+        result = fo.reconcile_live([ahead, odds_row("2026-08-14", GS, "Çorum", 2, 2)],
+                                   self.fixtures)
+        self.assertEqual([(r.home, r.away) for r in result.rows], [(GS, "Çorum")])
+        self.assertEqual(result.unplayed, [ahead])
 
     def test_disagreements_fail(self):
+        # Each alongside a row the calendar has not played: skipping that one
+        # must not hide the disagreement.
+        ahead = odds_row("2026-09-01", FB, GS, 1, 0)
         cases = {
-            "fixture list 2-2": odds_row("2026-08-14", GS, "Çorum", 2, 1),
-            "fixture list none": odds_row("2026-09-01", FB, GS, 1, 0),
-            "not a 2026-27 fixture": odds_row("2026-08-14", GS, "Corum", 2, 2),
-            "archive 2026-08-17": odds_row("2026-08-17", GS, "Çorum", 2, 2),
+            "fixture list 2-2": [odds_row("2026-08-14", GS, "Çorum", 2, 1), ahead],
+            "not a 2026-27 fixture": [odds_row("2026-08-14", GS, "Corum", 2, 2), ahead],
+            "archive 2026-08-17": [odds_row("2026-08-17", GS, "Çorum", 2, 2), ahead],
+            "twice": [ahead, ahead],
         }
-        for message, row in cases.items():
+        for message, rows in cases.items():
             with self.subTest(message=message), self.assertRaisesRegex(RuntimeError, message):
-                fo.reconcile_live([row], self.fixtures)
+                fo.reconcile_live(rows, self.fixtures)
 
     def test_every_accented_club_of_the_season_has_an_alias(self):
         # The archive spells clubs in plain ASCII.  A 2026-27 club whose name
@@ -241,6 +285,8 @@ class EndToEnd(unittest.TestCase):
             ("T1", "2017-03-01", "Fenerbahce", GS, "2.0", "2.0"),
             ("T1", "2023-03-01", "Hatayspor", GS, "0.0", "3.0", *([""] * 10)),
             ("T1", "2026-08-14", GS, "Corum", "2.0", "2.0"),
+            # Ahead of the committed calendar, which has not played it yet.
+            ("T1", "2026-08-22", "Corum", GS, "0.0", "1.0"),
             ("T2", "2016-08-19", "Altay", "Boluspor", "1.0", "0.0"),
         ]), encoding="utf-8")
         slice_rows = fo.parse_archive_odds(self.archive.read_text(encoding="utf-8"),
@@ -269,10 +315,13 @@ class EndToEnd(unittest.TestCase):
                           ["2016-17", "2017-03-01", FB, GS, "2", "2"]])
         self.assertEqual(rows[1][6:], [repr(float(p)) for p in PRICES])
         live = (self.tmp / "odds" / "live.csv").read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(live), 2)
         self.assertEqual(live[1].split(",")[:6], ["2026-27", "2026-08-14", GS, "Çorum", "2", "2"])
         self.assertIn("1 earthquake walkovers dropped", log)
         self.assertIn("2016-17: 2 matches; b365 1x2 2/2 (100.0%)", log)
-        self.assertIn("2026-27 (live, not pinned): 1 played matches", log)
+        self.assertIn("2026-27 (live, not pinned): 1 played matches, 1 with Bet365 1X2; "
+                      "1 archive rows skipped", log)
+        self.assertIn(f"skipped 2026-08-22 Çorum v {GS} (0-1): not played", log)
 
     def test_a_changed_slice_stops_the_run_before_writing(self):
         with self.assertRaisesRegex(RuntimeError, "archive odds slice changed upstream"):
