@@ -35,8 +35,7 @@ pub fn validate_n_sims(n: usize) -> Result<usize, String> {
     }
 }
 
-/// A generous cap: enough to pin a whole matchday and then some, low enough
-/// that rejection sampling for improbable pins cannot dominate a run.
+/// A generous cap: enough to pin a whole matchday and then some.
 pub const MAX_WHAT_IF: usize = 20;
 
 /// Resolve pinned outcomes to fixture indices, rejecting anything that is not

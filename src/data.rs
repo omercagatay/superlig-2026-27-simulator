@@ -14,20 +14,22 @@ pub const HOME_ADV: f64 = 80.0;
 /// Distinct from `D_DIV`, which maps a rating gap to a *scoring-rate* ratio.
 pub const ELO_DIV: f64 = 400.0;
 
-/// One-sigma uncertainty in a club's true strength, in Elo points, resampled
-/// per simulated season. Ratings are estimates, not facts: squads change, form
-/// is unobserved, and the ratings themselves carry error. Treating them as exact
-/// makes favourites' title odds run hot and the tails too thin.
+/// One-sigma uncertainty in a club's true strength, in Elo points, drawn
+/// per simulated season and held for all of it. Ratings are estimates, not
+/// facts: squads change, form is unobserved, and the ratings themselves
+/// carry error. Treating them as exact makes favourites' title odds run hot
+/// and the tails too thin.
 ///
-/// Calibrated in `examples/arena.rs` against the spread of real final tables:
-/// replaying held-out seasons from the model's own match probabilities, this
-/// sigma (a row of the arena's sweep) raises the played-match table spread
-/// from 13.4 to 15.0 against 17.3 observed on 2024-25, and from 13.0 to 14.4
-/// against 15.2 on 2025-26. Costs nothing per analytic match forecast; only
-/// season simulation draws it.
-///
-/// Known residual: it remains under-dispersed on 2024-25; Galatasaray's 92
-/// points from played fixtures remain only about a 7% replay event (6.7%).
+/// The offset acts on the whole model, the blended and lifted λ pair, as an
+/// Elo gap acts on the Elo component (`sim::ShockOn::Blend`), and is
+/// mean-preserving: it spreads strengths without moving the league's
+/// scoring rate. Chosen in `examples/arena.rs`, whose replay tilts the whole
+/// blended forecast by the drawn gap, against the spread of real final
+/// tables (a row of its sweep). On the development seasons it is also near
+/// the points-CRPS optimum of this shock (`examples/season_eval.rs`, 5,000
+/// seasons): 50, 75 and 100 change pooled `pts_crps` by −0.022, −0.033 and
+/// +0.013 points against the same 75 on the Elo ratings alone. Costs nothing
+/// per analytic match forecast; only season simulation draws it.
 pub const RATING_SIGMA: f64 = 75.0;
 
 /// In-season Elo update rate for one league match, before the goal-difference

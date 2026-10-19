@@ -667,6 +667,7 @@ fn season_sim(
         dates,
         played: HashMap::new(),
         ensemble: Some(ens.clone()),
+        offset: vec![0.0; teams.len()],
     };
     let points = |pts: &[f64]| {
         let mean = pts.iter().sum::<f64>() / pts.len() as f64;
