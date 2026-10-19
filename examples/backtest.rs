@@ -473,12 +473,18 @@ fn calibration_slope(forecasts: &[(f64, bool)]) -> Option<(f64, f64)> {
 }
 
 /// The summary as one JSON object for `EVAL_METRICS`: keys sorted, each
-/// value the number as printed (a failed fit's `NaN` as null).
+/// value the number as printed (a failed fit's `NaN` as null). Any other
+/// value that is not a number is a bug, not a null.
 fn metrics_json(summary: &[(String, String)]) -> String {
     let map: std::collections::BTreeMap<&str, serde_json::Value> = summary
         .iter()
         .map(|(k, v)| {
-            let value = serde_json::from_str(v).unwrap_or(serde_json::Value::Null);
+            let value = match v.as_str() {
+                "NaN" | "inf" | "-inf" => serde_json::Value::Null,
+                _ => serde_json::from_str::<serde_json::Number>(v)
+                    .unwrap_or_else(|_| panic!("summary {k}={v} is not a number"))
+                    .into(),
+            };
             (k.as_str(), value)
         })
         .collect();
@@ -874,7 +880,10 @@ mod tests {
         let f = grouped(&[(0.2, 2, 10), (0.5, 5, 10), (0.8, 8, 10)]);
         let (b, se) = calibration_slope(&f).expect("fit");
         assert!((b - 1.0).abs() < 1e-9, "slope {b}");
-        assert!(se > 0.0 && se.is_finite(), "se {se}");
+        // At a = 0, b = 1 the logits ±ln 4 cancel in the cross term, so
+        // Var(b) = 1 / Σ p(1 − p) logit(p)² = 1 / (20 · 0.16 · ln² 4).
+        let expected = 1.0 / (3.2f64.sqrt() * 4f64.ln());
+        assert!((se - expected).abs() < 1e-9, "se {se}, expected {expected}");
     }
 
     #[test]
@@ -894,6 +903,74 @@ mod tests {
         let (b4, se4) = calibration_slope(&f4).expect("fit");
         assert!((b4 - expected).abs() < 1e-9, "slope {b4}");
         assert!((se / se4 - 2.0).abs() < 1e-6, "se {se} vs {se4}");
+    }
+
+    /// The evidence lines, in order: skill against the base rates, then
+    /// calibration per outcome. Their keys are what `EVAL_METRICS` writes.
+    #[test]
+    fn evidence_is_skill_then_calibration() {
+        let acc = Acc {
+            n: 4,
+            ll: 3.0,
+            rps: 0.6,
+            ou: 2.0,
+            btts: 3.0,
+            base_ll: 4.0,
+            base_rps: 0.8,
+            base_ou: 2.5,
+            base_btts: 2.0,
+            outcomes: vec![
+                ([0.5, 0.3, 0.2], 0),
+                ([0.4, 0.3, 0.3], 1),
+                ([0.6, 0.2, 0.2], 2),
+                ([0.3, 0.3, 0.4], 2),
+            ],
+            ..Acc::default()
+        };
+        let lines = acc.evidence("dev");
+        let mut keys: Vec<String> = [
+            "1x2_ll_base",
+            "1x2_skill",
+            "rps_base",
+            "rpss",
+            "ou25_ll_base",
+            "ou25_skill",
+            "btts_ll_base",
+            "btts_skill",
+        ]
+        .iter()
+        .map(|k| format!("dev_{k}"))
+        .collect();
+        for name in ["home", "draw", "away"] {
+            for part in ["pred", "obs", "slope", "slope_se"] {
+                keys.push(format!("dev_cal_{name}_{part}"));
+            }
+        }
+        assert_eq!(
+            lines.iter().map(|l| &l.0).collect::<Vec<_>>(),
+            keys.iter().collect::<Vec<_>>()
+        );
+        let value = |key: &str| {
+            lines
+                .iter()
+                .find(|l| l.0 == key)
+                .map(|l| l.1.as_str())
+                .expect("key")
+        };
+        // Base losses per match, and 1 − model / base.
+        assert_eq!(value("dev_1x2_ll_base"), "1.00000");
+        assert_eq!(value("dev_1x2_skill"), "0.25000");
+        assert_eq!(value("dev_rps_base"), "0.20000");
+        assert_eq!(value("dev_rpss"), "0.25000");
+        assert_eq!(value("dev_ou25_skill"), "0.20000");
+        assert_eq!(value("dev_btts_skill"), "-0.50000");
+        // Mean forecast, then how often it happened: home 1, draw 1, away 2 of 4.
+        assert_eq!(value("dev_cal_home_pred"), "0.4500");
+        assert_eq!(value("dev_cal_home_obs"), "0.2500");
+        assert_eq!(value("dev_cal_draw_pred"), "0.2750");
+        assert_eq!(value("dev_cal_draw_obs"), "0.2500");
+        assert_eq!(value("dev_cal_away_pred"), "0.2750");
+        assert_eq!(value("dev_cal_away_obs"), "0.5000");
     }
 
     #[test]

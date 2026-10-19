@@ -465,10 +465,16 @@ mod tests {
         assert_ne!(first, bootstrap_ci(&blocks, 2000, 8));
     }
 
+    /// Dates hold one to four matches, so a resample's mean must be taken
+    /// over its matches, not its dates, for every draw to come out at 0.25.
     #[test]
     fn a_constant_difference_has_a_zero_width_interval() {
         let dates: Vec<String> = (0..30).map(date).collect();
-        let diffs: Vec<(&str, f64)> = dates.iter().map(|d| (d.as_str(), 0.25)).collect();
+        let diffs: Vec<(&str, f64)> = dates
+            .iter()
+            .enumerate()
+            .flat_map(|(i, d)| std::iter::repeat_n((d.as_str(), 0.25), 1 + i % 4))
+            .collect();
         let p = paired(&diffs);
         let blocks = date_blocks(&p.iter().collect::<Vec<_>>());
         for (lo, hi) in bootstrap_ci(&blocks, 1000, 1) {
