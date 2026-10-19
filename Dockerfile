@@ -30,8 +30,8 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 # The server runs as an unprivileged user with a fixed UID. It only reads
 # its binary (data is embedded) and frontend/dist, which stay root-owned and
 # world-readable, so it owns nothing and has no home directory.
-RUN groupadd --system --gid 10001 app \
-    && useradd --system --uid 10001 --gid app --no-create-home \
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --no-create-home \
            --home-dir /nonexistent --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=backend-builder /app/target/release/superlig-sim .

@@ -29,9 +29,10 @@ argmin-math = { version = "0.5", default-features = false, features = ["vec"] }
 encoding_rs = "0.8"
 
 [dev-dependencies]
-# Already in the tree through tower-http's gzip support; a router test
-# decompresses a response with it.
+# Already in the tree through tower-http's gzip and brotli support; a router
+# test decompresses responses with them.
 flate2 = "1"
+brotli-decompressor = "6"
 
 [profile.release]
 opt-level = 3

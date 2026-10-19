@@ -1455,6 +1455,7 @@ dependencies = [
  "argmin",
  "argmin-math",
  "axum",
+ "brotli-decompressor",
  "chrono",
  "csv",
  "dotenvy",

@@ -2,7 +2,10 @@
 
 The project is released under the MIT License in [`LICENSE`](LICENSE). The
 match history it ships includes data from the sources below, which keep
-their own terms.
+their own terms. The 2025-26 results in `data/superlig_results.csv` and the
+2026-27 fixtures and results in `data/fixtures_2026_27.json` are taken from
+the public pages of [tff.org](https://www.tff.org), and the MIT License does
+not cover them.
 
 ## Club Football Match Data 2000–2025
 

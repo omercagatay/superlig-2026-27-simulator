@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -32,10 +33,12 @@ fn env_flag(name: &str) -> bool {
 /// API, and the inline SVG favicon, a `data:` image. The pre-paint theme
 /// script is a file (`frontend/public/theme.js`) so scripts need no inline
 /// allowance, and React sets `style` props through the CSSOM, which
-/// `style-src` does not police, so styles need none either.
+/// `style-src` does not police, so styles need none either. `form-action`,
+/// `frame-ancestors` and `base-uri` do not fall back to `default-src`, so
+/// each is set.
 const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; \
      style-src 'self'; img-src 'self' data:; connect-src 'self'; \
-     frame-ancestors 'none'; base-uri 'self'; object-src 'none'";
+     frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
 
 /// Headers every response carries, the SPA's files and errors included.
 fn security_headers() -> [(HeaderName, HeaderValue); 4] {
@@ -56,10 +59,13 @@ fn security_headers() -> [(HeaderName, HeaderValue); 4] {
     ]
 }
 
+/// Where the built SPA is served from, relative to the working directory.
+const STATIC_DIR: &str = "frontend/dist";
+
 /// The API, each rate-limited group with its own per-IP allowance, and the
-/// built SPA for everything else, all compressed for clients that accept
-/// gzip or brotli and all carrying `security_headers`.
-fn router(state: Arc<AppState>, trust_proxy: bool) -> Router {
+/// built SPA in `static_dir` for everything else, all compressed for clients
+/// that accept gzip or brotli and all carrying `security_headers`.
+fn router(state: Arc<AppState>, trust_proxy: bool, static_dir: impl AsRef<Path>) -> Router {
     let [nosniff, referrer, frame, csp] =
         security_headers().map(|(name, value)| SetResponseHeaderLayer::overriding(name, value));
     // No CORS layer: the SPA is served from this origin, and the Vite dev
@@ -99,7 +105,7 @@ fn router(state: Arc<AppState>, trust_proxy: bool) -> Router {
         )
         .layer(RequestBodyLimitLayer::new(1024 * 1024))
         .with_state(state)
-        .fallback_service(ServeDir::new("frontend/dist"))
+        .fallback_service(ServeDir::new(static_dir))
         // Added after the fallback, so the SPA's files get them too.
         .layer(
             ServiceBuilder::new()
@@ -266,7 +272,7 @@ async fn serve() -> anyhow::Result<()> {
         tracing::info!("TRUST_PROXY off: rate limiting keys on socket peer address");
     }
 
-    let app = router(state, trust_proxy);
+    let app = router(state, trust_proxy, STATIC_DIR);
 
     let port: u16 = std::env::var("PORT")
         .ok()
@@ -310,8 +316,11 @@ mod tests {
         body::{Body, Bytes},
         extract::ConnectInfo,
         http::{Request, StatusCode},
+        response::Response,
     };
+    use std::collections::HashMap;
     use std::io::Read;
+    use std::path::PathBuf;
     use superlig_sim::forecast_cache::SimKey;
     use tower::Service;
 
@@ -325,11 +334,7 @@ mod tests {
     }
 
     /// A GET from one peer, offering `encoding` if given.
-    async fn fetch(
-        app: &mut Router,
-        path: &str,
-        encoding: Option<&str>,
-    ) -> axum::response::Response {
+    async fn fetch(app: &mut Router, path: &str, encoding: Option<&str>) -> Response {
         let mut req = Request::builder().uri(path);
         if let Some(encoding) = encoding {
             req = req.header(header::ACCEPT_ENCODING, encoding);
@@ -340,59 +345,168 @@ mod tests {
         app.call(req).await.unwrap()
     }
 
-    /// API answers and the SPA fallback carry them, its 404s included (the
-    /// last path is one whether or not frontend/dist is built).
-    #[tokio::test]
-    async fn every_response_carries_the_security_headers() {
-        let mut app = router(test_state(), false);
-        for path in ["/api/health", "/api/matches", "/no-such-file.js"] {
-            let resp = fetch(&mut app, path, None).await;
-            for (name, value) in security_headers() {
-                assert_eq!(resp.headers().get(&name), Some(&value), "{name} on {path}");
+    /// A directory of static files standing in for the built SPA, so these
+    /// tests need no `npm run build`; removed when dropped.
+    struct StaticFiles(PathBuf);
+
+    impl StaticFiles {
+        fn new(test: &str, files: &[(&str, &[u8])]) -> Self {
+            let dir =
+                std::env::temp_dir().join(format!("superlig-sim-{test}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            for (name, contents) in files {
+                std::fs::write(dir.join(name), contents).unwrap();
             }
+            Self(dir)
         }
     }
 
-    /// The calendar, the largest API answer, goes out compressed to a client
-    /// that accepts it and inflates to the bytes an identity client gets.
+    impl Drop for StaticFiles {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    /// A script of a few kilobytes, as the SPA's bundles are.
+    fn script() -> Vec<u8> {
+        (0..100)
+            .map(|i| format!("export const club{i} = \"Galatasaray\";\n"))
+            .collect::<String>()
+            .into_bytes()
+    }
+
+    /// The single value of `name` on `resp`.
+    fn only<'a>(resp: &'a Response, name: &HeaderName, path: &str) -> &'a str {
+        let mut values = resp.headers().get_all(name).iter();
+        let value = values
+            .next()
+            .unwrap_or_else(|| panic!("no {name} on {path}"));
+        assert!(values.next().is_none(), "{name} sent twice on {path}");
+        value.to_str().unwrap()
+    }
+
+    /// API answers and the SPA's files carry them, the fallback's 404s
+    /// included. The expected values are spelled out here rather than taken
+    /// from `security_headers`, so weakening one there fails.
+    #[tokio::test]
+    async fn every_response_carries_the_security_headers() {
+        let files = StaticFiles::new("headers", &[("app.js", &script())]);
+        let mut app = router(test_state(), false, &files.0);
+        for (path, status) in [
+            ("/api/health", StatusCode::OK),
+            ("/api/matches", StatusCode::OK),
+            ("/app.js", StatusCode::OK),
+            ("/no-such-file.js", StatusCode::NOT_FOUND),
+        ] {
+            let resp = fetch(&mut app, path, None).await;
+            assert_eq!(resp.status(), status, "{path}");
+            assert_eq!(only(&resp, &header::X_FRAME_OPTIONS, path), "DENY");
+            assert_eq!(
+                only(&resp, &header::X_CONTENT_TYPE_OPTIONS, path),
+                "nosniff"
+            );
+            assert_eq!(
+                only(&resp, &header::REFERRER_POLICY, path),
+                "strict-origin-when-cross-origin"
+            );
+
+            let csp = only(&resp, &header::CONTENT_SECURITY_POLICY, path);
+            let directives: HashMap<String, Vec<&str>> = csp
+                .split(';')
+                .filter_map(|directive| {
+                    let mut words = directive.split_ascii_whitespace();
+                    Some((words.next()?.to_ascii_lowercase(), words.collect()))
+                })
+                .collect();
+            for (directive, source) in [
+                ("default-src", "'self'"),
+                ("script-src", "'self'"),
+                ("object-src", "'none'"),
+                ("base-uri", "'self'"),
+                ("frame-ancestors", "'none'"),
+                // Not covered by default-src: without it a form could post anywhere.
+                ("form-action", "'self'"),
+            ] {
+                assert_eq!(
+                    directives.get(directive),
+                    Some(&vec![source]),
+                    "{directive} on {path}: {csp}"
+                );
+            }
+            let lower = csp.to_ascii_lowercase();
+            for unsafe_source in ["'unsafe-inline'", "'unsafe-eval'"] {
+                assert!(
+                    !lower.contains(unsafe_source),
+                    "{unsafe_source} on {path}: {csp}"
+                );
+            }
+            assert!(
+                !directives.values().flatten().any(|source| *source == "*"),
+                "a bare * on {path}: {csp}"
+            );
+        }
+    }
+
+    /// The body of a 200.
+    async fn body(resp: Response) -> Bytes {
+        assert_eq!(resp.status(), StatusCode::OK);
+        axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap()
+    }
+
+    /// `compressed` decoded from `encoding`.
+    fn inflate(encoding: &str, compressed: &[u8]) -> Vec<u8> {
+        let mut inflated = Vec::new();
+        match encoding {
+            "gzip" => flate2::read::GzDecoder::new(compressed).read_to_end(&mut inflated),
+            "br" => {
+                brotli_decompressor::Decompressor::new(compressed, 4096).read_to_end(&mut inflated)
+            }
+            _ => panic!("unexpected encoding {encoding}"),
+        }
+        .unwrap();
+        inflated
+    }
+
+    /// The calendar, the largest API answer, and a script served by the SPA
+    /// fallback go out compressed to a client that accepts it and inflate to
+    /// the bytes an identity client gets.
     #[tokio::test]
     async fn large_responses_are_compressed() {
-        let mut app = router(test_state(), false);
-        let body = |resp: axum::response::Response| async move {
-            assert_eq!(resp.status(), StatusCode::OK);
-            axum::body::to_bytes(resp.into_body(), usize::MAX)
-                .await
-                .unwrap()
-        };
-
-        let resp = fetch(&mut app, "/api/matches", None).await;
-        assert!(resp.headers().get(header::CONTENT_ENCODING).is_none());
-        let plain = body(resp).await;
-
-        let resp = fetch(&mut app, "/api/matches", Some("gzip")).await;
-        assert_eq!(resp.headers()[header::CONTENT_ENCODING], "gzip");
-        let gzip = body(resp).await;
-        let mut inflated = Vec::new();
-        flate2::read::GzDecoder::new(&gzip[..])
-            .read_to_end(&mut inflated)
-            .unwrap();
-        assert_eq!(inflated, plain);
-        assert!(
-            gzip.len() * 2 < plain.len(),
-            "gzip {} of {} bytes",
-            gzip.len(),
-            plain.len()
-        );
-
-        let resp = fetch(&mut app, "/api/matches", Some("br;q=1, gzip;q=0.5")).await;
-        assert_eq!(resp.headers()[header::CONTENT_ENCODING], "br");
-        let br = body(resp).await;
-        assert!(
-            br.len() * 2 < plain.len(),
-            "br {} of {} bytes",
-            br.len(),
-            plain.len()
-        );
+        let script = script();
+        let files = StaticFiles::new("compression", &[("app.js", &script)]);
+        let mut app = router(test_state(), false, &files.0);
+        for path in ["/api/matches", "/app.js"] {
+            let resp = fetch(&mut app, path, None).await;
+            assert!(
+                resp.headers().get(header::CONTENT_ENCODING).is_none(),
+                "{path}"
+            );
+            let plain = body(resp).await;
+            if path == "/app.js" {
+                assert_eq!(plain, script);
+            }
+            for (accept, encoding) in [("gzip", "gzip"), ("br;q=1, gzip;q=0.5", "br")] {
+                let resp = fetch(&mut app, path, Some(accept)).await;
+                assert_eq!(
+                    resp.headers()
+                        .get(header::CONTENT_ENCODING)
+                        .and_then(|value| value.to_str().ok()),
+                    Some(encoding),
+                    "{path}"
+                );
+                let compressed = body(resp).await;
+                assert_eq!(inflate(encoding, &compressed), plain, "{encoding} {path}");
+                assert!(
+                    compressed.len() * 2 < plain.len(),
+                    "{encoding} {path}: {} of {} bytes",
+                    compressed.len(),
+                    plain.len()
+                );
+            }
+        }
     }
 
     /// One visitor's page loads must not use up the calendar's allowance.
@@ -410,7 +524,7 @@ mod tests {
             )
             .await
             .unwrap();
-        let mut app = router(state, false);
+        let mut app = router(state, false, STATIC_DIR);
         let peer: SocketAddr = "192.0.2.1:5000".parse().unwrap();
         let mut send = |method: &str, path: &str| {
             let body = if method == "POST" { "{}" } else { "" };
