@@ -8,21 +8,31 @@ metric name to number, rounded to the precision the backtest prints.  A
 figure the backtest could not compute (a calibration fit that did not
 converge prints NaN) is null: it matches only another null, and no doc may
 quote it.  data/metrics/season.json is the season evaluation's, in the same
-format (examples/season_eval.rs with SEASON_METRICS=<path>).
+format (examples/season_eval.rs with SEASON_METRICS=<path>), and
+data/metrics/market.json the offline market benchmark's (examples/market.rs
+with MARKET_METRICS=<path>).  CI diffs the first two; it cannot rerun the
+market benchmark, whose bookmaker odds are not committed and come over the
+network (scripts/fetch_odds.py), so market.json is diffed only by hand.
 
 Usage:
   python3 scripts/check_metrics.py diff FRESH [COMMITTED]
       FRESH was just written by the backtest (or the season evaluation);
       COMMITTED defaults to data/metrics/backtest.json (pass
-      data/metrics/season.json for the season evaluation's).  Every metric
+      data/metrics/season.json for the season evaluation's,
+      data/metrics/market.json for the market benchmark's).  Every metric
       must match exactly (both are rounded at the printed precision), and
       neither file may have a metric the other lacks.
-  python3 scripts/check_metrics.py docs [--metrics PATH] [--season-metrics PATH] [FILE ...]
-      Every metric marker in FILE (default README.md, README.tr.md and
-      CLAUDE.md) must show the committed value, and there must be at least
-      one: a check that finds nothing to check fails.  --metrics defaults to
-      data/metrics/backtest.json, --season-metrics to
-      data/metrics/season.json, which is read only when a marker quotes it.
+  python3 scripts/check_metrics.py docs [--metrics PATH] [--season-metrics PATH]
+                                        [--market-metrics PATH] [FILE ...]
+      Every metric marker in FILE (default: the files in DOCS, README.md,
+      README.tr.md, CLAUDE.md, docs/model-card.md and docs/model-card.tr.md)
+      must show the committed value, and there must be at least one: a
+      check that finds nothing to check fails.  Every FILE must exist: a
+      listed doc that is missing fails the check rather than being
+      skipped.  --metrics defaults to data/metrics/backtest.json,
+      --season-metrics to data/metrics/season.json and --market-metrics to
+      data/metrics/market.json; those two are read only when a marker
+      quotes them.
 
 A marker wraps the figure it guards, on one line, invisible once rendered:
   <!-- metric:KEY -->VALUE<!-- /metric -->
@@ -36,6 +46,8 @@ A marker wraps the figure it guards, on one line, invisible once rendered:
       decimal comma, thousands point, leading percent sign (0,9756, %52,3).
   <!-- metric:season:KEY[:SPEC[:tr]] -->VALUE<!-- /metric -->
       KEY from the season metrics instead of the backtest's.
+  <!-- metric:market:KEY[:SPEC[:tr]] -->VALUE<!-- /metric -->
+      KEY from the market benchmark's metrics.
 Markers inside code (backtick spans or fenced blocks) are text, not markers,
 so the syntax can be documented.
 
@@ -56,7 +68,17 @@ from typing import NamedTuple, Sequence, Union
 ROOT = Path(__file__).resolve().parents[1]
 COMMITTED = ROOT / "data" / "metrics" / "backtest.json"
 SEASON_COMMITTED = ROOT / "data" / "metrics" / "season.json"
-DOCS = [ROOT / "README.md", ROOT / "README.tr.md", ROOT / "CLAUDE.md"]
+MARKET_COMMITTED = ROOT / "data" / "metrics" / "market.json"
+# The docs that quote the committed metrics, checked by default.  Explicit
+# rather than a glob, so a doc that goes missing (or was never created)
+# fails the check instead of dropping out of it.
+DOCS = [
+    ROOT / "README.md",
+    ROOT / "README.tr.md",
+    ROOT / "CLAUDE.md",
+    ROOT / "docs" / "model-card.md",
+    ROOT / "docs" / "model-card.tr.md",
+]
 REGENERATE = (
     "EVAL_HOLDOUT=1 EVAL_METRICS=data/metrics/backtest.json "
     "cargo run --release --example backtest"
@@ -65,9 +87,18 @@ SEASON_REGENERATE = (
     "EVAL_HOLDOUT=1 SEASON_METRICS=data/metrics/season.json "
     "cargo run --release --example season_eval"
 )
-# A marker key in this namespace (metric:season:KEY) names KEY in the season
-# metrics; a key without one names a backtest metric.
+# Needs the network: the odds are fetched, never committed.
+MARKET_REGENERATE = (
+    "python3 scripts/fetch_odds.py && "
+    "EVAL_HOLDOUT=1 EVAL_DUMP=/tmp/prod.csv cargo run --release --example backtest && "
+    "MARKET_METRICS=data/metrics/market.json "
+    "cargo run --release --example market -- /tmp/prod.csv"
+)
+# A marker key in one of these namespaces (metric:season:KEY,
+# metric:market:KEY) names KEY in that file's metrics; a key without one
+# names a backtest metric.
 SEASON = "season"
+MARKET = "market"
 
 Number = Union[int, Decimal]
 # None is a metric the backtest wrote as null.
@@ -77,7 +108,7 @@ OPEN = re.compile(r"<!--\s*metric:")
 CODE_SPAN = re.compile(r"(`+).+?\1")
 FENCE = re.compile(r"^\s*(```|~~~)")
 MARKER = re.compile(
-    rf"<!--\s*metric:(?P<key>(?:{SEASON}:)?[A-Za-z0-9_]+)"
+    rf"<!--\s*metric:(?P<key>(?:(?:{SEASON}|{MARKET}):)?[A-Za-z0-9_]+)"
     r"(?::(?P<spec>[^:>\s]*))?(?::(?P<locale>[A-Za-z]+))?\s*-->"
     r"(?P<value>.*?)<!--\s*/metric\s*-->"
 )
@@ -90,9 +121,12 @@ class MetricsError(Exception):
 
 def writer_of(committed: Path) -> tuple[str, str]:
     """What writes `committed`, and the command that regenerates it: the
-    season evaluation for a file named season.json, the backtest otherwise."""
+    season evaluation for a file named season.json, the market benchmark for
+    market.json, the backtest otherwise."""
     if committed.name == SEASON_COMMITTED.name:
         return "the season evaluation with SEASON_METRICS", SEASON_REGENERATE
+    if committed.name == MARKET_COMMITTED.name:
+        return "the market benchmark with MARKET_METRICS", MARKET_REGENERATE
     return "the backtest with EVAL_METRICS", REGENERATE
 
 
@@ -304,24 +338,33 @@ def run_diff(fresh_path: Path, committed_path: Path) -> int:
     return 1
 
 
-def quotes_season(paths: Sequence[Path]) -> bool:
-    """Whether a marker in `paths` quotes the season metrics."""
+def quotes(paths: Sequence[Path], namespace: str) -> bool:
+    """Whether a marker in `paths` quotes a metric of `namespace`."""
     return any(
-        isinstance(mk, Marker) and mk.key.startswith(f"{SEASON}:")
+        isinstance(mk, Marker) and mk.key.startswith(f"{namespace}:")
         for path in paths
         if path.is_file()
         for mk in find_markers(path)
     )
 
 
-def run_docs(paths: Sequence[Path], metrics_path: Path, season_path: Path) -> int:
+def run_docs(
+    paths: Sequence[Path],
+    metrics_path: Path,
+    season_path: Path,
+    market_path: Path = MARKET_COMMITTED,
+) -> int:
     sources = [metrics_path]
     try:
         metrics = load_metrics(metrics_path)
-        if quotes_season(paths):
-            sources.append(season_path)
-            season = load_metrics(season_path, f"it is written with\n  {SEASON_REGENERATE}")
-            metrics.update({f"{SEASON}:{key}": value for key, value in season.items()})
+        for namespace, path, command in (
+            (SEASON, season_path, SEASON_REGENERATE),
+            (MARKET, market_path, MARKET_REGENERATE),
+        ):
+            if quotes(paths, namespace):
+                sources.append(path)
+                extra = load_metrics(path, f"it is written with\n  {command}")
+                metrics.update({f"{namespace}:{key}": value for key, value in extra.items()})
     except MetricsError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
@@ -337,15 +380,15 @@ def run_docs(paths: Sequence[Path], metrics_path: Path, season_path: Path) -> in
             "\n".join(errors)
             + f"\n\n{len(errors)} problem(s) in {checked} metric marker(s).  Quote the "
             f"figures in {shown(metrics_path)} ({SEASON}: markers: "
-            f"{shown(season_path)}); if those are stale, regenerate them first with\n"
-            f"  {REGENERATE}\n  {SEASON_REGENERATE}",
+            f"{shown(season_path)}; {MARKET}: markers: {shown(market_path)}); if those "
+            "are stale, regenerate them first with\n"
+            f"  {REGENERATE}\n  {SEASON_REGENERATE}\n  {MARKET_REGENERATE}",
             file=sys.stderr,
         )
         return 1
-    print(
-        f"{checked} metric marker(s) in {', '.join(shown(p) for p in paths)} "
-        f"match {' and '.join(shown(p) for p in sources)}"
-    )
+    names = [shown(p) for p in sources]
+    listed = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+    print(f"{checked} metric marker(s) in {', '.join(shown(p) for p in paths)} match {listed}")
     return 0
 
 
@@ -358,11 +401,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     docs = sub.add_parser("docs", help="check the figures the docs quote")
     docs.add_argument("--metrics", type=Path, default=COMMITTED)
     docs.add_argument("--season-metrics", type=Path, default=SEASON_COMMITTED)
+    docs.add_argument("--market-metrics", type=Path, default=MARKET_COMMITTED)
     docs.add_argument("files", type=Path, nargs="*", default=DOCS)
     args = parser.parse_args(argv)
     if args.mode == "diff":
         return run_diff(args.fresh, args.committed)
-    return run_docs(args.files, args.metrics, args.season_metrics)
+    return run_docs(args.files, args.metrics, args.season_metrics, args.market_metrics)
 
 
 if __name__ == "__main__":

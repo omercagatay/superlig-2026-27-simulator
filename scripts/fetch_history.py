@@ -335,12 +335,14 @@ def check_counts(counts: dict[int, int], expected: dict[int, int], what: str) ->
         )
 
 
-def check_digest(got: str, pinned: str, what: str) -> None:
+def check_digest(
+    got: str, pinned: str, what: str, script: str = "scripts/fetch_history.py"
+) -> None:
     if got != pinned:
         raise RuntimeError(
             f"{what} changed upstream: sha256 {got}, pinned {pinned}. "
             "Re-verify the upstream change (what moved, and why) before "
-            "updating the pinned digest in scripts/fetch_history.py."
+            f"updating the pinned digest in {script}."
         )
 
 

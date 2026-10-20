@@ -1,9 +1,27 @@
 /* Pure helpers over the /api/matches calendar, kept apart from React so
    calendar.test.mjs tests them directly. */
 
-import type { MatchesResponse, PlayedMatch, WhatIf } from "./api";
+import type { AsOf, MatchesResponse, PlayedMatch, WhatIf } from "./api";
 // With the extension: node's test runner loads this file as it is.
-import { kickoffOrder } from "./clubs.ts";
+import { dateSpan, kickoffOrder, num, type Lang } from "./clubs.ts";
+import { fill } from "./history.ts";
+
+/** The "as of" line: how many results are in and the latest one's date.
+ *  `text` holds the templates for before the first result, part of the
+ *  season and the whole of it; {played}, {fixtures} and {date} are filled
+ *  in ("63 of 306 matches played · latest result 18 October"). */
+export function asOfLine(
+  asOf: AsOf,
+  lang: Lang,
+  text: { none: string; some: string; all: string },
+): string {
+  if (asOf.played === 0 || !asOf.latest_result) return text.none;
+  return fill(asOf.played >= asOf.fixtures ? text.all : text.some, {
+    played: num(asOf.played, lang),
+    fixtures: num(asOf.fixtures, lang),
+    date: dateSpan([asOf.latest_result], lang),
+  });
+}
 
 /** Every played result in the calendar, matchday by matchday and in
  *  kick-off order within one. */

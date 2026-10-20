@@ -187,6 +187,13 @@ main {
   padding: 24px var(--gutter) 40px;
 }
 
+/* How far the season has got, above the page title. */
+.as-of {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .page-title {
   font-size: 24px;
   margin-bottom: 8px;
@@ -457,6 +464,12 @@ table.data {
   font-weight: 600;
 }
 
+/* Points needed: the chance headings may wrap, so all three columns fit a
+   phone. */
+.data.needed th {
+  white-space: normal;
+}
+
 .data .rank {
   width: 1%;
 }
@@ -483,6 +496,10 @@ table.data {
 
 .league .zone-rel td:first-child {
   box-shadow: inset 3px 0 0 var(--red);
+}
+
+.table-switch {
+  margin: 4px 0 16px;
 }
 
 .legend {

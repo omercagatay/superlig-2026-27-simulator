@@ -274,14 +274,49 @@ class Docs(TempDir):
         self.assertEqual(code, 1)
         self.assertIn("gone.md does not exist", err)
 
-    def test_defaults_are_the_committed_file_and_the_three_docs(self):
+    def test_a_missing_doc_fails_beside_good_ones(self):
+        # A listed doc that is gone is an error, not one file fewer to check,
+        # even when the others pass.
+        metrics = self.metrics_file()
+        good = self.write("a.md", "<!-- metric:hold_n -->647<!-- /metric -->\n")
+        code, _, err = self.run_main(["docs", "--metrics", metrics, good, self.dir / "gone.md"])
+        self.assertEqual(code, 1)
+        self.assertIn("gone.md does not exist", err)
+        self.assertIn("1 problem(s) in 1 metric marker(s)", err)
+
+    def test_defaults_are_the_committed_file_and_the_listed_docs(self):
         self.assertEqual(cm.COMMITTED, cm.ROOT / "data" / "metrics" / "backtest.json")
         self.assertEqual(cm.SEASON_COMMITTED, cm.ROOT / "data" / "metrics" / "season.json")
         self.assertEqual(
-            [p.name for p in cm.DOCS], ["README.md", "README.tr.md", "CLAUDE.md"]
+            [p.relative_to(cm.ROOT).as_posix() for p in cm.DOCS],
+            [
+                "README.md",
+                "README.tr.md",
+                "CLAUDE.md",
+                "docs/model-card.md",
+                "docs/model-card.tr.md",
+            ],
         )
         for doc in cm.DOCS:
             self.assertTrue(doc.is_file(), doc)
+
+    def test_the_default_list_is_checked_and_a_missing_entry_fails(self):
+        # With no FILE arguments the check reads cm.DOCS as it stands when
+        # main() runs, so a listed doc that does not exist fails it.
+        metrics = self.metrics_file()
+        good = self.write("a.md", "<!-- metric:hold_n -->647<!-- /metric -->\n")
+        saved = cm.DOCS
+        try:
+            cm.DOCS = [good]
+            code, out, err = self.run_main(["docs", "--metrics", metrics])
+            self.assertEqual(code, 0, err)
+            self.assertIn("1 metric marker(s)", out)
+            cm.DOCS = [good, self.dir / "never-written.md"]
+            code, _, err = self.run_main(["docs", "--metrics", metrics])
+            self.assertEqual(code, 1)
+            self.assertIn("never-written.md does not exist", err)
+        finally:
+            cm.DOCS = saved
 
 
 # examples/season_eval.rs's SEASON_METRICS shape: {set}_{snapshot}_{metric}.
@@ -383,6 +418,111 @@ class SeasonMetrics(TempDir):
         code, _, err = self.run_main(["diff", self.dir / "absent.json", committed])
         self.assertEqual(code, 1)
         self.assertIn("SEASON_METRICS=", err)
+
+
+# examples/market.rs's MARKET_METRICS shape: {dev,hold,live}_{metric}.
+MARKET_METRICS = {
+    "dev_diff_1x2_ll": 0.01055,
+    "dev_pool_w": 0.073,
+    "hold_n": 620,
+    "live_n": 19,
+}
+
+
+class MarketMetrics(TempDir):
+    """metric:market:KEY quotes data/metrics/market.json, which CI cannot
+    regenerate (the odds are not committed) but the docs check still reads."""
+
+    def files(self, text):
+        backtest = self.metrics_file("backtest.json")
+        season = self.metrics_file("season.json", SEASON_METRICS)
+        market = self.metrics_file("market.json", MARKET_METRICS)
+        return backtest, season, market, self.write("README.md", text)
+
+    def docs(self, backtest, season, market, doc):
+        return self.run_main(
+            ["docs", "--metrics", backtest, "--season-metrics", season,
+             "--market-metrics", market, doc]
+        )
+
+    def test_the_namespace_is_part_of_the_key(self):
+        doc = self.write(
+            "a.md",
+            "<!-- metric:market:dev_diff_1x2_ll:.4f:tr -->0,0106<!-- /metric --> "
+            "<!-- metric:market_x -->1<!-- /metric --> "
+            "<!-- metric:markets:hold_n -->1<!-- /metric -->\n",
+        )
+        got = [m if isinstance(m, str) else (m.key, m.spec, m.locale)
+               for m in cm.find_markers(doc)]
+        self.assertEqual(got[:2], [("market:dev_diff_1x2_ll", ".4f", "tr"),
+                                   ("market_x", None, None)])
+        # Only the listed namespaces exist: "markets" reads as a key with a
+        # spec, not a namespace.
+        self.assertEqual(got[2], ("markets", "hold_n", None))
+
+    def test_all_three_files_are_checked(self):
+        backtest, season, market, doc = self.files(
+            "gap <!-- metric:market:dev_diff_1x2_ll:+.4f -->+0.0106<!-- /metric -->, "
+            "w <!-- metric:market:dev_pool_w:.2f -->0.07<!-- /metric -->, "
+            "<!-- metric:market:hold_n:,d -->620<!-- /metric --> matches; "
+            "<!-- metric:season:n_sims:,d -->2,000<!-- /metric --> seasons; "
+            "holdout <!-- metric:hold_1x2_ll:.4f -->0.9756<!-- /metric -->\n"
+        )
+        code, out, err = self.docs(backtest, season, market, doc)
+        self.assertEqual(code, 0, err)
+        self.assertIn("5 metric marker(s)", out)
+        self.assertIn("season.json and", out)
+        self.assertIn("market.json", out)
+
+    def test_a_stale_market_figure_fails_and_names_its_command(self):
+        backtest, season, market, doc = self.files(
+            "<!-- metric:market:live_n -->20<!-- /metric -->\n"
+        )
+        code, _, err = self.docs(backtest, season, market, doc)
+        self.assertEqual(code, 1)
+        self.assertIn("market:live_n shows '20'", err)
+        self.assertIn(cm.MARKET_REGENERATE, err)
+
+    def test_the_market_file_is_read_only_when_quoted(self):
+        backtest = self.metrics_file("backtest.json")
+        season = self.metrics_file("season.json", SEASON_METRICS)
+        absent = self.dir / "market.json"
+        plain = self.write("a.md", "<!-- metric:season:n_sims -->2000<!-- /metric -->\n")
+        code, out, err = self.docs(backtest, season, absent, plain)
+        self.assertEqual(code, 0, err)
+        self.assertNotIn("market.json", out)
+        quoted = self.write("b.md", "<!-- metric:market:live_n -->19<!-- /metric -->\n")
+        code, _, err = self.docs(backtest, season, absent, quoted)
+        self.assertEqual(code, 1)
+        self.assertIn("market.json does not exist", err)
+        self.assertIn(cm.MARKET_REGENERATE, err)
+
+    def test_the_files_do_not_share_keys(self):
+        backtest, season, market, doc = self.files(
+            "<!-- metric:market:n_sims -->2000<!-- /metric -->\n"
+            "<!-- metric:season:live_n -->19<!-- /metric -->\n"
+        )
+        code, _, err = self.docs(backtest, season, market, doc)
+        self.assertEqual(code, 1)
+        self.assertIn("market:n_sims is not a committed metric", err)
+        self.assertIn("season:live_n is not a committed metric", err)
+
+    def test_diff_names_the_market_command_for_the_market_file(self):
+        fresh = self.metrics_file("fresh.json", {**MARKET_METRICS, "live_n": 20})
+        committed = self.metrics_file("market.json", MARKET_METRICS)
+        code, _, err = self.run_main(["diff", fresh, committed])
+        self.assertEqual(code, 1)
+        self.assertIn("1 of 4 metrics differ", err)
+        self.assertIn(cm.MARKET_REGENERATE, err)
+        self.assertNotIn(cm.SEASON_REGENERATE, err)
+        code, out, _ = self.run_main(["diff", committed, committed])
+        self.assertEqual(code, 0)
+        self.assertIn("4 metrics match", out)
+
+    def test_the_default_market_file(self):
+        self.assertEqual(cm.MARKET_COMMITTED, cm.ROOT / "data" / "metrics" / "market.json")
+        self.assertIn("scripts/fetch_odds.py", cm.MARKET_REGENERATE)
+        self.assertIn("MARKET_METRICS=data/metrics/market.json", cm.MARKET_REGENERATE)
 
 
 if __name__ == "__main__":

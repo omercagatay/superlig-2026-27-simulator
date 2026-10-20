@@ -103,8 +103,22 @@ const DICT = {
   likely: ["Likely scores", "Olası skorlar"],
   playedThisWeek: ["Played", "Oynanan maçlar"],
 
+  // As of ({name} placeholders are filled by calendar.ts `asOfLine`)
+  asOfNone: ["No matches played yet", "Henüz maç oynanmadı"],
+  asOfSome: [
+    "{played} of {fixtures} matches played · latest result {date}",
+    "{played}/{fixtures} maç oynandı · son sonuç {date}",
+  ],
+  asOfAll: [
+    "All {fixtures} matches played · last result {date}",
+    "{fixtures} maçın tamamı oynandı · son sonuç {date}",
+  ],
+
   // Table
-  projectedTable: ["Projected final table", "Tahmini sezon sonu puan durumu"],
+  currentTable: ["Current table", "Güncel puan durumu"],
+  projectedTable: ["Projected final table", "Tahminî sezon sonu puan durumu"],
+  tableCurrent: ["Current", "Güncel"],
+  tableProjected: ["Projected", "Tahminî"],
   colPos: ["Pos", "Sıra"],
   colP: ["P", "O"],
   colW: ["W", "G"],
@@ -133,14 +147,18 @@ const DICT = {
   tipXpts: ["Expected points over 34 matches", "34 maçta beklenen puan"],
   tipXgd: ["Expected goal difference", "Beklenen averaj"],
   pointsNeeded: ["Points needed", "Gereken puan"],
-  place: ["Place", "Sıra"],
+  finish: ["Finish", "Sıra"],
   chance50: ["50% chance", "%50 ihtimalle"],
   chance75: ["75% chance", "%75 ihtimalle"],
   chance90: ["90% chance", "%90 ihtimalle"],
+  tipPointsNeeded: [
+    "Finish on this many points and you took this place or higher at least {pct} of the time in the simulations",
+    "Bu puanla bitiren kulüp, simülasyonlarda en az {pct} oranında bu sırayı ya da daha iyisini aldı",
+  ],
+  tooFewSeasons: ["Too few simulated seasons to say", "Bunu söylemeye yetecek kadar simülasyon yok"],
+  runMoreSims: ["Run more simulations to see this", "Bunu görmek için daha fazla simülasyon çalıştırın"],
   champion: ["Champion", "Şampiyon"],
-  lastTopTwoPlace: ["2nd place", "2. sıra"],
-  lastTopFourPlace: ["4th place", "4. sıra"],
-  lastSafePlace: ["15th place (safe)", "15. sıra (kalır)"],
+  topFifteen: ["Top 15 (stays up)", "İlk 15 (kalır)"],
   aboveWhom: ["Who finishes above whom", "Kim kimin üstünde bitirir"],
   /* Turkish would need a genitive suffix that varies by club name
      ("Trabzonspor'un üstünde"), so the comparison uses a symbol there. */

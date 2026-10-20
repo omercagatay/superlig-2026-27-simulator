@@ -58,8 +58,9 @@ pub struct PositionRow {
     pub position_pct: Vec<f64>,
 }
 
-/// A row of the representative projected final table.
-#[derive(Serialize, Clone)]
+/// A row of a league table: the projected final table (`SimResponse.table`)
+/// or the table as it stands (`MatchesResponse.standings`).
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct TableRow {
     pub position: usize,
     pub team: String,
@@ -160,6 +161,71 @@ pub struct MatchesResponse {
     /// The next matchday (`World::next_round_on`, the same rule as
     /// `/api/upcoming`) — the UI's landing round.
     pub current_round: u8,
+    /// The table as it stands, from the recorded results
+    /// (`current_standings`).
+    pub standings: Vec<TableRow>,
+    pub as_of: AsOf,
+}
+
+/// How far the season has got: the results the current table, and every
+/// forecast made from the same state of the league, stand on.
+#[derive(Serialize, Clone, Debug, PartialEq)]
+pub struct AsOf {
+    /// Results recorded.
+    pub played: usize,
+    /// Fixtures in the season.
+    pub fixtures: usize,
+    /// Calendar date of the latest recorded result, ISO `YYYY-MM-DD`;
+    /// `None` before the first.
+    pub latest_result: Option<String>,
+}
+
+/// The table as it stands: every recorded result, ranked by the league
+/// rules, with head-to-head counting only once a level block's meetings are
+/// all played and clubs no rule separates listed by name
+/// (`league::standings`).
+pub fn current_standings(world: &crate::sim::World) -> Vec<TableRow> {
+    let results: HashMap<(usize, usize), (i64, i64)> = world
+        .played
+        .iter()
+        .map(|(&fixture, &(hg, ag))| (fixture, (i64::from(hg), i64::from(ag))))
+        .collect();
+    let (records, order) = crate::league::standings(&world.teams, &results);
+    let goals = |g: i64| u16::try_from(g).expect("a season's goals are a small count");
+    order
+        .into_iter()
+        .enumerate()
+        .map(|(pos, club)| {
+            let r = records[club];
+            TableRow {
+                position: pos + 1,
+                team: world.teams[club].clone(),
+                played: r.played(),
+                won: r.won,
+                drawn: r.drawn,
+                lost: r.lost,
+                gf: goals(r.gf),
+                ga: goals(r.ga),
+                gd: r.gd(),
+                points: r.points,
+            }
+        })
+        .collect()
+}
+
+fn as_of(world: &crate::sim::World) -> AsOf {
+    let played: Vec<&str> = world
+        .fixtures
+        .iter()
+        .zip(&world.dates)
+        .filter(|(f, _)| world.played.contains_key(&(f.home, f.away)))
+        .map(|(_, d)| d.date.as_str())
+        .collect();
+    AsOf {
+        played: played.len(),
+        fixtures: world.fixtures.len(),
+        latest_result: played.iter().max().map(|d| d.to_string()),
+    }
 }
 
 pub fn build_matches_response(world: &crate::sim::World) -> MatchesResponse {
@@ -226,20 +292,115 @@ pub fn build_matches_response_on(world: &crate::sim::World, today: &str) -> Matc
     MatchesResponse {
         rounds,
         current_round: world.next_round_on(today),
+        standings: current_standings(world),
+        as_of: as_of(world),
     }
 }
 
-/// What a points total has actually been worth: the distribution of the
-/// points held by the club finishing in a given position. Read as "reach this
-/// many points and you'd have taken this place in N% of simulated seasons".
-#[derive(Serialize, Clone, Debug)]
+/// The points a place takes: for finishing in `position` or higher, the
+/// fewest final points that gave a 50, 75 and 90% chance of it in the
+/// simulated seasons. `p50` is the fewest points p such that at least half
+/// of the simulated club-seasons ending on p points finished in `position`
+/// or higher, and so did at least half of those ending on every higher total
+/// seen at least `MIN_CLUB_SEASONS` times; likewise `p75` and `p90`. So
+/// "finish on `p50` points and you take the place at least half the time".
+///
+/// It used to be the spread of the points the club finishing in `position`
+/// ended on. The median of that reads the same way but asks for more: a club
+/// on it also took the place in the seasons the place went for fewer points.
+/// On the default forecast of 19 October 2026 (63 results; a one-off
+/// measurement), a club on the old 50, 75 and 90% figures took the place
+/// 66-74%, 90-93% and 96-98% of the time across the four places.
+///
+/// `None` when too few simulated seasons say: no total qualifies, or none
+/// seen often enough below the last one that does fell short of the chance
+/// (`points_for_place`), so that one marks where the sample thins out, not
+/// the fewest points. Runs under about 1,000 seasons leave figures `None`,
+/// most of them below about 500: on the same forecast (seeds 12345, 1 and
+/// 2; a one-off measurement) all twelve at 100 and 200 seasons, nine at
+/// 300, five or six at 500, two to four at 700, and one or two at 1,000
+/// (the surest title figures). From about 1,500 seasons there are none or
+/// one; the default 50,000 leaves none.
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub struct RaceThreshold {
+    /// The lowest place that counts: 1 for the title, 2 for the top two, 4
+    /// for the top four, the last place above the relegation zone.
     pub position: usize,
     pub label: String,
-    /// Points that took the place in 50 / 75 / 90% of seasons.
-    pub p50: i64,
-    pub p75: i64,
-    pub p90: i64,
+    pub p50: Option<i64>,
+    pub p75: Option<i64>,
+    pub p90: Option<i64>,
+}
+
+/// A points total that fewer simulated club-seasons than this ended on is
+/// too rare to judge a place by (`RaceThreshold`). At 100, one season either
+/// way moves its share by a point, and its binomial standard error is at
+/// most 5 points (3 at a 90% share). The default forecast's 50,000 seasons
+/// are 900,000 club-seasons, so this drops only the far tails, where one
+/// freak season (a runner-up on 95 points, say) would otherwise decide
+/// whether every total below it is enough. A run of 1,000 seasons can leave
+/// the surest title figure without enough seasons to say.
+pub const MIN_CLUB_SEASONS: usize = 100;
+
+/// The fewest points on which at least `pct`% of the club-seasons in
+/// `counts` (`SimResults::position_point_counts`) finished in the top
+/// `places`, with every higher total seen at least `min_seen` times doing as
+/// well. Rarer totals are skipped, and cannot be the answer themselves.
+///
+/// The answer must also have a total seen at least `min_seen` times below
+/// it that fell short. Without one, the scan ran out of well-sampled totals
+/// first, and the last one that qualified is where the sample thins out,
+/// not the fewest points: `None` then. On the default forecast of 19
+/// October 2026 (63 results; a one-off measurement, seeds 12345, 1 and 2),
+/// 200 seasons read 37/37/37 for staying up that way, where 50,000 seasons
+/// give 33/35/37.
+fn points_for_place(
+    counts: &[Vec<usize>],
+    places: usize,
+    pct: usize,
+    min_seen: usize,
+) -> Option<i64> {
+    let totals = counts.first().map_or(0, Vec::len);
+    let mut fewest = None;
+    for points in (0..totals).rev() {
+        let seen: usize = counts.iter().map(|at| at[points]).sum();
+        if seen < min_seen {
+            continue;
+        }
+        let took: usize = counts[..places].iter().map(|at| at[points]).sum();
+        if took * 100 < pct * seen {
+            return fewest;
+        }
+        fewest = Some(points as i64);
+    }
+    None
+}
+
+/// The four marks of the points-needed table. UEFA qualification is
+/// deliberately not claimed: cup outcomes and the season's access list can
+/// move it.
+fn race_thresholds(results: &SimResults) -> Vec<RaceThreshold> {
+    let counts = &results.position_point_counts;
+    let last_safe = counts.len() - crate::data::RELEGATION_SPOTS;
+    let marks: [(usize, &str); 4] = [
+        (1, "Champion"),
+        (crate::data::TOP_TWO_PLACES, "Top two"),
+        (crate::data::TOP_FOUR_PLACES, "Top four"),
+        (last_safe, "Safe"),
+    ];
+    marks
+        .iter()
+        .map(|&(position, label)| {
+            let need = |pct| points_for_place(counts, position, pct, MIN_CLUB_SEASONS);
+            RaceThreshold {
+                position,
+                label: label.to_string(),
+                p50: need(50),
+                p75: need(75),
+                p90: need(90),
+            }
+        })
+        .collect()
 }
 
 #[derive(Serialize, Clone)]
@@ -432,44 +593,6 @@ pub fn build_response(
     });
     rivalries.truncate(8);
 
-    // Exact league-position cut lines. UEFA qualification is deliberately not
-    // claimed here: cup outcomes and the season's access list can move it.
-    let last_safe = n_teams - crate::data::RELEGATION_SPOTS;
-    let marks: [(usize, &str); 4] = [
-        (1, "Champion"),
-        (crate::data::TOP_TWO_PLACES, "Last top-two place"),
-        (crate::data::TOP_FOUR_PLACES, "Last top-four place"),
-        (last_safe, "Last safe place"),
-    ];
-    let quantile = |counts: &[usize], q: f64| -> Option<i64> {
-        let total: usize = counts.iter().sum();
-        if total == 0 {
-            return None;
-        }
-        let target = ((total - 1) as f64 * q).round() as usize;
-        let mut cumulative = 0;
-        for (points, &count) in counts.iter().enumerate() {
-            cumulative += count;
-            if cumulative > target {
-                return Some(points as i64);
-            }
-        }
-        None
-    };
-    let thresholds: Vec<RaceThreshold> = marks
-        .iter()
-        .filter_map(|&(position, label)| {
-            let counts = results.cutoff_point_counts.get(position - 1)?;
-            Some(RaceThreshold {
-                position,
-                label: label.to_string(),
-                p50: quantile(counts, 0.5)?,
-                p75: quantile(counts, 0.75)?,
-                p90: quantile(counts, 0.9)?,
-            })
-        })
-        .collect();
-
     SimResponse {
         n_sims: results.n_sims,
         seed: config.seed,
@@ -477,10 +600,10 @@ pub fn build_response(
         positions,
         table,
         rivalries,
+        thresholds: race_thresholds(results),
+        what_if,
         // The modal champion across all trials, not whoever happened to win
         // the sampled season.
-        thresholds,
-        what_if,
         consensus_champion: {
             let champ = (0..n_teams)
                 .max_by_key(|&i| results.title_counts[i])
@@ -573,21 +696,259 @@ mod tests {
         // Champion = modal champion = the top row of the odds table.
         assert_eq!(resp.consensus_champion, resp.teams[0].team);
 
-        // Cut lines must be ordered by position and by demand: taking a
-        // higher place needs more points, and being surer needs more still.
         assert_eq!(resp.thresholds.len(), 4);
-        for t in &resp.thresholds {
-            assert!(t.p50 <= t.p75 && t.p75 <= t.p90, "{}: {t:?}", t.label);
-            assert!((0..=102).contains(&t.p90));
+        assert_thresholds_ordered(&resp.thresholds);
+    }
+
+    /// Points needed are ordered by place and by chance: a higher place
+    /// needs at least as many points, and being surer of it at least as many
+    /// again. Only figures present are compared: a missing one (too few
+    /// seasons to say) can lie above every total seen often enough or below
+    /// the last one that qualified (`points_for_place`), so it has no place
+    /// in the order.
+    fn assert_thresholds_ordered(thresholds: &[RaceThreshold]) {
+        // `a` should need no more points than `b`.
+        let ordered = |a: Option<i64>, b: Option<i64>, what: &str| {
+            if let (Some(a), Some(b)) = (a, b) {
+                assert!(a <= b, "{what}: {a} then {b}: {thresholds:?}");
+            }
+        };
+        for t in thresholds {
+            ordered(t.p50, t.p75, &t.label);
+            ordered(t.p75, t.p90, &t.label);
+            for p in [t.p50, t.p75, t.p90].into_iter().flatten() {
+                assert!((0..=102).contains(&p), "{t:?}");
+            }
         }
-        for pair in resp.thresholds.windows(2) {
+        for pair in thresholds.windows(2) {
             assert!(pair[0].position < pair[1].position);
-            assert!(
-                pair[0].p50 >= pair[1].p50,
-                "{} should need at least as many points as {}",
-                pair[0].label,
-                pair[1].label
-            );
+            let what = format!("{} against {}", pair[1].label, pair[0].label);
+            ordered(pair[1].p50, pair[0].p50, &what);
+            ordered(pair[1].p75, pair[0].p75, &what);
+            ordered(pair[1].p90, pair[0].p90, &what);
+        }
+    }
+
+    /// `SimResults` with nothing but the joint position-points counts filled
+    /// in, from `(times, season)` pairs: `season` lists the final points by
+    /// finishing position, and the season is counted `times` times.
+    fn results_from_seasons(seasons: &[(usize, Vec<i64>)]) -> SimResults {
+        let n = crate::data::N_TEAMS;
+        let mut counts = vec![vec![0; crate::data::N_ROUNDS * 3 + 1]; n];
+        for (times, points) in seasons {
+            assert_eq!(points.len(), n);
+            assert!(points.windows(2).all(|p| p[0] >= p[1]), "{points:?}");
+            for (position, &p) in points.iter().enumerate() {
+                counts[position][p as usize] += times;
+            }
+        }
+        SimResults {
+            n_sims: seasons.iter().map(|(times, _)| times).sum(),
+            position_counts: vec![vec![0; n]; n],
+            title_counts: vec![0; n],
+            top_two_counts: vec![0; n],
+            third_counts: vec![0; n],
+            fourth_counts: vec![0; n],
+            top_four_counts: vec![0; n],
+            relegation_counts: vec![0; n],
+            points_sum: vec![0.0; n],
+            gd_sum: vec![0.0; n],
+            won_sum: vec![0.0; n],
+            drawn_sum: vec![0.0; n],
+            gf_sum: vec![0.0; n],
+            ga_sum: vec![0.0; n],
+            pairwise_above: vec![0; n * n],
+            position_point_counts: counts,
+            representative: crate::sim::SeasonResult {
+                order: (0..n).collect(),
+                records: vec![Default::default(); n],
+            },
+        }
+    }
+
+    /// A season whose top two finish on `first` and `second` points, the
+    /// other sixteen clubs well below them.
+    fn season(first: i64, second: i64) -> Vec<i64> {
+        let mut points = vec![first, second];
+        points.extend((0..16).map(|i| 50 - 2 * i));
+        points
+    }
+
+    /// The share of club-seasons on `points` that finished in the top
+    /// `places`, in percent.
+    fn share(results: &SimResults, points: usize, places: usize) -> f64 {
+        let counts = &results.position_point_counts;
+        let seen: usize = counts.iter().map(|at| at[points]).sum();
+        let took: usize = counts[..places].iter().map(|at| at[points]).sum();
+        100.0 * took as f64 / seen as f64
+    }
+
+    /// Four kinds of season, equally likely. Twice the title goes for 70 or
+    /// 71 points with a runner-up one point behind; twice for 80 or 81 with
+    /// nobody near. The champion's median total is 80, which the old table
+    /// gave as the points for a 50% chance, but a club on 80 points took the
+    /// title every time, and one on 71 did too. The fewest points that gave
+    /// an even chance were 70 (the champion once, the runner-up once).
+    #[test]
+    fn points_needed_are_the_fewest_points_that_gave_the_chance() {
+        let m = MIN_CLUB_SEASONS;
+        let results = results_from_seasons(&[
+            (m, season(70, 69)),
+            (m, season(71, 70)),
+            (m, season(80, 60)),
+            (m, season(81, 60)),
+        ]);
+        let champion = &race_thresholds(&results)[0];
+        assert_eq!(champion.label, "Champion");
+
+        // The old figures: quantiles of the champion's points.
+        let old = |q: f64| {
+            let counts = &results.position_point_counts[0];
+            let total: usize = counts.iter().sum();
+            let target = ((total - 1) as f64 * q).round() as usize;
+            let mut cumulative = 0;
+            counts
+                .iter()
+                .position(|&c| {
+                    cumulative += c;
+                    cumulative > target
+                })
+                .unwrap()
+        };
+        assert_eq!([old(0.5), old(0.75), old(0.9)], [80, 80, 81]);
+        assert_eq!(share(&results, 80, 1), 100.0, "the old 50% figure");
+
+        assert_eq!(
+            (champion.p50, champion.p75, champion.p90),
+            (Some(70), Some(71), Some(71))
+        );
+        assert_eq!(share(&results, 70, 1), 50.0);
+        assert_eq!(share(&results, 69, 1), 0.0);
+        assert_eq!(share(&results, 71, 1), 100.0);
+        // Every club on 60 points or more finished in the top two.
+        assert_eq!(race_thresholds(&results)[1].p90, Some(60));
+    }
+
+    /// A total too few club-seasons ended on is skipped. One freak season,
+    /// with the title going for 96 points over a runner-up on 95, would
+    /// otherwise put 95 points short of a 50% chance of the title and the
+    /// first total that qualifies at 96. Seen often enough, it counts.
+    #[test]
+    fn points_needed_skip_totals_too_rare_to_judge() {
+        let m = MIN_CLUB_SEASONS;
+        let usual = [
+            (m, season(70, 69)),
+            (m, season(71, 70)),
+            (m, season(80, 60)),
+            (m, season(81, 60)),
+        ];
+        let mut seasons = usual.to_vec();
+        seasons.push((m - 1, season(96, 95)));
+        let champion = &race_thresholds(&results_from_seasons(&seasons))[0];
+        assert_eq!(champion.p50, Some(70));
+
+        seasons.last_mut().unwrap().0 = m;
+        let champion = &race_thresholds(&results_from_seasons(&seasons))[0];
+        assert_eq!(champion.p50, Some(96));
+
+        // Nothing seen often enough: no figure at all.
+        let rare = results_from_seasons(&[(m / 2, season(80, 60))]);
+        for t in race_thresholds(&rare) {
+            assert_eq!((t.p50, t.p75, t.p90), (None, None, None), "{}", t.label);
+        }
+    }
+
+    /// A figure needs a total seen often enough below it that fell short.
+    /// Here every club on 28 points or more stayed up, and every total below
+    /// 28 was seen too rarely to judge, though clubs on 27, 25, 23 and 21
+    /// stayed up too. The old scan ran out of totals and gave the last one
+    /// it had passed, 28, for every chance: only where the sample thins out,
+    /// as staying up read 37/37/37 at 200 seasons on the forecast of 19
+    /// October 2026, where 50,000 give 33/35/37. Once a total below falls
+    /// short often enough to judge, the figure is back.
+    #[test]
+    fn points_needed_need_a_total_below_that_fell_short() {
+        let m = MIN_CLUB_SEASONS;
+        let last_safe = crate::data::N_TEAMS - crate::data::RELEGATION_SPOTS;
+        // The last safe place on 27 - 2k points and the bottom three below
+        // it, every one of those totals in one kind of season only.
+        let thin = |k: i64| {
+            let mut points = season(70, 60);
+            assert_eq!(points[last_safe - 2], 28);
+            points[last_safe - 1..].copy_from_slice(&[
+                27 - 2 * k,
+                20 - 4 * k,
+                19 - 4 * k,
+                18 - 4 * k,
+            ]);
+            points
+        };
+        let mut seasons: Vec<_> = (0..4).map(|k| (m / 2, thin(k))).collect();
+        let results = results_from_seasons(&seasons);
+
+        // The scan as it was: the last total seen often enough that
+        // qualified, whether or not one below it fell short.
+        let old = |pct: usize| {
+            let counts = &results.position_point_counts;
+            let mut fewest = None;
+            for points in (0..counts[0].len()).rev() {
+                let seen: usize = counts.iter().map(|at| at[points]).sum();
+                if seen < m {
+                    continue;
+                }
+                let took: usize = counts[..last_safe].iter().map(|at| at[points]).sum();
+                if took * 100 < pct * seen {
+                    break;
+                }
+                fewest = Some(points as i64);
+            }
+            fewest
+        };
+        assert_eq!([old(50), old(75), old(90)], [Some(28); 3]);
+        assert_eq!(share(&results, 27, last_safe), 100.0);
+
+        let thresholds = race_thresholds(&results);
+        let safe = &thresholds[3];
+        assert_eq!((safe.label.as_str(), safe.position), ("Safe", last_safe));
+        assert_eq!((safe.p50, safe.p75, safe.p90), (None, None, None));
+        // The places above are bracketed by the club just below them.
+        let p90: Vec<_> = thresholds[..3].iter().map(|t| t.p90).collect();
+        assert_eq!(p90, [Some(70), Some(60), Some(48)]);
+
+        // Seen often enough, the relegated totals of the first kind of
+        // season fall short below 27, the fewest points now judged enough.
+        seasons[0].0 = m;
+        let safe = &race_thresholds(&results_from_seasons(&seasons))[3];
+        assert_eq!(
+            (safe.p50, safe.p75, safe.p90),
+            (Some(27), Some(27), Some(27))
+        );
+    }
+
+    /// Ordered by chance and by place, on simulated seasons from preseason
+    /// and part-way through, with seasons enough to fill the tails and with
+    /// few enough that some figures go missing.
+    #[test]
+    fn points_needed_are_ordered_by_chance_and_place() {
+        for played in [0, crate::sim::MID_SEASON] {
+            let w = World::with_played(played);
+            for n_sims in [100, 2_000] {
+                let cfg = SimConfig {
+                    n_sims,
+                    seed: 7,
+                    elo_overrides: HashMap::new(),
+                    forced: HashMap::new(),
+                };
+                let thresholds = race_thresholds(&w.simulate(&cfg));
+                assert_eq!(thresholds.len(), 4);
+                assert_thresholds_ordered(&thresholds);
+                if n_sims == 2_000 {
+                    assert!(
+                        thresholds.iter().all(|t| t.p90.is_some()),
+                        "{played} played: {thresholds:?}"
+                    );
+                }
+            }
         }
     }
 
@@ -660,6 +1021,107 @@ mod tests {
             .rounds
             .iter()
             .all(|r| r.matches.iter().all(|m| m.played)));
+        assert_eq!(resp.as_of.played, crate::data::N_FIXTURES);
+        assert_eq!(
+            resp.as_of.latest_result,
+            w.dates.iter().map(|d| d.date.clone()).max()
+        );
+        assert!(resp.standings.iter().all(|r| r.played == 34));
+    }
+
+    /// The current table is the recorded results added up: each row checked
+    /// against a tally of the club's own results, rows in points order.
+    #[test]
+    fn current_standings_add_up_the_recorded_results() {
+        let w = World::with_played(crate::sim::MID_SEASON);
+        let resp = build_matches_response_on(&w, "2026-10-18");
+        let table = &resp.standings;
+
+        let positions: Vec<usize> = table.iter().map(|r| r.position).collect();
+        assert_eq!(positions, (1..=crate::data::N_TEAMS).collect::<Vec<_>>());
+        for pair in table.windows(2) {
+            assert!(pair[0].points >= pair[1].points, "{pair:?}");
+        }
+        for row in table {
+            let club = w.idx[&row.team];
+            let mut tally = TableRow {
+                position: row.position,
+                team: row.team.clone(),
+                played: 0,
+                won: 0,
+                drawn: 0,
+                lost: 0,
+                gf: 0,
+                ga: 0,
+                gd: 0,
+                points: 0,
+            };
+            for (&(home, away), &(hg, ag)) in &w.played {
+                let (scored, conceded) = match club {
+                    c if c == home => (hg, ag),
+                    c if c == away => (ag, hg),
+                    _ => continue,
+                };
+                tally.played += 1;
+                tally.gf += scored;
+                tally.ga += conceded;
+                match scored.cmp(&conceded) {
+                    std::cmp::Ordering::Greater => tally.won += 1,
+                    std::cmp::Ordering::Equal => tally.drawn += 1,
+                    std::cmp::Ordering::Less => tally.lost += 1,
+                }
+            }
+            tally.gd = tally.gf as i64 - tally.ga as i64;
+            tally.points = 3 * tally.won as i64 + tally.drawn as i64;
+            assert_eq!(*row, tally);
+        }
+        let games: u32 = table.iter().map(|r| u32::from(r.played)).sum();
+        assert_eq!(games as usize, 2 * crate::sim::MID_SEASON);
+
+        // As of the seven matchdays' worth `with_played` records, the first
+        // fixtures by date.
+        let mut dates: Vec<&str> = w.dates.iter().map(|d| d.date.as_str()).collect();
+        dates.sort();
+        assert_eq!(
+            resp.as_of,
+            AsOf {
+                played: crate::sim::MID_SEASON,
+                fixtures: crate::data::N_FIXTURES,
+                latest_result: Some(dates[crate::sim::MID_SEASON - 1].to_string()),
+            }
+        );
+    }
+
+    /// Before the first result every club is on nothing, listed by name.
+    #[test]
+    fn the_preseason_table_lists_the_clubs_by_name() {
+        let w = World::with_played(0);
+        let resp = build_matches_response_on(&w, "2026-08-01");
+        assert_eq!(
+            resp.as_of,
+            AsOf {
+                played: 0,
+                fixtures: crate::data::N_FIXTURES,
+                latest_result: None,
+            }
+        );
+        assert!(resp
+            .standings
+            .iter()
+            .all(|r| r.played == 0 && r.points == 0 && r.gf == 0 && r.ga == 0));
+        let listed: Vec<&str> = resp.standings.iter().map(|r| r.team.as_str()).collect();
+        assert_eq!(
+            &listed[..6],
+            [
+                "Alanyaspor",
+                "Amedspor",
+                "Başakşehir",
+                "Beşiktaş",
+                "Çorum",
+                "Erzurumspor"
+            ]
+        );
+        assert_eq!(listed.last(), Some(&"Trabzonspor"));
     }
 
     /// A match postponed from an early round, still unplayed and dated in

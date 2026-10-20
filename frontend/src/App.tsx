@@ -13,9 +13,9 @@ import {
   type SimResponse,
   type WhatIf,
 } from "./api";
-import { playedResults, prunePlayedPicks } from "./calendar";
+import { asOfLine, playedResults, prunePlayedPicks } from "./calendar";
 import { describeError, type Failure } from "./errors";
-import { useT } from "./i18n";
+import { useLang, useT } from "./i18n";
 import { ClubDetail } from "./components/ClubDetail";
 import { Footer, type Theme } from "./components/Footer";
 import { Header, pageFromHash, type Page } from "./components/Header";
@@ -23,16 +23,16 @@ import { FixturesPage } from "./pages/FixturesPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { ProbabilitiesPage } from "./pages/ProbabilitiesPage";
 import { ResultsPage } from "./pages/ResultsPage";
-import { TablePage } from "./pages/TablePage";
+import { TablePage, type TableView } from "./pages/TablePage";
 
-// Must match --bg in styles.css and the pre-paint script in index.html.
+// Must match --bg in styles.css and the pre-paint script, public/theme.js.
 const THEME_COLOR: Record<Theme, string> = { light: "#ffffff", dark: "#16181c" };
 
 // The settings GET /api/forecast answers for; the footer starts on them.
 const DEFAULT_SIMS = 50000;
 const DEFAULT_SEED = 12345;
 
-// index.html makes the same choice before first paint; this only has to
+// public/theme.js makes the same choice before first paint; this only has to
 // agree with it so React state matches the attribute already set.
 function initialTheme(): Theme {
   try {
@@ -55,6 +55,7 @@ function defaultForecast(signal: AbortSignal): Promise<SimResponse> {
 
 export default function App() {
   const t = useT();
+  const { lang } = useLang();
   const [data, setData] = useState<SimResponse | null>(null);
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
@@ -69,6 +70,8 @@ export default function App() {
   const [prunedPicks, setPrunedPicks] = useState(0);
   const [theme, setTheme] = useState<Theme>(initialTheme);
   const [page, setPage] = useState<Page>(pageFromHash);
+  // Null until the reader picks one; kept across page changes.
+  const [tableView, setTableView] = useState<TableView | null>(null);
   const [club, setClub] = useState<string | null>(null);
 
   useEffect(() => {
@@ -252,8 +255,21 @@ export default function App() {
   // cached; the scrape stands in when the calendar failed to load.
   const results = matchesData ? playedResults(matchesData) : (liveData?.played_matches ?? null);
 
+  // What stands in for the simulation until it arrives, or when it failed.
+  const noForecast = loading ? (
+    <p className="muted">{t("simulating")}</p>
+  ) : (
+    <div>
+      <p className="muted">{t("noForecast")}</p>
+      <button type="button" className="btn btn-primary" onClick={() => void handleSimulate()}>
+        {t("runSimulation")}
+      </button>
+    </div>
+  );
+
   // Only the forecast pages wait on the simulation; Fixtures and Results
-  // have data of their own and stay up when it fails.
+  // have data of their own and stay up when it fails, and so does Table's
+  // current table, which comes with the calendar.
   let content: ReactNode;
   if (page === "fixtures") {
     content = matchesData ? (
@@ -269,17 +285,23 @@ export default function App() {
     );
   } else if (page === "results") {
     content = results ? <ResultsPage played={results} /> : <p className="muted">{calendarNote}</p>;
-  } else if (!data) {
-    content = loading ? (
-      <p className="muted">{t("simulating")}</p>
-    ) : (
-      <div>
-        <p className="muted">{t("noForecast")}</p>
-        <button type="button" className="btn btn-primary" onClick={() => void handleSimulate()}>
-          {t("runSimulation")}
-        </button>
-      </div>
+  } else if (page === "table") {
+    // The current table unless the reader chose, or there is nothing in it
+    // yet (preseason) or the calendar failed.
+    const view = tableView ?? (matchesFailed || matchesData?.as_of.played === 0 ? "projected" : "current");
+    content = (
+      <TablePage
+        current={matchesData?.standings ?? null}
+        projected={data?.table ?? null}
+        view={view}
+        onView={setTableView}
+        currentMissing={<p className="muted">{calendarNote}</p>}
+        projectedMissing={noForecast}
+        onSelectClub={setClub}
+      />
     );
+  } else if (!data) {
+    content = noForecast;
   } else if (page === "overview") {
     content = (
       <OverviewPage
@@ -291,8 +313,6 @@ export default function App() {
         onSelectClub={setClub}
       />
     );
-  } else if (page === "table") {
-    content = <TablePage table={data.table} onSelectClub={setClub} />;
   } else {
     content = <ProbabilitiesPage data={data} onSelectClub={setClub} />;
   }
@@ -324,7 +344,19 @@ export default function App() {
           )}
         </p>
       )}
-      <main>{content}</main>
+      <main>
+        {/* What the forecasts stand on. Results says the same in its lead. */}
+        {matchesData && page !== "results" && (
+          <p className="as-of">
+            {asOfLine(matchesData.as_of, lang, {
+              none: t("asOfNone"),
+              some: t("asOfSome"),
+              all: t("asOfAll"),
+            })}
+          </p>
+        )}
+        {content}
+      </main>
       <Footer
         nSims={nSims}
         seed={seed}

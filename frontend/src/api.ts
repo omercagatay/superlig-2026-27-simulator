@@ -21,6 +21,8 @@ export interface PositionRow {
   position_pct: number[];
 }
 
+/** A league-table row: the projected final table's (SimResponse.table) or
+ *  the table as it stands (MatchesResponse.standings). */
 export interface TableRow {
   position: number;
   team: string;
@@ -41,13 +43,19 @@ export interface RivalryPair {
   count: number;
 }
 
+/** The points a place takes: p50 is the fewest final points on which at
+ *  least half of the simulated club-seasons finished in `position` or
+ *  higher, as did at least half on every higher total seen often enough
+ *  (100 club-seasons); likewise p75 and p90. Null when too few simulated
+ *  seasons ended near it to say. */
 export interface RaceThreshold {
+  /** The lowest place that counts: 1, 2, 4, and the last safe place. */
   position: number;
+  /** "Champion" | "Top two" | "Top four" | "Safe" */
   label: string;
-  /** Points that took the place in 50 / 75 / 90% of simulated seasons. */
-  p50: number;
-  p75: number;
-  p90: number;
+  p50: number | null;
+  p75: number | null;
+  p90: number | null;
 }
 
 export interface SimResponse {
@@ -214,9 +222,25 @@ export interface MatchesResponse {
    *  With only overdue fixtures left, it is the earliest round still
    *  holding one; once every fixture is played, the last round. */
   current_round: number;
+  /** The table as it stands, from the recorded results, by the league
+   *  rules; clubs no rule separates are listed by name. */
+  standings: TableRow[];
+  as_of: AsOf;
 }
 
-/** The full 306-fixture calendar with model prices for every unplayed game. */
+/** How far the season has got. */
+export interface AsOf {
+  /** Results recorded. */
+  played: number;
+  /** Fixtures in the season. */
+  fixtures: number;
+  /** Date of the latest recorded result, ISO YYYY-MM-DD; null before the
+   *  first. */
+  latest_result: string | null;
+}
+
+/** The full 306-fixture calendar with model prices for every unplayed game,
+ *  and the table as it stands. */
 export async function getMatches(): Promise<MatchesResponse> {
   return request("/api/matches");
 }

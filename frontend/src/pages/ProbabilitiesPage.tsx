@@ -1,6 +1,7 @@
 import type { RaceThreshold, RivalryPair, SimResponse, TeamRow } from "../api";
 import { useLang, useT, type Key } from "../i18n";
 import { num, pct, signed } from "../clubs";
+import { fill } from "../history";
 import { Bar, ClubName } from "../components/Common";
 import { PositionGrid } from "../components/PositionGrid";
 
@@ -24,9 +25,9 @@ const RACES: Race[] = [
 
 const PLACE: Record<string, Key> = {
   Champion: "champion",
-  "Last top-two place": "lastTopTwoPlace",
-  "Last top-four place": "lastTopFourPlace",
-  "Last safe place": "lastSafePlace",
+  "Top two": "topTwo",
+  "Top four": "topFour",
+  Safe: "topFifteen",
 };
 
 function OutcomeTable({
@@ -127,30 +128,59 @@ function RaceList({ race, teams }: { race: Race; teams: TeamRow[] }) {
   );
 }
 
+/** The fewest points that gave each chance of finishing in a place or
+ *  higher; "–" where too few simulated seasons ended near it to say, and one
+ *  line instead of the table when that is every figure (a run of 100
+ *  seasons or so). */
 function PointsNeeded({ rows }: { rows: RaceThreshold[] }) {
   const t = useT();
+  const { lang } = useLang();
+  const empty = rows.every((r) => r.p50 == null && r.p75 == null && r.p90 == null);
+  if (empty) {
+    return (
+      <section>
+        <h2 className="section-title">{t("pointsNeeded")}</h2>
+        <p className="muted">{t("runMoreSims")}</p>
+      </section>
+    );
+  }
+  const tip = (chance: number) => fill(t("tipPointsNeeded"), { pct: pct(chance, lang, 0) });
+  const cell = (points: number | null, className?: string) =>
+    points == null ? (
+      <td className={className} title={t("tooFewSeasons")}>
+        –
+      </td>
+    ) : (
+      <td className={className}>{points}</td>
+    );
   return (
     <section>
       <h2 className="section-title">{t("pointsNeeded")}</h2>
       <div className="table-wrap">
-        <table className="data">
+        <table className="data needed">
           <thead>
             <tr>
               <th scope="col" className="l">
-                {t("place")}
+                {t("finish")}
               </th>
-              <th scope="col">{t("chance50")}</th>
-              <th scope="col">{t("chance75")}</th>
-              <th scope="col">{t("chance90")}</th>
+              <th scope="col" title={tip(50)}>
+                {t("chance50")}
+              </th>
+              <th scope="col" title={tip(75)}>
+                {t("chance75")}
+              </th>
+              <th scope="col" title={tip(90)}>
+                {t("chance90")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.position}>
                 <td className="l">{PLACE[r.label] ? t(PLACE[r.label]) : r.label}</td>
-                <td>{r.p50}</td>
-                <td>{r.p75}</td>
-                <td className="pts">{r.p90}</td>
+                {cell(r.p50)}
+                {cell(r.p75)}
+                {cell(r.p90, "pts")}
               </tr>
             ))}
           </tbody>

@@ -234,8 +234,12 @@ pub fn blend_lambdas(
             )
         }
     };
-    // Heavy underdogs score more than the blend predicts (backtest: 0.66
-    // expected, 0.88 scored), so lift low λs part of the way to the pivot.
+    // Underdogs score more than the blend predicts, so lift the lower λ part
+    // of the way to the pivot. With the lift off (`EVAL_LIFT=0
+    // EVAL_HOLDOUT=1` backtest with `EVAL_DUMP`; a one-off, not in a metrics
+    // file), the lower λ of the 572 dev and holdout matches where it was
+    // below 0.9 averaged 0.776, and those sides scored 0.953 goals a match
+    // (dev alone: 0.788 against 0.930, 430 matches).
     let lift = |l: f64| {
         if l < data::UNDERDOG_PIVOT {
             l + data::UNDERDOG_LIFT * (data::UNDERDOG_PIVOT - l)
@@ -363,10 +367,15 @@ pub struct SimResults {
     pub ga_sum: Vec<f64>,
     /// `pairwise_above[a * n + b]` = trials where `a` finished above `b`.
     pub pairwise_above: Vec<usize>,
-    /// `cutoff_point_counts[position][points]` is the number of trials where
-    /// that points total occupied the position. A fixed-size histogram avoids
-    /// retaining one points value per simulated season.
-    pub cutoff_point_counts: Vec<Vec<usize>>,
+    /// `position_point_counts[position][points]` is the number of simulated
+    /// club-seasons that finished in `position` on `points`: the joint
+    /// distribution of finishing place and final points over every club,
+    /// each trial adding one count to every position. Read along a position,
+    /// it is the points the club in that place ended on; read down a points
+    /// total, where the clubs ending on it finished
+    /// (`models::RaceThreshold`). A fixed-size histogram avoids retaining
+    /// one points value per season.
+    pub position_point_counts: Vec<Vec<usize>>,
     /// A deterministic sample season retained for diagnostics and tests.
     pub representative: SeasonResult,
 }
@@ -389,7 +398,7 @@ struct SimAccumulator {
     gf_sum: Vec<f64>,
     ga_sum: Vec<f64>,
     pairwise_above: Vec<usize>,
-    cutoff_point_counts: Vec<Vec<usize>>,
+    position_point_counts: Vec<Vec<usize>>,
 }
 
 impl SimAccumulator {
@@ -409,7 +418,7 @@ impl SimAccumulator {
             gf_sum: vec![0.0; n],
             ga_sum: vec![0.0; n],
             pairwise_above: vec![0; n * n],
-            cutoff_point_counts: vec![vec![0; data::N_ROUNDS * 3 + 1]; n],
+            position_point_counts: vec![vec![0; data::N_ROUNDS * 3 + 1]; n],
         }
     }
 
@@ -420,7 +429,7 @@ impl SimAccumulator {
             self.position_counts[club][position] += 1;
             let points = usize::try_from(season.records[club].points)
                 .expect("simulated league points are non-negative");
-            self.cutoff_point_counts[position][points] += 1;
+            self.position_point_counts[position][points] += 1;
             if position == 0 {
                 self.title_counts[club] += 1;
             }
@@ -460,9 +469,9 @@ impl SimAccumulator {
             }
         }
         for (dst, src) in self
-            .cutoff_point_counts
+            .position_point_counts
             .iter_mut()
-            .zip(&other.cutoff_point_counts)
+            .zip(&other.position_point_counts)
         {
             for (dst, src) in dst.iter_mut().zip(src) {
                 *dst += *src;
@@ -1200,7 +1209,7 @@ impl World {
             gf_sum: totals.gf_sum,
             ga_sum: totals.ga_sum,
             pairwise_above: totals.pairwise_above,
-            cutoff_point_counts: totals.cutoff_point_counts,
+            position_point_counts: totals.position_point_counts,
             representative,
         }
     }
