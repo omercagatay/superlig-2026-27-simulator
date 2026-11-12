@@ -200,25 +200,21 @@ pub fn world_at(world: &World, date: Option<&str>) -> World {
 /// preseason, then the end of the last day of every matchday whose games are
 /// all played, in date order and without repeats.
 pub fn completed_matchday_dates(world: &World) -> Vec<Option<String>> {
-    let mut last_day: std::collections::BTreeMap<u8, Option<String>> = Default::default();
+    // Per matchday: whether every game is played, and its last day.
+    let mut rounds: std::collections::BTreeMap<u8, (bool, &str)> = Default::default();
     for (f, d) in world.fixtures.iter().zip(&world.dates) {
-        let day = last_day
-            .entry(f.round)
-            .or_insert_with(|| Some(String::new()));
-        if !world.played.contains_key(&(f.home, f.away)) {
-            // One game still to play: the matchday is not complete.
-            *day = None;
-        } else if let Some(latest) = day {
-            if d.date > *latest {
-                latest.clone_from(&d.date);
-            }
-        }
+        let (complete, last_day) = rounds.entry(f.round).or_insert((true, ""));
+        *complete &= world.played.contains_key(&(f.home, f.away));
+        *last_day = (*last_day).max(d.date.as_str());
     }
-    let mut dates: Vec<String> = last_day.into_values().flatten().collect();
-    dates.sort();
+    let mut dates: Vec<&str> = rounds
+        .into_values()
+        .filter_map(|(complete, last_day)| complete.then_some(last_day))
+        .collect();
+    dates.sort_unstable();
     dates.dedup();
     std::iter::once(None)
-        .chain(dates.into_iter().map(Some))
+        .chain(dates.into_iter().map(|day| Some(day.to_string())))
         .collect()
 }
 
