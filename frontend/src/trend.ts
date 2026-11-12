@@ -218,9 +218,15 @@ function pointText(p: TrendPoint, m: Measure, lang: Lang, words: TrendWords, cur
   return fill(words.after, { v, date: shortDate(p.latest, lang) });
 }
 
+/** A sentence's first letter in capitals, by the language's rules. The
+ *  Turkish words start lower case so they read mid-sentence too. */
+function capitalize(text: string, lang: Lang): string {
+  return text.charAt(0).toLocaleUpperCase(lang === "tr" ? "tr-TR" : "en-GB") + text.slice(1);
+}
+
 /** Where the series started, for the caption under a club-dialog figure. */
 export function startCaption(series: TrendPoint[], m: Measure, lang: Lang, words: TrendWords): string {
-  return series.length ? pointText(series[0], m, lang, words, null) : "";
+  return series.length ? capitalize(pointText(series[0], m, lang, words, null), lang) : "";
 }
 
 /** The sparkline's text alternative: "58.3% before the season, 84.4% now,
@@ -240,7 +246,7 @@ export function sparkLabel(
   const lo = formatValue(Math.min(...values), m, lang);
   const hi = formatValue(Math.max(...values), m, lang);
   if (lo !== hi) parts.push(fill(words.between, { lo, hi }));
-  return parts.join(", ");
+  return capitalize(parts.join(", "), lang);
 }
 
 /** How much of the series was computed after the fact. Reconstructed
