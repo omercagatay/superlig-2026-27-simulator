@@ -293,6 +293,7 @@ class Docs(TempDir):
                 "README.md",
                 "README.tr.md",
                 "CLAUDE.md",
+                "docs/evaluation.md",
                 "docs/model-card.md",
                 "docs/model-card.tr.md",
             ],
