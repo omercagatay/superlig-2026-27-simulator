@@ -602,8 +602,8 @@ pub enum ShockOn {
     /// variance at that fixture: sigma², plus drift² per step taken), so
     /// the shock spreads strengths without changing the scoring rate. An
     /// evaluated alternative, not production: it widened the development
-    /// seasons to nominal coverage but failed the holdout check (CLAUDE.md,
-    /// "Season-level evaluation").
+    /// seasons to nominal coverage but failed the holdout check
+    /// (docs/evaluation.md, "Season-level evaluation").
     Blend,
 }
 
@@ -1093,7 +1093,8 @@ impl World {
             // update is still not zero-mean noise: results come from the
             // blended λ but are scored against Elo's logistic expectancy, so
             // it also pulls the trial's Elo towards the blend's view, a shift
-            // of the mean forecast (CLAUDE.md, "Season-level evaluation").
+            // of the mean forecast (docs/evaluation.md, "Season-level
+            // evaluation").
             Some(elo_delta_k(
                 disp.hot_k,
                 elo[h] + (shock[h] + self.offset[h]),

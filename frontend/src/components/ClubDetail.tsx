@@ -222,8 +222,12 @@ export function ClubDetail({
                   </tr>
                 </thead>
                 <tbody>
-                  {series.map((p) => (
-                    <tr key={`${p.played}-${p.now}`}>
+                  {/* By position: two snapshots can stand on the same
+                      results (a published one beside its reconstructed twin,
+                      a corrected result, a new model), and the rows never
+                      reorder. */}
+                  {series.map((p, i) => (
+                    <tr key={i}>
                       <th scope="row" className={p.played === 0 && !p.now ? "l trend-wrap" : "l"}>
                         {pointDate(p)}
                       </th>
