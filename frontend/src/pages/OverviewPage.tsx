@@ -9,7 +9,8 @@ import {
   drawable,
   reconstruction,
   reconstructionNote,
-  sharedScale,
+  ownScale,
+  sharedSpan,
   sparkLabel,
   type Measure,
   type TrendPoint,
@@ -50,9 +51,9 @@ function RaceList({
   const { lang } = useLang();
   const words = useTrendWords();
   const max = rows.length ? pick(rows[0]) : 1;
-  // One scale for the list, so rows compare.
-  const scale = series
-    ? sharedScale(
+  // One span for the list, so a point is the same height in every row.
+  const span = series
+    ? sharedSpan(
         series.filter((s): s is TrendPoint[] => s !== null),
         measure,
       )
@@ -64,13 +65,13 @@ function RaceList({
           <button type="button" className="rank-row" onClick={() => onSelectClub(x.team)}>
             <span className="rank">{ranked ? i + 1 : ""}</span>
             <ClubName team={x.team} />
-            {series && scale && (
+            {series && span !== null && (
               <span className="rank-spark">
                 {series[i] && (
                   <Sparkline
                     series={series[i]}
                     measure={measure}
-                    scale={scale}
+                    scale={ownScale(series[i], measure, span)}
                     width={SPARK_W}
                     height={SPARK_H}
                     tone={tone}

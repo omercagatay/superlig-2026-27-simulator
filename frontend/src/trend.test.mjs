@@ -10,7 +10,7 @@ import {
   ownScale,
   reconstruction,
   reconstructionNote,
-  sharedScale,
+  sharedSpan,
   sparkLabel,
   sparkPath,
   sparkPoints,
@@ -124,15 +124,28 @@ test("the on-screen forecast is appended only when default and newer than the lo
   assert.deepEqual(clubSeries(SNAPSHOTS, "Nobody", { ...now, teams: [team("Nobody", 1)] }), []);
 });
 
-test("trendView: null without snapshots; `current` only for the default forecast", () => {
+test("trendView: null without snapshots, and beside any forecast but the default one", () => {
   assert.equal(trendView(null, sim(), asOf(18), DEFAULTS), null);
   assert.equal(trendView({ snapshots: [] }, sim(), asOf(18), DEFAULTS), null);
   const v = trendView(TREND, sim(), asOf(18), DEFAULTS);
   assert.equal(v.current, 18);
   assert.equal(v.now, null);
-  assert.equal(trendView(TREND, sim({ seed: 2 }), asOf(18), DEFAULTS).current, null);
-  assert.equal(trendView(TREND, null, asOf(18), DEFAULTS).current, null);
   assert.equal(trendView(TREND, sim(), asOf(27), DEFAULTS).now.played, 27);
+  // A scenario's figures are not the log's: no line is drawn next to them.
+  const pick = [{ home: "Galatasaray", away: "Eyüpspor", outcome: "away" }];
+  for (const other of [
+    sim({ seed: 2 }),
+    sim({ n_sims: 1000 }),
+    sim({ what_if: pick }),
+    sim({ elo_overrides: { Galatasaray: 1500 } }),
+    sim({ scenario_applied: "an injury" }),
+  ]) {
+    assert.equal(trendView(TREND, other, asOf(18), DEFAULTS), null);
+  }
+  // Before the forecast or the calendar has loaded, the log alone.
+  assert.equal(trendView(TREND, null, asOf(18), DEFAULTS).current, null);
+  assert.equal(trendView(TREND, sim(), null, DEFAULTS).current, null);
+  assert.equal(trendView(TREND, null, null, DEFAULTS).snapshots.length, TREND.snapshots.length);
 });
 
 test("a series is drawable with two points and something above the floor", () => {
@@ -145,13 +158,31 @@ test("a series is drawable with two points and something above the floor", () =>
   assert.equal(drawable(trace, "title_pct", 0.05), false);
 });
 
-test("a list shares one scale from 0 to its highest value over the season", () => {
-  const g = clubSeries(SNAPSHOTS, "Galatasaray", null);
-  const e = clubSeries(SNAPSHOTS, "Eyüpspor", null);
-  assert.deepEqual(sharedScale([g, e], "title_pct"), [0, 84.4]);
-  assert.deepEqual(sharedScale([g, e], "relegation_pct"), [0, 25]);
-  // Never an empty range.
-  assert.deepEqual(sharedScale([], "title_pct"), [0, 1]);
+test("a list shares one span, and each row sits on its own window of it", () => {
+  const series = (values) =>
+    values.map((v, i) => ({ played: i * 9, latest: null, now: false, reconstructed: false, title_pct: v, top_four_pct: 0, relegation_pct: 0, exp_points: 0 }));
+  const riser = series([58.3, 61.9, 84.4]);
+  const faller = series([35.9, 23.2, 3.0]);
+  const steady = series([1.9, 5.9, 10.1]);
+  const flat = series([0.1, 0.2, 0.1]);
+  const rows = [riser, faller, steady, flat];
+  // The widest range any row covered: the faller's 32.9 points.
+  const span = sharedSpan(rows, "title_pct");
+  assert.ok(Math.abs(span - 32.9) < 1e-9);
+  // Every window is that wide, so a point is the same height in every row.
+  for (const row of rows) {
+    const [lo, hi] = ownScale(row, "title_pct", span);
+    assert.ok(Math.abs(hi - lo - span) < 1e-9);
+    assert.ok(lo >= 0 && hi <= 100);
+    for (const p of row) assert.ok(p.title_pct >= lo - 1e-9 && p.title_pct <= hi + 1e-9);
+  }
+  // The widest row fills its window; a row near zero sits on the floor.
+  assert.deepEqual(ownScale(faller, "title_pct", span).map((v) => Math.round(v * 10) / 10), [3, 35.9]);
+  assert.equal(ownScale(flat, "title_pct", span)[0], 0);
+  // Rows that barely moved still span the minimum, and no rows at all too.
+  assert.equal(sharedSpan([flat], "title_pct"), MIN_SPAN.title_pct);
+  assert.equal(sharedSpan([], "title_pct"), MIN_SPAN.title_pct);
+  assert.equal(sharedSpan([[]], "exp_points"), MIN_SPAN.exp_points);
 });
 
 test("a fact's own scale spans at least its minimum, inside its bounds", () => {
@@ -209,8 +240,8 @@ test("where reconstruction ends, and the sentence that says so", () => {
   assert.equal(reconstructionNote({ kind: "none" }, "en", words), "");
   assert.equal(reconstructionNote({ kind: "all" }, "en", words), "All of them.");
   assert.equal(reconstructionNote({ kind: "until", date: null }, "en", words), "Preseason only.");
-  assert.equal(reconstructionNote({ kind: "until", date: "2026-11-02" }, "en", words), "Up to Mon 2 Nov.");
-  assert.equal(reconstructionNote({ kind: "until", date: "2026-11-02" }, "tr", words), "Up to 2 Kas Pzt.");
+  assert.equal(reconstructionNote({ kind: "until", date: "2026-11-02" }, "en", words), "Up to 2 November.");
+  assert.equal(reconstructionNote({ kind: "until", date: "2026-11-02" }, "tr", words), "Up to 2 Kasım.");
 });
 
 test("the text alternative gives the start, the end and the range", () => {
@@ -222,7 +253,7 @@ test("the text alternative gives the start, the end and the range", () => {
   // Not the default forecast on screen, or the calendar has moved on: dated.
   assert.equal(
     sparkLabel(g, "title_pct", "en", WORDS, null),
-    "58.3% before the season, 84.4% after Mon 24 Aug, between 58.3% and 84.4%",
+    "58.3% before the season, 84.4% after 24 August, between 58.3% and 84.4%",
   );
   // A now point reads "now"; Turkish formats.
   const withNow = clubSeries(SNAPSHOTS, "Galatasaray", nowSource(TREND, sim(), asOf(27), DEFAULTS));
@@ -231,10 +262,10 @@ test("the text alternative gives the start, the end and the range", () => {
     sparkLabel(withNow, "title_pct", "tr", tr, 27),
     "Sezon öncesi %58,3, şu an %90,0, en düşük %58,3, en yüksek %90,0",
   );
-  assert.equal(sparkLabel(withNow.slice(1), "title_pct", "tr", tr, null), "17 Ağu Pzt sonrası %59,0, şu an %90,0, en düşük %59,0, en yüksek %90,0");
+  assert.equal(sparkLabel(withNow.slice(1), "title_pct", "tr", tr, null), "17 Ağustos sonrası %59,0, şu an %90,0, en düşük %59,0, en yüksek %90,0");
   // Zero prints as zero, and a range that prints as one value is left out.
   const e = clubSeries(SNAPSHOTS, "Eyüpspor", null);
-  assert.equal(sparkLabel(e, "title_pct", "en", WORDS, null), "0.0% before the season, 0.0% after Mon 17 Aug");
+  assert.equal(sparkLabel(e, "title_pct", "en", WORDS, null), "0.0% before the season, 0.0% after 17 August");
   assert.equal(sparkLabel(g, "exp_points", "en", WORDS, 18), "76.6 before the season, 79.7 now, between 73.6 and 79.7");
   assert.equal(sparkLabel([], "title_pct", "en", WORDS, null), "");
 });
@@ -243,6 +274,6 @@ test("the caption says where the series started", () => {
   const g = clubSeries(SNAPSHOTS, "Galatasaray", null);
   assert.equal(startCaption(g, "title_pct", "en", WORDS), "58.3% before the season");
   assert.equal(startCaption(g, "exp_points", "tr", { ...WORDS, before: "sezon öncesi {v}" }), "Sezon öncesi 76,6");
-  assert.equal(startCaption(g.slice(1), "title_pct", "en", WORDS), "59.0% after Mon 17 Aug");
+  assert.equal(startCaption(g.slice(1), "title_pct", "en", WORDS), "59.0% after 17 August");
   assert.equal(startCaption([], "title_pct", "en", WORDS), "");
 });

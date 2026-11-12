@@ -5,7 +5,7 @@
 
 import type { AsOf, SimResponse, TeamRow, TrendResponse, TrendSnapshot } from "./api";
 // With the extension: node's test runner loads these files as they are.
-import { num, pct, shortDate, type Lang } from "./clubs.ts";
+import { dateSpan, num, pct, type Lang } from "./clubs.ts";
 import { fill } from "./history.ts";
 
 /** What a sparkline plots. */
@@ -113,15 +113,7 @@ export function drawable(series: TrendPoint[], m: Measure, floor = 0): boolean {
   return series.length >= 2 && series.some((p) => p[m] > floor);
 }
 
-/** One scale for every row of a list, so rows compare: 0 to the highest
- *  value any of them reached over the season. */
-export function sharedScale(series: TrendPoint[][], m: Measure): [number, number] {
-  let hi = 0;
-  for (const s of series) for (const p of s) hi = Math.max(hi, p[m]);
-  return [0, Math.max(hi, 1)];
-}
-
-/** The fewest units a club-dialog sparkline spans, so noise stays flat. */
+/** The fewest units a sparkline spans, so noise stays flat. */
 export const MIN_SPAN: Record<Measure, number> = {
   title_pct: 10,
   top_four_pct: 10,
@@ -137,13 +129,31 @@ const BOUNDS: Record<Measure, [number, number]> = {
   exp_points: [0, Infinity],
 };
 
+/** One span for every row of a list: the widest range any row covered over
+ *  the season, at least `MIN_SPAN`. Each row is drawn on a window of that
+ *  width about its own range (`ownScale`), so a percentage point is the
+ *  same height in every row and the rows' slopes compare, while each line
+ *  gets the height its own movement earns. One scale from zero for the
+ *  whole list spent most of the height on the gap between the leader and
+ *  the rest: a 26-point rise drew as a quarter of a row, and the bar
+ *  beside the line already shows the level. */
+export function sharedSpan(series: TrendPoint[][], m: Measure): number {
+  let span = MIN_SPAN[m];
+  for (const s of series) {
+    if (s.length === 0) continue;
+    const values = s.map((p) => p[m]);
+    span = Math.max(span, Math.max(...values) - Math.min(...values));
+  }
+  return span;
+}
+
 /** A series' own scale: its range, widened about its middle to at least
- *  `MIN_SPAN` and kept inside the measure's bounds. */
-export function ownScale(series: TrendPoint[], m: Measure): [number, number] {
+ *  `span` (the measure's `MIN_SPAN`, or a list's `sharedSpan`) and kept
+ *  inside the measure's bounds. */
+export function ownScale(series: TrendPoint[], m: Measure, span = MIN_SPAN[m]): [number, number] {
   const values = series.map((p) => p[m]);
   let lo = Math.min(...values);
   let hi = Math.max(...values);
-  const span = MIN_SPAN[m];
   if (hi - lo < span) {
     const mid = (lo + hi) / 2;
     lo = mid - span / 2;
@@ -215,7 +225,7 @@ function pointText(p: TrendPoint, m: Measure, lang: Lang, words: TrendWords, cur
   const v = formatValue(p[m], m, lang);
   if (p.now || (current !== null && p.played === current && p.played > 0)) return fill(words.now, { v });
   if (p.played === 0 || p.latest === null) return fill(words.before, { v });
-  return fill(words.after, { v, date: shortDate(p.latest, lang) });
+  return fill(words.after, { v, date: dateSpan([p.latest], lang) });
 }
 
 /** A sentence's first letter in capitals, by the language's rules. The
@@ -284,7 +294,7 @@ export interface ReconstructionWords {
 export function reconstructionNote(r: Reconstruction, lang: Lang, words: ReconstructionWords): string {
   if (r.kind === "none") return "";
   if (r.kind === "all") return words.all;
-  return r.date === null ? words.untilPreseason : fill(words.until, { date: shortDate(r.date, lang) });
+  return r.date === null ? words.untilPreseason : fill(words.until, { date: dateSpan([r.date], lang) });
 }
 
 /** Everything the pages need to draw the trend. */
@@ -292,12 +302,18 @@ export interface TrendView {
   snapshots: TrendSnapshot[];
   /** The on-screen forecast as a last point, when it qualifies. */
   now: NowSource | null;
-  /** Results the calendar holds while the default forecast is on screen,
-   *  so a point standing on all of them reads "now"; null otherwise. */
+  /** Results the calendar holds, so a point standing on all of them reads
+   *  "now"; null while the calendar or the forecast has not loaded. */
   current: number | null;
 }
 
-/** The trend as the pages draw it; null when there is none to draw. */
+/** The trend as the pages draw it; null when there is none to draw.
+ *
+ *  That includes any forecast on screen that is not the default one: with
+ *  results assumed, a rating changed or another run's settings, the figure
+ *  beside a line is that scenario's, and a line ending somewhere else would
+ *  read as a disagreement. The log is the default forecast's history, so it
+ *  is shown only next to the default forecast. */
 export function trendView(
   trend: TrendResponse | null,
   sim: SimResponse | null,
@@ -305,6 +321,10 @@ export function trendView(
   defaults: Defaults,
 ): TrendView | null {
   if (!trend || trend.snapshots.length === 0) return null;
-  const current = sim && asOf && isDefaultForecast(sim, defaults) ? asOf.played : null;
-  return { snapshots: trend.snapshots, now: nowSource(trend, sim, asOf, defaults), current };
+  if (sim && !isDefaultForecast(sim, defaults)) return null;
+  return {
+    snapshots: trend.snapshots,
+    now: nowSource(trend, sim, asOf, defaults),
+    current: sim && asOf ? asOf.played : null,
+  };
 }

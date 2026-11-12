@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { MatchCard, MatchesResponse, PositionRow, TeamRow } from "../api";
 import { useLang, useT } from "../i18n";
-import { num, pct, shortDate } from "../clubs";
+import { dateSpan, num, pct, shortDate } from "../clubs";
 import { ClubName, Swatch } from "./Common";
 import { Sparkline, useTrendWords } from "./Sparkline";
 import {
@@ -132,7 +132,7 @@ export function ClubDetail({
       </dd>
     ) : null;
   const pointDate = (p: TrendPoint) =>
-    p.now ? t("nowRow") : p.played === 0 || p.latest === null ? t("beforeSeason") : shortDate(p.latest, lang);
+    p.now ? t("nowRow") : p.played === 0 || p.latest === null ? t("beforeSeason") : dateSpan([p.latest], lang);
   const historyNote = trend
     ? reconstructionNote(reconstruction(trend.snapshots, trend.now !== null), lang, words.note)
     : "";
