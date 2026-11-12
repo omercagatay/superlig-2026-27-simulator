@@ -7,7 +7,9 @@ on:
     branches: [main, master]
   # A new advisory arrives without a push, and the weekly data commits start
   # no run (they are pushed with GITHUB_TOKEN). So the two audits also run
-  # every Monday; the jobs that only a code change can break are skipped.
+  # every Monday: rust-audit, and the frontend job, whose npm audit is one of
+  # its steps (the rest of it takes seconds). The other three jobs are
+  # skipped then.
   schedule:
     - cron: "23 5 * * 1"
 

@@ -3,7 +3,7 @@
 # The assertions inside fetch_fixtures.py are the point: if TFF changes its
 # markup, the structural checks (306 fixtures, 34 rounds, every pair twice,
 # nine matches on every week page, every fixture dated) fail here and the run
-# goes red, instead of the app quietly serving a stale calendar. Up to nine
+# goes red, instead of the app quietly serving a stale calendar. Up to 18
 # postponed matches ("Ertelendi" or blank) may keep their committed date; a
 # week widget that stops yielding dates fails the run. A committed result
 # that vanishes or changes fails it too; for a genuine TFF correction,
@@ -85,12 +85,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/fixtures_2026_27.json data/forecast_log.json data/season_log.json
           if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No data changes."
           else
             git commit -m "data: weekly refresh (fixtures, forecast logs)"
             git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
       # One open issue at most: a repeat failure comments on it. --repo

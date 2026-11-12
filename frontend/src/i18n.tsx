@@ -223,8 +223,8 @@ const DICT = {
     "Sezon öncesi noktası sonradan hesaplandı; sonrakiler yayımlandığı hâliyle tahmindir.",
   ],
   trendAll: [
-    "These points were computed afterwards, not published at the time.",
-    "Bu noktalar o tarihlerde yayımlanmadı, sonradan hesaplandı.",
+    "These points were computed afterwards, not recorded at the time.",
+    "Bu noktalar o tarihlerde kaydedilmedi, sonradan hesaplandı.",
   ],
   trendBefore: ["{v} before the season", "sezon öncesi {v}"],
   trendAfter: ["{v} after {date}", "{date} sonrası {v}"],

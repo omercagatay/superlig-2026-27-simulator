@@ -9,13 +9,15 @@
 //! at the season's end it is the record of what was published, to be scored
 //! against the final table.
 //!
-//! A snapshot marked `reconstructed` was not published when the league stood
-//! there: it was computed afterwards, by the model its `model_version` names,
-//! from the results up to `latest_result`. The log starts with one for the
-//! preseason and one for each matchday completed before logging began, so the
-//! record of how the race moved does not start mid-season. They show what
-//! that model would have said, and are left out of any scoring of what was
-//! published.
+//! A snapshot marked `reconstructed` was not written down when the league
+//! stood there: it was computed afterwards, by the model its `model_version`
+//! names, from the results up to `latest_result`. The log starts with one for
+//! the preseason and one for each matchday completed before logging began, so
+//! the record of how the race moved does not start mid-season. Whether or not
+//! the site showed the same figures at the time (it did where that model was
+//! already running), nothing froze them then, so they are left out of any
+//! scoring of what was published, and one never stands in for a published
+//! snapshot: `append` logs the published one beside it.
 
 use std::sync::OnceLock;
 
@@ -52,8 +54,8 @@ pub struct SeasonSnapshot {
     pub logged_at: String,
     /// The model that made it (`model_version::current()` at the time).
     pub model_version: String,
-    /// Computed after the fact rather than published at the time (see the
-    /// module comment). Absent from the file when false.
+    /// Computed after the fact rather than written down at the time (see
+    /// the module comment). Absent from the file when false.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub reconstructed: bool,
     pub n_sims: usize,
@@ -68,9 +70,10 @@ pub struct TrendResponse {
     pub snapshots: Vec<SeasonSnapshot>,
 }
 
-/// A figure as the log stores it: to three decimal places. A share of the
-/// default forecast's 50,000 seasons is a multiple of 0.002%, so nothing the
-/// site shows is lost, and a snapshot reads back from the file exactly.
+/// A figure as the log stores it: to three decimal places, so a snapshot
+/// reads back from the file exactly. The site shows one decimal, and a share
+/// of 50,000 seasons (today's `DEFAULT_N_SIMS`) is a multiple of 0.002%, so
+/// nothing is lost.
 fn logged(x: f64) -> f64 {
     (x * 1e3).round() / 1e3
 }
@@ -154,10 +157,13 @@ fn latest_result(world: &World) -> Option<String> {
 }
 
 /// Whether `old` already records the forecast `fresh` makes: the same state
-/// of the league, the same model and run, the same figures. The day it was
-/// written down is not part of what it says.
+/// of the league, the same model and run, the same figures, and the same
+/// kind of record. The day it was written down is not part of what it says.
+/// A reconstructed snapshot and a published one are never the same record,
+/// whatever their figures: only the published one was frozen at the time.
 fn same_forecast(old: &SeasonSnapshot, fresh: &SeasonSnapshot) -> bool {
-    old.played == fresh.played
+    old.reconstructed == fresh.reconstructed
+        && old.played == fresh.played
         && old.latest_result == fresh.latest_result
         && old.model_version == fresh.model_version
         && (old.n_sims, old.seed) == (fresh.n_sims, fresh.seed)
@@ -168,6 +174,9 @@ fn same_forecast(old: &SeasonSnapshot, fresh: &SeasonSnapshot) -> bool {
 /// the same, and report whether it was added. A snapshot already in the log
 /// is never touched, so two runs between matchdays log one snapshot, and a
 /// run after new results, a corrected result or a model change logs another.
+/// So does the first ordinary run after a backfill that found the league
+/// where the backfill left it: that forecast is on the site now, and is
+/// logged as published beside its reconstructed twin.
 pub fn append(log: &mut Vec<SeasonSnapshot>, fresh: SeasonSnapshot) -> bool {
     if log.last().is_some_and(|last| same_forecast(last, &fresh)) {
         return false;
@@ -225,9 +234,14 @@ fn load_log() -> Vec<SeasonSnapshot> {
     )
 }
 
-/// The day the newest snapshot of the embedded log was written.
-pub fn latest_logged_at() -> Option<String> {
-    load_log().into_iter().map(|s| s.logged_at).max()
+/// The day the newest snapshot of the embedded log was written. Worked out
+/// once: `/api/health` reports it on every call, and the log cannot change
+/// while the server runs.
+pub fn latest_logged_at() -> Option<&'static str> {
+    static LATEST: OnceLock<Option<String>> = OnceLock::new();
+    LATEST
+        .get_or_init(|| load_log().into_iter().map(|s| s.logged_at).max())
+        .as_deref()
 }
 
 /// The body of `GET /api/trend`, serialized once: the log is embedded, so it
@@ -339,6 +353,29 @@ mod tests {
         assert_eq!(log[0].logged_at, "2026-11-12");
     }
 
+    /// The first ordinary run after the backfill, with no result in between:
+    /// the forecast is on the site that day, so it is logged as published
+    /// even though a reconstructed snapshot already carries its figures.
+    #[test]
+    fn a_reconstructed_snapshot_does_not_stand_in_for_a_published_one() {
+        let world = World::with_played(MID_SEASON);
+        let reconstructed = SeasonSnapshot {
+            reconstructed: true,
+            ..test_snapshot(&world)
+        };
+        let mut log = vec![reconstructed.clone()];
+        // Running the backfill's own step again adds nothing.
+        assert!(!append(&mut log, reconstructed.clone()));
+        assert!(append(&mut log, test_snapshot(&world)));
+        assert_eq!(log.len(), 2);
+        assert_eq!(log[0], reconstructed);
+        assert!(!log[1].reconstructed);
+        assert_eq!(log[1].clubs, log[0].clubs);
+        // And the next run, still with nothing new, leaves it at that.
+        assert!(!append(&mut log, test_snapshot(&world)));
+        assert_eq!(log.len(), 2);
+    }
+
     #[test]
     fn new_results_or_a_new_model_are_a_new_snapshot() {
         let mut log = Vec::new();
@@ -403,27 +440,12 @@ mod tests {
         assert_eq!(last.elo, world.elo);
     }
 
+    /// The state is built fixture by fixture, not taken from however many
+    /// matchdays the shipped calendar's first results happen to complete.
     #[test]
     fn only_completed_matchdays_are_reconstructed() {
-        assert_eq!(completed_matchday_dates(&World::with_played(0)), [None]);
-
-        let world = World::with_played(MID_SEASON);
-        let dates = completed_matchday_dates(&world);
-        assert_eq!(dates[0], None);
-        assert!(dates.len() > 1);
-        let mut sorted = dates.clone();
-        sorted.sort();
-        sorted.dedup();
-        assert_eq!(dates, sorted, "in date order, without repeats");
-
-        let complete = |round: u8| {
-            world
-                .fixtures
-                .iter()
-                .filter(|f| f.round == round)
-                .all(|f| world.played.contains_key(&(f.home, f.away)))
-        };
-        let last_day = |round: u8| {
+        let score = (1, 0);
+        let last_day = |world: &World, round: u8| {
             world
                 .fixtures
                 .iter()
@@ -431,21 +453,54 @@ mod tests {
                 .filter(|(f, _)| f.round == round)
                 .map(|(_, d)| d.date.clone())
                 .max()
+                .expect("every matchday has fixtures")
         };
-        for round in 1..=data::N_ROUNDS as u8 {
-            let day = last_day(round);
-            assert_eq!(
-                dates.contains(&day),
-                complete(round) || {
-                    // Another, completed matchday may end on the same day.
-                    (1..=data::N_ROUNDS as u8).any(|r| complete(r) && last_day(r) == day)
-                },
-                "matchday {round}"
-            );
+        let mut world = World::with_played(0);
+        assert_eq!(completed_matchday_dates(&world), [None]);
+
+        // Matchdays 2, 3 and 5 in full, all but one game of matchday 4, and
+        // one game of matchday 9.
+        let fixtures = world.fixtures.clone();
+        let mut left_out = false;
+        for f in &fixtures {
+            let play = match f.round {
+                2 | 3 | 5 => true,
+                4 => std::mem::replace(&mut left_out, true),
+                9 => f.home == fixtures.iter().find(|g| g.round == 9).unwrap().home,
+                _ => false,
+            };
+            if play {
+                world.played.insert((f.home, f.away), score);
+            }
         }
-        // One more result does not complete another matchday.
-        let more = completed_matchday_dates(&World::with_played(MID_SEASON + 1));
-        assert!(more.len() <= dates.len() + 1);
+        let mut expected: Vec<String> = [2, 3, 5].map(|r| last_day(&world, r)).to_vec();
+        expected.sort();
+        expected.dedup();
+        let expected: Vec<Option<String>> = std::iter::once(None)
+            .chain(expected.into_iter().map(Some))
+            .collect();
+        assert_eq!(completed_matchday_dates(&world), expected);
+
+        // The missing game completes matchday 4, and its last day joins them.
+        for f in fixtures.iter().filter(|f| f.round == 4) {
+            world.played.insert((f.home, f.away), score);
+        }
+        let with_four = completed_matchday_dates(&world);
+        assert!(with_four.contains(&Some(last_day(&world, 4))));
+        let mut sorted = with_four.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(with_four, sorted, "in date order, without repeats");
+        // Every result in: one date per distinct last day, after the preseason.
+        for f in &fixtures {
+            world.played.insert((f.home, f.away), score);
+        }
+        let mut all: Vec<String> = (1..=data::N_ROUNDS as u8)
+            .map(|r| last_day(&world, r))
+            .collect();
+        all.sort();
+        all.dedup();
+        assert_eq!(completed_matchday_dates(&world).len(), all.len() + 1);
     }
 
     /// The shipped log is embedded and served as it is; a malformed one would
@@ -462,11 +517,14 @@ mod tests {
             let at = format!("snapshot {i} ({} played)", snap.played);
             assert!(snap.played <= data::N_FIXTURES, "{at}");
             assert_eq!(snap.latest_result.is_none(), snap.played == 0, "{at}");
-            assert_eq!(
-                (snap.n_sims, snap.seed),
-                (DEFAULT_N_SIMS, DEFAULT_SEED),
-                "{at}"
-            );
+            // Enough seasons for the figures to mean something. Not today's
+            // defaults: a snapshot is frozen, and they may change after it.
+            assert!(snap.n_sims >= 10_000, "{at}: {} seasons", snap.n_sims);
+            // No snapshot repeats the one before it: `append` logs a state
+            // once, so a repeat would mean a run logged twice.
+            if let Some(before) = i.checked_sub(1).map(|j| &log[j]) {
+                assert!(!same_forecast(before, snap), "{at} repeats the one before");
+            }
             assert!(
                 crate::model_version::LABELS.contains(&snap.model_version.as_str()),
                 "{at}: unknown model {:?}",

@@ -235,9 +235,14 @@ fn load_log() -> Vec<LoggedForecast> {
     )
 }
 
-/// The day the newest entry of the embedded forecast log was written.
-pub fn latest_logged_at() -> Option<String> {
-    load_log().into_iter().map(|f| f.logged_at).max()
+/// The day the newest entry of the embedded forecast log was written. Worked
+/// out once: `/api/health` reports it on every call, and the log cannot
+/// change while the server runs.
+pub fn latest_logged_at() -> Option<&'static str> {
+    static LATEST: OnceLock<Option<String>> = OnceLock::new();
+    LATEST
+        .get_or_init(|| load_log().into_iter().map(|f| f.logged_at).max())
+        .as_deref()
 }
 
 /// Score every logged forecast whose fixture has since been played.
