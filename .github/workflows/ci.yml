@@ -82,16 +82,24 @@ jobs:
       - name: Check all targets on the MSRV
         run: cargo check --locked --all-targets
 
+  # On a push or pull request a vulnerability fails this job. On the Monday
+  # schedule the action opens an issue for each new advisory instead,
+  # informational ones (unmaintained, unsound) included, hence issues: write.
   rust-audit:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       checks: write
+      issues: write
     steps:
       - uses: actions/checkout@v7
       - uses: rustsec/audit-check@v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # paste is unmaintained and has no successor release; it is a
+          # compile-time macro crate that argmin pulls in. Nothing to act on
+          # until argmin drops it, so it would only sit as an open issue.
+          ignore: RUSTSEC-2024-0436
 
   frontend:
     runs-on: ubuntu-latest
