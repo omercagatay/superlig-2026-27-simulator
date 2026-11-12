@@ -209,6 +209,32 @@ const DICT = {
   missedIt: ["missed", "bilinemedi"],
   matchesCol: ["Matches", "Maç"],
 
+  // Season trend ({name} placeholders are filled by history.ts `fill`)
+  trendNote: [
+    "The small lines show how each chance has moved since before the season.",
+    "Küçük çizgiler her olasılığın sezon öncesinden bu yana nasıl değiştiğini gösteriyor.",
+  ],
+  trendUntil: [
+    "Points up to {date} were computed afterwards; later ones are the forecast as published.",
+    "{date} tarihine kadarki noktalar sonradan hesaplandı; sonrakiler yayımlandığı hâliyle tahmindir.",
+  ],
+  trendUntilPreseason: [
+    "The preseason point was computed afterwards; later ones are the forecast as published.",
+    "Sezon öncesi noktası sonradan hesaplandı; sonrakiler yayımlandığı hâliyle tahmindir.",
+  ],
+  trendAll: [
+    "These points were computed afterwards, not published at the time.",
+    "Bu noktalar o tarihlerde yayımlanmadı, sonradan hesaplandı.",
+  ],
+  trendBefore: ["{v} before the season", "Sezon öncesi {v}"],
+  trendAfter: ["{v} after {date}", "{date} sonrası {v}"],
+  trendNow: ["{v} now", "Şu an {v}"],
+  trendBetween: ["between {lo} and {hi}", "en düşük {lo}, en yüksek {hi}"],
+  weekByWeek: ["Week by week", "Hafta hafta"],
+  beforeSeason: ["Before the season", "Sezon öncesi"],
+  nowRow: ["Now", "Şu an"],
+  titleShort: ["Title", "Şamp."],
+
   // Club page
   close: ["Close", "Kapat"],
   expectedPoints: ["Expected points", "Beklenen puan"],

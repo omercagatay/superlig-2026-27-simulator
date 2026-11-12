@@ -3,6 +3,24 @@ import type { MatchCard, MatchesResponse, PositionRow, TeamRow } from "../api";
 import { useLang, useT } from "../i18n";
 import { num, pct, shortDate } from "../clubs";
 import { ClubName, Swatch } from "./Common";
+import { Sparkline, useTrendWords } from "./Sparkline";
+import {
+  clubSeries,
+  drawable,
+  ownScale,
+  reconstruction,
+  reconstructionNote,
+  sparkLabel,
+  startCaption,
+  type Measure,
+  type TrendPoint,
+  type TrendView,
+} from "../trend";
+
+const SPARK_W = 120;
+const SPARK_H = 28;
+/** Below this a chance prints as "<0.1%" at most: nothing to draw. */
+const TRACE = 0.05;
 
 /** The club's own view of a fixture: who it plays, where, its chances. */
 type ClubFixture = {
@@ -47,11 +65,14 @@ export function ClubDetail({
   team,
   position,
   matches,
+  trend,
   onClose,
 }: {
   team: TeamRow;
   position: PositionRow | undefined;
   matches: MatchesResponse | null;
+  /** The season so far; null shows no trend. */
+  trend: TrendView | null;
   onClose: () => void;
 }) {
   const t = useT();
@@ -88,6 +109,33 @@ export function ClubDetail({
       opener?.focus();
     };
   }, [onClose]);
+
+  const words = useTrendWords();
+  const series: TrendPoint[] = trend ? clubSeries(trend.snapshots, team.team, trend.now) : [];
+  // Under a figure: its line over the season and where it started. A
+  // measure at zero throughout has nothing to show.
+  const factTrend = (m: Measure, tone: "accent" | "red") =>
+    trend && drawable(series, m, TRACE) ? (
+      <dd className="fact-trend">
+        <Sparkline
+          series={series}
+          measure={m}
+          scale={ownScale(series, m)}
+          width={SPARK_W}
+          height={SPARK_H}
+          tone={tone}
+          label={sparkLabel(series, m, lang, words.point, trend.current)}
+        />
+        <span className="facts-note" aria-hidden="true">
+          {startCaption(series, m, lang, words.point)}
+        </span>
+      </dd>
+    ) : null;
+  const pointDate = (p: TrendPoint) =>
+    p.now ? t("nowRow") : p.played === 0 || p.latest === null ? t("beforeSeason") : shortDate(p.latest, lang);
+  const historyNote = trend
+    ? reconstructionNote(reconstruction(trend.snapshots, trend.now !== null), lang, words.note)
+    : "";
 
   const fixtures = matches ? clubFixtures(team.team, matches) : [];
   const remaining = fixtures.filter((f) => !f.m.played && f.winPct != null);
@@ -133,24 +181,65 @@ export function ClubDetail({
           <div>
             <dt>{t("title")}</dt>
             <dd>{pct(team.title_pct, lang)}</dd>
+            {factTrend("title_pct", "accent")}
           </div>
           <div>
             <dt>{t("topFour")}</dt>
             <dd>{pct(team.top_four_pct, lang)}</dd>
+            {factTrend("top_four_pct", "accent")}
           </div>
           <div>
             <dt>{t("relegation")}</dt>
             <dd>{pct(team.relegation_pct, lang)}</dd>
+            {factTrend("relegation_pct", "red")}
           </div>
           <div>
             <dt>{t("expectedPoints")}</dt>
             <dd>{num(team.exp_points, lang, 1)}</dd>
+            {factTrend("exp_points", "accent")}
           </div>
           <div>
             <dt>{t("averageFinish")}</dt>
             <dd>{num(team.mean_position, lang, 1)}</dd>
           </div>
         </dl>
+
+        {series.length >= 2 && (
+          <details className="hist">
+            <summary>{t("weekByWeek")}</summary>
+            <div className="table-wrap">
+              <table className="data trend-table">
+                <thead>
+                  <tr>
+                    <th scope="col" className="l">
+                      {t("date")}
+                    </th>
+                    <th scope="col">{t("colP")}</th>
+                    <th scope="col">{t("titleShort")}</th>
+                    <th scope="col">{t("topFourShort")}</th>
+                    <th scope="col">{t("relegationShort")}</th>
+                    <th scope="col">{t("xPts")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {series.map((p) => (
+                    <tr key={`${p.played}-${p.now}`}>
+                      <th scope="row" className={p.played === 0 && !p.now ? "l trend-wrap" : "l"}>
+                        {pointDate(p)}
+                      </th>
+                      <td>{num(p.played, lang)}</td>
+                      <td>{pct(p.title_pct, lang)}</td>
+                      <td>{pct(p.top_four_pct, lang)}</td>
+                      <td>{pct(p.relegation_pct, lang)}</td>
+                      <td>{num(p.exp_points, lang, 1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {historyNote && <p className="trend-note">{historyNote}</p>}
+          </details>
+        )}
 
         {position && (
           <section>
