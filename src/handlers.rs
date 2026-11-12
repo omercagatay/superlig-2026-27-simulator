@@ -504,6 +504,27 @@ pub async fn accuracy(
     Ok(Json(report))
 }
 
+/// How each club's season forecast has moved: the weekly snapshots of
+/// `data/season_log.json`, oldest first. The log is embedded, so this is a
+/// byte copy of a body serialized once.
+pub async fn trend() -> Response {
+    json_response(Bytes::from_static(crate::trend::response_json()))
+}
+
+/// The commit a deployment was built from, when the platform says: Railway
+/// sets `RAILWAY_GIT_COMMIT_SHA` for a deploy from GitHub. `None` anywhere
+/// else, or when the value is not a commit hash.
+fn deployed_commit() -> Option<String> {
+    commit_hash(&std::env::var("RAILWAY_GIT_COMMIT_SHA").ok()?)
+}
+
+/// `raw` trimmed, if it is a full or abbreviated hexadecimal commit hash.
+fn commit_hash(raw: &str) -> Option<String> {
+    let hash = raw.trim();
+    let hex = (7..=64).contains(&hash.len()) && hash.bytes().all(|b| b.is_ascii_hexdigit());
+    hex.then(|| hash.to_ascii_lowercase())
+}
+
 pub async fn health(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let live_fetched_at = state
         .live_data
@@ -539,6 +560,12 @@ pub async fn health(State(state): State<Arc<AppState>>) -> Json<serde_json::Valu
         "model_version": crate::model_version::current(),
         "world_version": world_version,
         "forecast_cached": forecast_cached,
+        // Which build this is: the commit it was deployed from, and the
+        // newest entry of each log embedded in it, so a stale deployment
+        // shows without comparing forecasts.
+        "commit": deployed_commit(),
+        "forecast_log_latest": crate::accuracy::latest_logged_at(),
+        "season_log_latest": crate::trend::latest_logged_at(),
     }))
 }
 
@@ -883,5 +910,50 @@ mod tests {
         assert_eq!(health["model_version"], crate::model_version::current());
         assert_eq!(health["world_version"], 0);
         assert_eq!(health["forecast_cached"], false);
+    }
+
+    /// Health names the newest entry of each embedded log, so a deployment
+    /// built before the last weekly refresh can be told from a current one.
+    #[tokio::test]
+    async fn health_dates_the_embedded_logs() {
+        let state = test_state(1, 0, Duration::from_secs(5));
+        let Json(health) = health(State(state)).await;
+        for key in ["forecast_log_latest", "season_log_latest"] {
+            let day = health[key]
+                .as_str()
+                .unwrap_or_else(|| panic!("{key} is not a date: {}", health[key]));
+            chrono::NaiveDate::parse_from_str(day, "%Y-%m-%d")
+                .unwrap_or_else(|e| panic!("{key} {day:?}: {e}"));
+        }
+        assert_eq!(
+            health["forecast_log_latest"],
+            crate::accuracy::latest_logged_at().unwrap()
+        );
+        // The commit is whatever the platform says, or null: never a guess.
+        assert!(health["commit"].is_null() || health["commit"].is_string());
+    }
+
+    #[test]
+    fn only_a_commit_hash_is_reported_as_the_commit() {
+        let full = "2e5ddfd7870bc3db0cbb427321bdcc2104d3efc9";
+        assert_eq!(commit_hash(full).as_deref(), Some(full));
+        assert_eq!(commit_hash(" 2E5DDFD\n").as_deref(), Some("2e5ddfd"));
+        for not_a_hash in ["", "main", "2e5ddf", "2e5ddfd-dirty", "<script>"] {
+            assert_eq!(commit_hash(not_a_hash), None, "{not_a_hash:?}");
+        }
+        assert_eq!(commit_hash(&"a".repeat(65)), None);
+    }
+
+    #[tokio::test]
+    async fn the_trend_is_the_embedded_season_log() {
+        let resp = trend().await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(resp.headers()[header::CONTENT_TYPE], "application/json");
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&body[..], crate::trend::response_json());
+        let parsed: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(!parsed["snapshots"].as_array().unwrap().is_empty());
     }
 }

@@ -235,6 +235,11 @@ fn load_log() -> Vec<LoggedForecast> {
     )
 }
 
+/// The day the newest entry of the embedded forecast log was written.
+pub fn latest_logged_at() -> Option<String> {
+    load_log().into_iter().map(|f| f.logged_at).max()
+}
+
 /// Score every logged forecast whose fixture has since been played.
 pub fn report(world: &crate::sim::World) -> AccuracyReport {
     report_with(world, load_log())

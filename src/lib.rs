@@ -13,6 +13,7 @@ pub mod piratings;
 pub mod rate_limit;
 pub mod scraper;
 pub mod sim;
+pub mod trend;
 pub mod validation;
 
 /// Strength-model blend weights from `ENSEMBLE_WEIGHTS` ("elo,dc,pi"),

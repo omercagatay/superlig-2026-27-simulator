@@ -73,6 +73,7 @@ fn router(state: Arc<AppState>, trust_proxy: bool, static_dir: impl AsRef<Path>)
     Router::new()
         .route("/api/health", get(handlers::health))
         .route("/api/live", get(handlers::get_live_data))
+        .route("/api/trend", get(handlers::trend))
         .merge(
             Router::new()
                 .route("/api/simulate", post(handlers::run_sim))
@@ -562,5 +563,12 @@ mod tests {
             StatusCode::OK,
             "simulate has an allowance of its own"
         );
+        // The trend is a byte copy of an embedded file, like the live data
+        // and health: no allowance to run out, even with the others spent.
+        for path in ["/api/trend", "/api/live", "/api/health"] {
+            for _ in 0..70 {
+                assert_eq!(send("GET", path).await, StatusCode::OK, "{path}");
+            }
+        }
     }
 }
