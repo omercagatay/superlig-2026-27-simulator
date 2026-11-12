@@ -25,7 +25,8 @@ Usage:
   python3 scripts/check_metrics.py docs [--metrics PATH] [--season-metrics PATH]
                                         [--market-metrics PATH] [FILE ...]
       Every metric marker in FILE (default: the files in DOCS, README.md,
-      README.tr.md, CLAUDE.md, docs/model-card.md and docs/model-card.tr.md)
+      README.tr.md, CLAUDE.md, docs/evaluation.md, docs/model-card.md and
+      docs/model-card.tr.md)
       must show the committed value, and there must be at least one: a
       check that finds nothing to check fails.  Every FILE must exist: a
       listed doc that is missing fails the check rather than being
@@ -76,6 +77,7 @@ DOCS = [
     ROOT / "README.md",
     ROOT / "README.tr.md",
     ROOT / "CLAUDE.md",
+    ROOT / "docs" / "evaluation.md",
     ROOT / "docs" / "model-card.md",
     ROOT / "docs" / "model-card.tr.md",
 ]

@@ -5,17 +5,20 @@ import {
   getForecast,
   getLiveData,
   getMatches,
+  getTrend,
   refreshLiveData,
   runSimulation,
   type AccuracyReport,
   type LiveData,
   type MatchesResponse,
   type SimResponse,
+  type TrendResponse,
   type WhatIf,
 } from "./api";
 import { asOfLine, playedResults, prunePlayedPicks } from "./calendar";
 import { describeError, type Failure } from "./errors";
 import { useLang, useT } from "./i18n";
+import { trendView } from "./trend";
 import { ClubDetail } from "./components/ClubDetail";
 import { Footer, type Theme } from "./components/Footer";
 import { Header, pageFromHash, type Page } from "./components/Header";
@@ -61,6 +64,7 @@ export default function App() {
   const [matchesData, setMatchesData] = useState<MatchesResponse | null>(null);
   const [matchesFailed, setMatchesFailed] = useState(false);
   const [accuracy, setAccuracy] = useState<AccuracyReport | null>(null);
+  const [trend, setTrend] = useState<TrendResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<Failure | null>(null);
@@ -208,6 +212,11 @@ export default function App() {
       .catch(() => {
         /* the report card is optional */
       });
+    getTrend()
+      .then(setTrend)
+      .catch(() => {
+        /* the trend is an enhancement: without it the pages show none */
+      });
     void showForecast(defaultForecast).then((failure) => {
       if (failure != null) setError({ error: failure, during: "forecast" });
     });
@@ -251,6 +260,10 @@ export default function App() {
   const shownError = error && describeError(error.error, error.during, t);
   const calendarNote = t(matchesFailed ? "calendarUnavailable" : "calendarLoading");
   const assumed = data?.what_if.length ?? 0;
+  const seasonTrend = trendView(trend, data, matchesData?.as_of ?? null, {
+    nSims: DEFAULT_SIMS,
+    seed: DEFAULT_SEED,
+  });
   // The calendar carries every played result even before a live scrape is
   // cached; the scrape stands in when the calendar failed to load.
   const results = matchesData ? playedResults(matchesData) : (liveData?.played_matches ?? null);
@@ -309,6 +322,7 @@ export default function App() {
         matches={matchesData}
         calendarNote={calendarNote}
         accuracy={accuracy}
+        trend={seasonTrend}
         onOpenFixtures={() => go("fixtures")}
         onSelectClub={setClub}
       />
@@ -375,6 +389,7 @@ export default function App() {
           team={selected}
           position={data.positions.find((p) => p.team === selected.team)}
           matches={matchesData}
+          trend={seasonTrend}
           onClose={closeClub}
         />
       )}

@@ -1,0 +1,1905 @@
+[
+  {
+    "played": 0,
+    "latest_result": null,
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 58.348,
+        "top_two_pct": 89.38,
+        "top_four_pct": 98.912,
+        "relegation_pct": 0.0,
+        "exp_points": 76.633,
+        "mean_position": 1.572
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 35.894,
+        "top_two_pct": 80.108,
+        "top_four_pct": 97.318,
+        "relegation_pct": 0.0,
+        "exp_points": 73.413,
+        "mean_position": 1.956
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 2.196,
+        "top_two_pct": 10.634,
+        "top_four_pct": 57.184,
+        "relegation_pct": 0.142,
+        "exp_points": 58.764,
+        "mean_position": 4.697
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.036,
+        "top_four_pct": 1.104,
+        "relegation_pct": 29.17,
+        "exp_points": 37.451,
+        "mean_position": 12.85
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 1.852,
+        "top_two_pct": 9.54,
+        "top_four_pct": 53.122,
+        "relegation_pct": 0.22,
+        "exp_points": 58.018,
+        "mean_position": 4.905
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 1.4,
+        "top_two_pct": 7.636,
+        "top_four_pct": 47.704,
+        "relegation_pct": 0.326,
+        "exp_points": 56.948,
+        "mean_position": 5.195
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.088,
+        "top_two_pct": 0.67,
+        "top_four_pct": 9.524,
+        "relegation_pct": 5.65,
+        "exp_points": 46.465,
+        "mean_position": 8.915
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.164,
+        "top_two_pct": 1.25,
+        "top_four_pct": 15.208,
+        "relegation_pct": 3.166,
+        "exp_points": 48.913,
+        "mean_position": 7.924
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.01,
+        "top_four_pct": 0.296,
+        "relegation_pct": 48.882,
+        "exp_points": 33.365,
+        "mean_position": 14.537
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.006,
+        "top_four_pct": 0.424,
+        "relegation_pct": 42.482,
+        "exp_points": 34.615,
+        "mean_position": 14.04
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.106,
+        "top_four_pct": 3.134,
+        "relegation_pct": 15.776,
+        "exp_points": 41.364,
+        "mean_position": 11.141
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.014,
+        "top_two_pct": 0.192,
+        "top_four_pct": 4.404,
+        "relegation_pct": 11.972,
+        "exp_points": 42.835,
+        "mean_position": 10.476
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.002,
+        "top_two_pct": 0.032,
+        "top_four_pct": 1.036,
+        "relegation_pct": 29.918,
+        "exp_points": 37.388,
+        "mean_position": 12.879
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.026,
+        "top_four_pct": 0.862,
+        "relegation_pct": 33.822,
+        "exp_points": 36.52,
+        "mean_position": 13.253
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.076,
+        "top_four_pct": 2.18,
+        "relegation_pct": 19.698,
+        "exp_points": 39.943,
+        "mean_position": 11.757
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.158,
+        "top_four_pct": 3.834,
+        "relegation_pct": 13.65,
+        "exp_points": 42.144,
+        "mean_position": 10.779
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.004,
+        "top_two_pct": 0.088,
+        "top_four_pct": 2.354,
+        "relegation_pct": 18.554,
+        "exp_points": 40.322,
+        "mean_position": 11.587
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.012,
+        "top_two_pct": 0.052,
+        "top_four_pct": 1.4,
+        "relegation_pct": 26.572,
+        "exp_points": 38.177,
+        "mean_position": 12.538
+      }
+    ]
+  },
+  {
+    "played": 9,
+    "latest_result": "2026-08-17",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 59.028,
+        "top_two_pct": 84.2,
+        "top_four_pct": 97.664,
+        "relegation_pct": 0.0,
+        "exp_points": 73.63,
+        "mean_position": 1.668
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 27.08,
+        "top_two_pct": 63.242,
+        "top_four_pct": 91.422,
+        "relegation_pct": 0.0,
+        "exp_points": 68.464,
+        "mean_position": 2.442
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 6.094,
+        "top_two_pct": 20.842,
+        "top_four_pct": 63.636,
+        "relegation_pct": 0.104,
+        "exp_points": 60.292,
+        "mean_position": 4.242
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.024,
+        "top_two_pct": 0.194,
+        "top_four_pct": 2.418,
+        "relegation_pct": 17.7,
+        "exp_points": 40.701,
+        "mean_position": 11.578
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 2.808,
+        "top_two_pct": 11.56,
+        "top_four_pct": 46.916,
+        "relegation_pct": 0.284,
+        "exp_points": 56.927,
+        "mean_position": 5.164
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 4.302,
+        "top_two_pct": 15.802,
+        "top_four_pct": 55.524,
+        "relegation_pct": 0.19,
+        "exp_points": 58.642,
+        "mean_position": 4.687
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.174,
+        "top_two_pct": 1.036,
+        "top_four_pct": 9.528,
+        "relegation_pct": 5.422,
+        "exp_points": 46.775,
+        "mean_position": 8.89
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.224,
+        "top_two_pct": 1.436,
+        "top_four_pct": 11.878,
+        "relegation_pct": 4.486,
+        "exp_points": 47.678,
+        "mean_position": 8.522
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.066,
+        "relegation_pct": 65.64,
+        "exp_points": 30.38,
+        "mean_position": 15.712
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.014,
+        "top_two_pct": 0.12,
+        "top_four_pct": 1.87,
+        "relegation_pct": 21.16,
+        "exp_points": 39.8,
+        "mean_position": 12.009
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.138,
+        "top_two_pct": 0.704,
+        "top_four_pct": 6.99,
+        "relegation_pct": 7.386,
+        "exp_points": 45.267,
+        "mean_position": 9.567
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.05,
+        "top_two_pct": 0.356,
+        "top_four_pct": 3.938,
+        "relegation_pct": 12.588,
+        "exp_points": 42.693,
+        "mean_position": 10.68
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.012,
+        "top_two_pct": 0.12,
+        "top_four_pct": 1.782,
+        "relegation_pct": 22.302,
+        "exp_points": 39.493,
+        "mean_position": 12.107
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.016,
+        "top_four_pct": 0.446,
+        "relegation_pct": 42.054,
+        "exp_points": 34.983,
+        "mean_position": 14.012
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.072,
+        "top_four_pct": 1.322,
+        "relegation_pct": 25.93,
+        "exp_points": 38.508,
+        "mean_position": 12.53
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.072,
+        "top_four_pct": 1.262,
+        "relegation_pct": 26.258,
+        "exp_points": 38.428,
+        "mean_position": 12.573
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.03,
+        "top_two_pct": 0.16,
+        "top_four_pct": 2.402,
+        "relegation_pct": 18.222,
+        "exp_points": 40.658,
+        "mean_position": 11.593
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.01,
+        "top_two_pct": 0.066,
+        "top_four_pct": 0.936,
+        "relegation_pct": 30.274,
+        "exp_points": 37.414,
+        "mean_position": 13.025
+      }
+    ]
+  },
+  {
+    "played": 18,
+    "latest_result": "2026-08-24",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 63.074,
+        "top_two_pct": 88.206,
+        "top_four_pct": 98.528,
+        "relegation_pct": 0.0,
+        "exp_points": 74.833,
+        "mean_position": 1.553
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 28.072,
+        "top_two_pct": 69.496,
+        "top_four_pct": 93.824,
+        "relegation_pct": 0.0,
+        "exp_points": 69.66,
+        "mean_position": 2.274
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 1.908,
+        "top_two_pct": 9.75,
+        "top_four_pct": 45.364,
+        "relegation_pct": 0.316,
+        "exp_points": 56.583,
+        "mean_position": 5.317
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.01,
+        "top_two_pct": 0.062,
+        "top_four_pct": 0.908,
+        "relegation_pct": 29.988,
+        "exp_points": 37.314,
+        "mean_position": 13.098
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 4.204,
+        "top_two_pct": 17.348,
+        "top_four_pct": 61.562,
+        "relegation_pct": 0.09,
+        "exp_points": 59.697,
+        "mean_position": 4.406
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 1.804,
+        "top_two_pct": 8.84,
+        "top_four_pct": 42.962,
+        "relegation_pct": 0.394,
+        "exp_points": 56.139,
+        "mean_position": 5.468
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.022,
+        "top_two_pct": 0.248,
+        "top_four_pct": 3.664,
+        "relegation_pct": 12.408,
+        "exp_points": 42.531,
+        "mean_position": 10.836
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.66,
+        "top_two_pct": 3.772,
+        "top_four_pct": 25.098,
+        "relegation_pct": 1.168,
+        "exp_points": 52.23,
+        "mean_position": 6.79
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.04,
+        "relegation_pct": 71.108,
+        "exp_points": 29.143,
+        "mean_position": 16.09
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.054,
+        "top_two_pct": 0.43,
+        "top_four_pct": 5.452,
+        "relegation_pct": 8.41,
+        "exp_points": 44.349,
+        "mean_position": 10.067
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.126,
+        "top_four_pct": 2.228,
+        "relegation_pct": 16.032,
+        "exp_points": 41.055,
+        "mean_position": 11.495
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.104,
+        "top_two_pct": 0.9,
+        "top_four_pct": 8.938,
+        "relegation_pct": 5.086,
+        "exp_points": 46.625,
+        "mean_position": 9.048
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.004,
+        "top_two_pct": 0.038,
+        "top_four_pct": 0.658,
+        "relegation_pct": 35.45,
+        "exp_points": 36.163,
+        "mean_position": 13.582
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.086,
+        "top_four_pct": 1.35,
+        "relegation_pct": 24.622,
+        "exp_points": 38.696,
+        "mean_position": 12.522
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.022,
+        "top_four_pct": 0.392,
+        "relegation_pct": 41.844,
+        "exp_points": 34.862,
+        "mean_position": 14.082
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.05,
+        "top_four_pct": 0.96,
+        "relegation_pct": 29.998,
+        "exp_points": 37.41,
+        "mean_position": 13.058
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.056,
+        "top_two_pct": 0.47,
+        "top_four_pct": 5.336,
+        "relegation_pct": 8.19,
+        "exp_points": 44.397,
+        "mean_position": 10.006
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.012,
+        "top_two_pct": 0.154,
+        "top_four_pct": 2.736,
+        "relegation_pct": 14.896,
+        "exp_points": 41.44,
+        "mean_position": 11.309
+      }
+    ]
+  },
+  {
+    "played": 27,
+    "latest_result": "2026-08-31",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 59.202,
+        "top_two_pct": 91.002,
+        "top_four_pct": 99.132,
+        "relegation_pct": 0.002,
+        "exp_points": 75.664,
+        "mean_position": 1.539
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 36.288,
+        "top_two_pct": 82.958,
+        "top_four_pct": 97.73,
+        "relegation_pct": 0.0,
+        "exp_points": 72.502,
+        "mean_position": 1.904
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 2.27,
+        "top_two_pct": 11.714,
+        "top_four_pct": 60.896,
+        "relegation_pct": 0.174,
+        "exp_points": 58.576,
+        "mean_position": 4.569
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.136,
+        "top_four_pct": 3.358,
+        "relegation_pct": 15.046,
+        "exp_points": 41.678,
+        "mean_position": 11.22
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 1.142,
+        "top_two_pct": 6.298,
+        "top_four_pct": 45.512,
+        "relegation_pct": 0.392,
+        "exp_points": 55.621,
+        "mean_position": 5.422
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.802,
+        "top_two_pct": 4.896,
+        "top_four_pct": 39.272,
+        "relegation_pct": 0.648,
+        "exp_points": 54.378,
+        "mean_position": 5.851
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.01,
+        "top_two_pct": 0.15,
+        "top_four_pct": 3.59,
+        "relegation_pct": 15.15,
+        "exp_points": 41.742,
+        "mean_position": 11.155
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.144,
+        "top_two_pct": 1.306,
+        "top_four_pct": 18.364,
+        "relegation_pct": 2.586,
+        "exp_points": 49.395,
+        "mean_position": 7.734
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.07,
+        "relegation_pct": 67.486,
+        "exp_points": 30.317,
+        "mean_position": 15.839
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.02,
+        "top_two_pct": 0.202,
+        "top_four_pct": 4.296,
+        "relegation_pct": 12.394,
+        "exp_points": 42.572,
+        "mean_position": 10.807
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.024,
+        "top_two_pct": 0.358,
+        "top_four_pct": 6.874,
+        "relegation_pct": 7.476,
+        "exp_points": 44.763,
+        "mean_position": 9.791
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.034,
+        "top_two_pct": 0.242,
+        "top_four_pct": 5.402,
+        "relegation_pct": 10.102,
+        "exp_points": 43.527,
+        "mean_position": 10.343
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.0,
+        "top_two_pct": 0.012,
+        "top_four_pct": 0.368,
+        "relegation_pct": 45.996,
+        "exp_points": 34.421,
+        "mean_position": 14.362
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.014,
+        "top_two_pct": 0.194,
+        "top_four_pct": 4.384,
+        "relegation_pct": 12.316,
+        "exp_points": 42.676,
+        "mean_position": 10.75
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.06,
+        "top_four_pct": 1.304,
+        "relegation_pct": 27.402,
+        "exp_points": 38.195,
+        "mean_position": 12.781
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.01,
+        "top_four_pct": 0.374,
+        "relegation_pct": 47.846,
+        "exp_points": 34.014,
+        "mean_position": 14.508
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.038,
+        "top_two_pct": 0.428,
+        "top_four_pct": 7.944,
+        "relegation_pct": 6.916,
+        "exp_points": 45.32,
+        "mean_position": 9.522
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.002,
+        "top_two_pct": 0.032,
+        "top_four_pct": 1.13,
+        "relegation_pct": 28.068,
+        "exp_points": 37.959,
+        "mean_position": 12.902
+      }
+    ]
+  },
+  {
+    "played": 36,
+    "latest_result": "2026-09-07",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 76.246,
+        "top_two_pct": 93.614,
+        "top_four_pct": 99.586,
+        "relegation_pct": 0.0,
+        "exp_points": 77.774,
+        "mean_position": 1.324
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 15.33,
+        "top_two_pct": 58.44,
+        "top_four_pct": 92.814,
+        "relegation_pct": 0.0,
+        "exp_points": 68.1,
+        "mean_position": 2.567
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 6.112,
+        "top_two_pct": 30.044,
+        "top_four_pct": 80.166,
+        "relegation_pct": 0.018,
+        "exp_points": 63.445,
+        "mean_position": 3.457
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.012,
+        "top_two_pct": 0.16,
+        "top_four_pct": 3.066,
+        "relegation_pct": 12.144,
+        "exp_points": 42.38,
+        "mean_position": 10.871
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 1.796,
+        "top_two_pct": 11.674,
+        "top_four_pct": 57.088,
+        "relegation_pct": 0.164,
+        "exp_points": 58.136,
+        "mean_position": 4.724
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.306,
+        "top_two_pct": 3.334,
+        "top_four_pct": 26.606,
+        "relegation_pct": 1.058,
+        "exp_points": 52.469,
+        "mean_position": 6.553
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.0,
+        "top_two_pct": 0.03,
+        "top_four_pct": 0.686,
+        "relegation_pct": 33.604,
+        "exp_points": 36.795,
+        "mean_position": 13.366
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.032,
+        "top_two_pct": 0.516,
+        "top_four_pct": 7.88,
+        "relegation_pct": 5.388,
+        "exp_points": 46.13,
+        "mean_position": 9.117
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.208,
+        "relegation_pct": 52.988,
+        "exp_points": 33.129,
+        "mean_position": 14.897
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.058,
+        "top_four_pct": 1.664,
+        "relegation_pct": 18.922,
+        "exp_points": 40.186,
+        "mean_position": 11.887
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.114,
+        "top_four_pct": 2.232,
+        "relegation_pct": 15.292,
+        "exp_points": 41.23,
+        "mean_position": 11.399
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.074,
+        "top_two_pct": 0.9,
+        "top_four_pct": 10.588,
+        "relegation_pct": 3.902,
+        "exp_points": 47.454,
+        "mean_position": 8.561
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.002,
+        "top_two_pct": 0.05,
+        "top_four_pct": 1.088,
+        "relegation_pct": 25.58,
+        "exp_points": 38.463,
+        "mean_position": 12.62
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.066,
+        "top_two_pct": 0.588,
+        "top_four_pct": 7.43,
+        "relegation_pct": 5.47,
+        "exp_points": 45.939,
+        "mean_position": 9.253
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.008,
+        "top_four_pct": 0.316,
+        "relegation_pct": 43.784,
+        "exp_points": 34.764,
+        "mean_position": 14.248
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.062,
+        "relegation_pct": 62.528,
+        "exp_points": 31.225,
+        "mean_position": 15.52
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.014,
+        "top_two_pct": 0.27,
+        "top_four_pct": 4.92,
+        "relegation_pct": 8.526,
+        "exp_points": 44.12,
+        "mean_position": 10.048
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.006,
+        "top_two_pct": 0.198,
+        "top_four_pct": 3.6,
+        "relegation_pct": 10.632,
+        "exp_points": 42.937,
+        "mean_position": 10.586
+      }
+    ]
+  },
+  {
+    "played": 45,
+    "latest_result": "2026-09-14",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 81.654,
+        "top_two_pct": 95.564,
+        "top_four_pct": 99.824,
+        "relegation_pct": 0.0,
+        "exp_points": 78.572,
+        "mean_position": 1.238
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 10.028,
+        "top_two_pct": 51.712,
+        "top_four_pct": 92.056,
+        "relegation_pct": 0.0,
+        "exp_points": 66.372,
+        "mean_position": 2.724
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 7.596,
+        "top_two_pct": 41.464,
+        "top_four_pct": 87.392,
+        "relegation_pct": 0.004,
+        "exp_points": 64.713,
+        "mean_position": 3.046
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.046,
+        "top_two_pct": 1.156,
+        "top_four_pct": 13.52,
+        "relegation_pct": 3.644,
+        "exp_points": 47.784,
+        "mean_position": 8.422
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 0.472,
+        "top_two_pct": 5.584,
+        "top_four_pct": 40.316,
+        "relegation_pct": 0.538,
+        "exp_points": 54.075,
+        "mean_position": 5.835
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.044,
+        "top_two_pct": 0.952,
+        "top_four_pct": 11.874,
+        "relegation_pct": 4.534,
+        "exp_points": 47.137,
+        "mean_position": 8.716
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.0,
+        "top_two_pct": 0.032,
+        "top_four_pct": 0.992,
+        "relegation_pct": 31.858,
+        "exp_points": 37.332,
+        "mean_position": 13.267
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.074,
+        "top_four_pct": 1.992,
+        "relegation_pct": 21.246,
+        "exp_points": 39.859,
+        "mean_position": 12.152
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.006,
+        "top_four_pct": 0.124,
+        "relegation_pct": 59.69,
+        "exp_points": 32.233,
+        "mean_position": 15.345
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.002,
+        "top_two_pct": 0.038,
+        "top_four_pct": 0.722,
+        "relegation_pct": 33.632,
+        "exp_points": 37.029,
+        "mean_position": 13.464
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.026,
+        "top_two_pct": 0.408,
+        "top_four_pct": 7.248,
+        "relegation_pct": 6.712,
+        "exp_points": 44.946,
+        "mean_position": 9.732
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.024,
+        "top_two_pct": 0.668,
+        "top_four_pct": 9.658,
+        "relegation_pct": 5.406,
+        "exp_points": 46.08,
+        "mean_position": 9.183
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.022,
+        "top_two_pct": 0.488,
+        "top_four_pct": 7.798,
+        "relegation_pct": 7.394,
+        "exp_points": 44.989,
+        "mean_position": 9.708
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.024,
+        "top_two_pct": 0.594,
+        "top_four_pct": 7.842,
+        "relegation_pct": 6.684,
+        "exp_points": 45.223,
+        "mean_position": 9.613
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.106,
+        "relegation_pct": 63.824,
+        "exp_points": 31.401,
+        "mean_position": 15.63
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.018,
+        "top_four_pct": 0.498,
+        "relegation_pct": 41.822,
+        "exp_points": 35.479,
+        "mean_position": 14.089
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.05,
+        "top_two_pct": 0.926,
+        "top_four_pct": 12.472,
+        "relegation_pct": 3.758,
+        "exp_points": 47.518,
+        "mean_position": 8.535
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.004,
+        "top_two_pct": 0.316,
+        "top_four_pct": 5.566,
+        "relegation_pct": 9.254,
+        "exp_points": 43.725,
+        "mean_position": 10.303
+      }
+    ]
+  },
+  {
+    "played": 54,
+    "latest_result": "2026-09-20",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 61.918,
+        "top_two_pct": 85.018,
+        "top_four_pct": 98.06,
+        "relegation_pct": 0.0,
+        "exp_points": 73.037,
+        "mean_position": 1.618
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 23.238,
+        "top_two_pct": 58.918,
+        "top_four_pct": 90.778,
+        "relegation_pct": 0.0,
+        "exp_points": 67.148,
+        "mean_position": 2.555
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 7.484,
+        "top_two_pct": 25.532,
+        "top_four_pct": 70.308,
+        "relegation_pct": 0.022,
+        "exp_points": 61.386,
+        "mean_position": 3.877
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.592,
+        "top_two_pct": 2.992,
+        "top_four_pct": 20.052,
+        "relegation_pct": 0.96,
+        "exp_points": 51.624,
+        "mean_position": 7.06
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 5.938,
+        "top_two_pct": 21.488,
+        "top_four_pct": 66.224,
+        "relegation_pct": 0.034,
+        "exp_points": 60.362,
+        "mean_position": 4.125
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.254,
+        "top_two_pct": 1.796,
+        "top_four_pct": 14.224,
+        "relegation_pct": 1.716,
+        "exp_points": 49.826,
+        "mean_position": 7.763
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.0,
+        "top_two_pct": 0.014,
+        "top_four_pct": 0.424,
+        "relegation_pct": 34.746,
+        "exp_points": 36.399,
+        "mean_position": 13.654
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.016,
+        "top_four_pct": 0.488,
+        "relegation_pct": 32.266,
+        "exp_points": 36.911,
+        "mean_position": 13.46
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.006,
+        "top_four_pct": 0.192,
+        "relegation_pct": 41.418,
+        "exp_points": 35.11,
+        "mean_position": 14.228
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.002,
+        "top_two_pct": 0.008,
+        "top_four_pct": 0.236,
+        "relegation_pct": 42.79,
+        "exp_points": 34.894,
+        "mean_position": 14.329
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.042,
+        "top_two_pct": 0.412,
+        "top_four_pct": 4.468,
+        "relegation_pct": 6.092,
+        "exp_points": 44.763,
+        "mean_position": 9.943
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.226,
+        "top_two_pct": 1.74,
+        "top_four_pct": 13.906,
+        "relegation_pct": 1.678,
+        "exp_points": 49.568,
+        "mean_position": 7.84
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.01,
+        "top_two_pct": 0.138,
+        "top_four_pct": 1.896,
+        "relegation_pct": 14.376,
+        "exp_points": 41.262,
+        "mean_position": 11.525
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.192,
+        "top_two_pct": 1.202,
+        "top_four_pct": 10.412,
+        "relegation_pct": 2.558,
+        "exp_points": 48.253,
+        "mean_position": 8.429
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.024,
+        "relegation_pct": 67.734,
+        "exp_points": 30.374,
+        "mean_position": 15.927
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.024,
+        "top_four_pct": 0.382,
+        "relegation_pct": 34.084,
+        "exp_points": 36.481,
+        "mean_position": 13.638
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.096,
+        "top_two_pct": 0.61,
+        "top_four_pct": 6.254,
+        "relegation_pct": 4.564,
+        "exp_points": 46.107,
+        "mean_position": 9.353
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.006,
+        "top_two_pct": 0.086,
+        "top_four_pct": 1.672,
+        "relegation_pct": 14.962,
+        "exp_points": 40.998,
+        "mean_position": 11.675
+      }
+    ]
+  },
+  {
+    "played": 63,
+    "latest_result": "2026-10-12",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 59.072,
+        "top_two_pct": 84.532,
+        "top_four_pct": 98.81,
+        "relegation_pct": 0.0,
+        "exp_points": 74.325,
+        "mean_position": 1.631
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 26.51,
+        "top_two_pct": 63.286,
+        "top_four_pct": 94.73,
+        "relegation_pct": 0.0,
+        "exp_points": 69.442,
+        "mean_position": 2.345
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 7.328,
+        "top_two_pct": 24.758,
+        "top_four_pct": 77.632,
+        "relegation_pct": 0.006,
+        "exp_points": 63.098,
+        "mean_position": 3.614
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.196,
+        "top_two_pct": 1.254,
+        "top_four_pct": 14.24,
+        "relegation_pct": 0.896,
+        "exp_points": 50.708,
+        "mean_position": 7.325
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 6.594,
+        "top_two_pct": 23.84,
+        "top_four_pct": 77.4,
+        "relegation_pct": 0.006,
+        "exp_points": 62.92,
+        "mean_position": 3.637
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.118,
+        "top_two_pct": 0.746,
+        "top_four_pct": 10.648,
+        "relegation_pct": 1.582,
+        "exp_points": 49.239,
+        "mean_position": 7.897
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.002,
+        "top_two_pct": 0.032,
+        "top_four_pct": 1.228,
+        "relegation_pct": 15.526,
+        "exp_points": 40.459,
+        "mean_position": 11.715
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.128,
+        "relegation_pct": 40.46,
+        "exp_points": 34.914,
+        "mean_position": 14.143
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.008,
+        "top_four_pct": 0.214,
+        "relegation_pct": 32.726,
+        "exp_points": 36.251,
+        "mean_position": 13.624
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.162,
+        "relegation_pct": 38.284,
+        "exp_points": 35.309,
+        "mean_position": 14.049
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.008,
+        "top_two_pct": 0.072,
+        "top_four_pct": 1.752,
+        "relegation_pct": 9.598,
+        "exp_points": 42.338,
+        "mean_position": 10.888
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.08,
+        "top_two_pct": 0.578,
+        "top_four_pct": 7.85,
+        "relegation_pct": 2.16,
+        "exp_points": 47.848,
+        "mean_position": 8.435
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.036,
+        "top_two_pct": 0.282,
+        "top_four_pct": 4.906,
+        "relegation_pct": 4.042,
+        "exp_points": 45.956,
+        "mean_position": 9.285
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.038,
+        "top_two_pct": 0.412,
+        "top_four_pct": 5.756,
+        "relegation_pct": 3.188,
+        "exp_points": 46.66,
+        "mean_position": 8.989
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.002,
+        "relegation_pct": 83.264,
+        "exp_points": 26.66,
+        "mean_position": 16.844
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.004,
+        "top_four_pct": 0.232,
+        "relegation_pct": 32.276,
+        "exp_points": 36.445,
+        "mean_position": 13.519
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.016,
+        "top_two_pct": 0.188,
+        "top_four_pct": 4.068,
+        "relegation_pct": 5.082,
+        "exp_points": 45.265,
+        "mean_position": 9.595
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.0,
+        "top_two_pct": 0.006,
+        "top_four_pct": 0.242,
+        "relegation_pct": 30.904,
+        "exp_points": 36.666,
+        "mean_position": 13.465
+      }
+    ]
+  },
+  {
+    "played": 72,
+    "latest_result": "2026-10-19",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 61.568,
+        "top_two_pct": 86.916,
+        "top_four_pct": 99.204,
+        "relegation_pct": 0.0,
+        "exp_points": 75.579,
+        "mean_position": 1.563
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 26.146,
+        "top_two_pct": 65.438,
+        "top_four_pct": 95.712,
+        "relegation_pct": 0.0,
+        "exp_points": 70.532,
+        "mean_position": 2.285
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 2.73,
+        "top_two_pct": 12.512,
+        "top_four_pct": 64.048,
+        "relegation_pct": 0.01,
+        "exp_points": 60.749,
+        "mean_position": 4.311
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.252,
+        "top_two_pct": 1.556,
+        "top_four_pct": 18.634,
+        "relegation_pct": 0.264,
+        "exp_points": 52.607,
+        "mean_position": 6.736
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 9.096,
+        "top_two_pct": 31.63,
+        "top_four_pct": 85.524,
+        "relegation_pct": 0.002,
+        "exp_points": 65.495,
+        "mean_position": 3.204
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.084,
+        "top_two_pct": 0.836,
+        "top_four_pct": 13.196,
+        "relegation_pct": 0.64,
+        "exp_points": 50.911,
+        "mean_position": 7.358
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.014,
+        "top_two_pct": 0.106,
+        "top_four_pct": 2.594,
+        "relegation_pct": 5.728,
+        "exp_points": 43.967,
+        "mean_position": 10.171
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.04,
+        "relegation_pct": 48.73,
+        "exp_points": 32.983,
+        "mean_position": 14.815
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.008,
+        "top_four_pct": 0.308,
+        "relegation_pct": 20.184,
+        "exp_points": 38.249,
+        "mean_position": 12.732
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.072,
+        "relegation_pct": 38.994,
+        "exp_points": 34.677,
+        "mean_position": 14.214
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.012,
+        "top_four_pct": 0.774,
+        "relegation_pct": 12.77,
+        "exp_points": 40.414,
+        "mean_position": 11.782
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.024,
+        "top_two_pct": 0.192,
+        "top_four_pct": 4.956,
+        "relegation_pct": 2.572,
+        "exp_points": 46.69,
+        "mean_position": 9.039
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.046,
+        "top_two_pct": 0.4,
+        "top_four_pct": 6.694,
+        "relegation_pct": 1.632,
+        "exp_points": 47.955,
+        "mean_position": 8.539
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.046,
+        "top_four_pct": 1.742,
+        "relegation_pct": 6.388,
+        "exp_points": 43.259,
+        "mean_position": 10.538
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.0,
+        "relegation_pct": 88.13,
+        "exp_points": 24.926,
+        "mean_position": 17.126
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.11,
+        "relegation_pct": 37.072,
+        "exp_points": 35.033,
+        "mean_position": 14.046
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.036,
+        "top_two_pct": 0.348,
+        "top_four_pct": 6.288,
+        "relegation_pct": 1.724,
+        "exp_points": 47.785,
+        "mean_position": 8.593
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.104,
+        "relegation_pct": 35.16,
+        "exp_points": 35.331,
+        "mean_position": 13.949
+      }
+    ]
+  },
+  {
+    "played": 81,
+    "latest_result": "2026-10-26",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 73.952,
+        "top_two_pct": 91.81,
+        "top_four_pct": 99.566,
+        "relegation_pct": 0.0,
+        "exp_points": 77.913,
+        "mean_position": 1.371
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 11.866,
+        "top_two_pct": 46.388,
+        "top_four_pct": 90.77,
+        "relegation_pct": 0.0,
+        "exp_points": 68.259,
+        "mean_position": 2.819
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 3.516,
+        "top_two_pct": 17.504,
+        "top_four_pct": 71.802,
+        "relegation_pct": 0.002,
+        "exp_points": 63.011,
+        "mean_position": 3.924
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.39,
+        "top_two_pct": 2.766,
+        "top_four_pct": 23.624,
+        "relegation_pct": 0.06,
+        "exp_points": 55.195,
+        "mean_position": 6.039
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 10.174,
+        "top_two_pct": 40.188,
+        "top_four_pct": 88.784,
+        "relegation_pct": 0.0,
+        "exp_points": 67.387,
+        "mean_position": 2.978
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.028,
+        "top_two_pct": 0.328,
+        "top_four_pct": 5.958,
+        "relegation_pct": 0.836,
+        "exp_points": 49.022,
+        "mean_position": 8.238
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.01,
+        "top_two_pct": 0.186,
+        "top_four_pct": 3.836,
+        "relegation_pct": 1.856,
+        "exp_points": 46.72,
+        "mean_position": 9.1
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.006,
+        "relegation_pct": 55.672,
+        "exp_points": 31.077,
+        "mean_position": 15.314
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.032,
+        "top_four_pct": 0.698,
+        "relegation_pct": 6.098,
+        "exp_points": 42.091,
+        "mean_position": 11.096
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.01,
+        "relegation_pct": 46.656,
+        "exp_points": 32.739,
+        "mean_position": 14.827
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.218,
+        "relegation_pct": 14.994,
+        "exp_points": 38.704,
+        "mean_position": 12.497
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.052,
+        "top_four_pct": 1.17,
+        "relegation_pct": 4.926,
+        "exp_points": 43.285,
+        "mean_position": 10.592
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.006,
+        "top_two_pct": 0.11,
+        "top_four_pct": 2.096,
+        "relegation_pct": 2.636,
+        "exp_points": 45.171,
+        "mean_position": 9.813
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.02,
+        "top_two_pct": 0.2,
+        "top_four_pct": 3.634,
+        "relegation_pct": 1.512,
+        "exp_points": 47.084,
+        "mean_position": 9.023
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.0,
+        "relegation_pct": 91.694,
+        "exp_points": 23.137,
+        "mean_position": 17.301
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.002,
+        "top_two_pct": 0.004,
+        "top_four_pct": 0.166,
+        "relegation_pct": 19.61,
+        "exp_points": 37.644,
+        "mean_position": 12.952
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.036,
+        "top_two_pct": 0.43,
+        "top_four_pct": 7.65,
+        "relegation_pct": 0.518,
+        "exp_points": 49.763,
+        "mean_position": 7.952
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.012,
+        "relegation_pct": 52.93,
+        "exp_points": 31.725,
+        "mean_position": 15.163
+      }
+    ]
+  },
+  {
+    "played": 90,
+    "latest_result": "2026-11-02",
+    "logged_at": "2026-11-12",
+    "model_version": "2026-10b",
+    "reconstructed": true,
+    "n_sims": 50000,
+    "seed": 12345,
+    "clubs": [
+      {
+        "team": "Galatasaray",
+        "title_pct": 84.416,
+        "top_two_pct": 96.472,
+        "top_four_pct": 99.798,
+        "relegation_pct": 0.0,
+        "exp_points": 79.676,
+        "mean_position": 1.202
+      },
+      {
+        "team": "Fenerbahçe",
+        "title_pct": 2.95,
+        "top_two_pct": 25.932,
+        "top_four_pct": 76.198,
+        "relegation_pct": 0.002,
+        "exp_points": 64.066,
+        "mean_position": 3.632
+      },
+      {
+        "team": "Beşiktaş",
+        "title_pct": 2.094,
+        "top_two_pct": 16.36,
+        "top_four_pct": 66.246,
+        "relegation_pct": 0.0,
+        "exp_points": 62.114,
+        "mean_position": 4.111
+      },
+      {
+        "team": "Amedspor",
+        "title_pct": 0.364,
+        "top_two_pct": 4.28,
+        "top_four_pct": 30.026,
+        "relegation_pct": 0.02,
+        "exp_points": 56.419,
+        "mean_position": 5.767
+      },
+      {
+        "team": "Trabzonspor",
+        "title_pct": 10.072,
+        "top_two_pct": 53.944,
+        "top_four_pct": 90.31,
+        "relegation_pct": 0.0,
+        "exp_points": 68.306,
+        "mean_position": 2.742
+      },
+      {
+        "team": "Başakşehir",
+        "title_pct": 0.024,
+        "top_two_pct": 0.806,
+        "top_four_pct": 9.344,
+        "relegation_pct": 0.31,
+        "exp_points": 50.879,
+        "mean_position": 7.666
+      },
+      {
+        "team": "Göztepe",
+        "title_pct": 0.048,
+        "top_two_pct": 1.13,
+        "top_four_pct": 11.932,
+        "relegation_pct": 0.296,
+        "exp_points": 51.347,
+        "mean_position": 7.442
+      },
+      {
+        "team": "Samsunspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.004,
+        "relegation_pct": 63.28,
+        "exp_points": 29.668,
+        "mean_position": 15.667
+      },
+      {
+        "team": "Erzurumspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.004,
+        "top_four_pct": 0.196,
+        "relegation_pct": 12.644,
+        "exp_points": 38.76,
+        "mean_position": 12.465
+      },
+      {
+        "team": "Gençlerbirliği",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.112,
+        "relegation_pct": 19.576,
+        "exp_points": 37.372,
+        "mean_position": 13.055
+      },
+      {
+        "team": "Rizespor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.212,
+        "relegation_pct": 12.432,
+        "exp_points": 39.034,
+        "mean_position": 12.354
+      },
+      {
+        "team": "Alanyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.002,
+        "top_four_pct": 0.168,
+        "relegation_pct": 13.98,
+        "exp_points": 38.74,
+        "mean_position": 12.514
+      },
+      {
+        "team": "Çorum",
+        "title_pct": 0.012,
+        "top_two_pct": 0.412,
+        "top_four_pct": 5.63,
+        "relegation_pct": 0.65,
+        "exp_points": 48.764,
+        "mean_position": 8.486
+      },
+      {
+        "team": "Kocaelispor",
+        "title_pct": 0.004,
+        "top_two_pct": 0.128,
+        "top_four_pct": 2.464,
+        "relegation_pct": 1.764,
+        "exp_points": 45.812,
+        "mean_position": 9.634
+      },
+      {
+        "team": "Eyüpspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.0,
+        "relegation_pct": 93.6,
+        "exp_points": 22.127,
+        "mean_position": 17.415
+      },
+      {
+        "team": "Konyaspor",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.064,
+        "relegation_pct": 25.076,
+        "exp_points": 36.144,
+        "mean_position": 13.51
+      },
+      {
+        "team": "Kasımpaşa",
+        "title_pct": 0.016,
+        "top_two_pct": 0.526,
+        "top_four_pct": 7.29,
+        "relegation_pct": 0.41,
+        "exp_points": 49.9,
+        "mean_position": 8.038
+      },
+      {
+        "team": "Gaziantep",
+        "title_pct": 0.0,
+        "top_two_pct": 0.0,
+        "top_four_pct": 0.006,
+        "relegation_pct": 55.96,
+        "exp_points": 31.067,
+        "mean_position": 15.3
+      }
+    ]
+  }
+]

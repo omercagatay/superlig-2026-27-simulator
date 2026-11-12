@@ -3,7 +3,7 @@
 # The assertions inside fetch_fixtures.py are the point: if TFF changes its
 # markup, the structural checks (306 fixtures, 34 rounds, every pair twice,
 # nine matches on every week page, every fixture dated) fail here and the run
-# goes red, instead of the app quietly serving a stale calendar. Up to nine
+# goes red, instead of the app quietly serving a stale calendar. Up to 18
 # postponed matches ("Ertelendi" or blank) may keep their committed date; a
 # week widget that stops yielding dates fails the run. A committed result
 # that vanishes or changes fails it too; for a genuine TFF correction,
@@ -18,8 +18,14 @@
 # started 5-7 hours late), so Thursday's slot is 18:17 Istanbul time, off
 # the busy top of the hour, leaving most of the evening as margin before
 # the UTC date turns. Extra runs are harmless: frozen entries are never
-# overwritten, and a forecast that has not moved keeps its entry, so a run
-# with no new results or fixture changes commits (and deploys) nothing.
+# overwritten, a forecast that has not moved keeps its entry, and the season
+# log gains a snapshot only when the season forecast has moved, so a run with
+# no new results or fixture changes commits nothing.
+#
+# This job does not deploy. The Railway service is connected to the
+# repository through Railway's GitHub integration, which deploys every push
+# to main, this job's data commit included. /api/health on the site reports
+# the commit it was built from and the newest entry of each embedded log.
 name: refresh data
 
 on:
@@ -46,9 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      # Whether the secret exists, without exposing the token itself to every
-      # step. A step's own env is not in scope for that step's `if`.
-      HAS_RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN != '' }}
       FAILURE_ISSUE: Weekly data refresh failed
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
@@ -67,7 +70,7 @@ jobs:
       - id: rust-cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Freeze forecasts for upcoming fixtures
+      - name: Freeze forecasts for upcoming fixtures and the season
         id: log-forecast
         run: cargo run --release --example log_forecast
 
@@ -80,26 +83,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/fixtures_2026_27.json data/forecast_log.json
+          git add data/fixtures_2026_27.json data/forecast_log.json data/season_log.json
           if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No data changes."
           else
-            git commit -m "data: weekly refresh (fixtures, forecast log)"
+            git commit -m "data: weekly refresh (fixtures, forecast logs)"
             git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
-
-      # Deploy only if the repo has a Railway token; the project deploys by
-      # CLI, so without one this step is skipped rather than failing.
-      - name: Deploy to Railway
-        id: deploy
-        if: steps.commit.outputs.changed == 'true' && env.HAS_RAILWAY_TOKEN == 'true'
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          npm i -g @railway/cli
-          railway up --service superlig-sim --detach
 
       # One open issue at most: a repeat failure comments on it. --repo
       # because a failed checkout leaves no git remote to infer it from.

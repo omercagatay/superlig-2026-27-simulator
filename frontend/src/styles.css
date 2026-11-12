@@ -1241,3 +1241,87 @@ input {
   color: var(--muted);
   font-size: 13px;
 }
+
+/* ---- Season trend: sparklines in the race lists and the club dialog ---- */
+
+.spark {
+  display: block;
+  overflow: visible;
+}
+
+.spark-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.spark-dot {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.spark-red .spark-line {
+  stroke: var(--red);
+}
+
+.spark-red .spark-dot {
+  fill: var(--red);
+}
+
+.rank-list-trend .rank-row {
+  grid-template-columns: 22px minmax(0, 1fr) 72px minmax(48px, 120px) 62px;
+}
+
+/* A phone has no room for both: the line stays, the bar goes. */
+@media (max-width: 519px) {
+  .rank-list-trend .rank-row {
+    grid-template-columns: 22px minmax(0, 1fr) 72px 56px;
+  }
+
+  .rank-list-trend .bar {
+    display: none;
+  }
+}
+
+.trend-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.facts .fact-trend {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.fact-trend .facts-note {
+  margin-top: 2px;
+}
+
+.trend-table .trend-wrap {
+  white-space: normal;
+}
+
+.trend-table tbody th {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+/* Headings may wrap ("Exp. pts"), so every column fits a phone. */
+.trend-table thead th {
+  white-space: normal;
+  vertical-align: bottom;
+}
+
+@media (max-width: 599px) {
+  .trend-table th,
+  .trend-table td {
+    padding-inline: 4px;
+    font-size: 13px;
+  }
+}

@@ -328,3 +328,42 @@ export interface AccuracyReport {
 export async function getAccuracy(): Promise<AccuracyReport> {
   return request("/api/accuracy");
 }
+
+/** One club's season in one trend snapshot, percentages as the site shows
+ *  them (src/trend.rs `ClubOutlook`). */
+export interface TrendClub {
+  team: string;
+  title_pct: number;
+  top_two_pct: number;
+  top_four_pct: number;
+  relegation_pct: number;
+  exp_points: number;
+  mean_position: number;
+}
+
+/** The default forecast as it stood on one state of the league. */
+export interface TrendSnapshot {
+  /** Results the forecast stood on. */
+  played: number;
+  /** Date of the latest of them, ISO YYYY-MM-DD; null before the first. */
+  latest_result: string | null;
+  /** The day the snapshot was written down. */
+  logged_at: string;
+  model_version: string;
+  /** Present (true) only on a snapshot computed after the fact rather than
+   *  published at the time. */
+  reconstructed?: boolean;
+  n_sims: number;
+  seed: number;
+  clubs: TrendClub[];
+}
+
+export interface TrendResponse {
+  /** Oldest first. */
+  snapshots: TrendSnapshot[];
+}
+
+/** The season forecast at successive states of the league. */
+export async function getTrend(): Promise<TrendResponse> {
+  return request("/api/trend");
+}

@@ -116,7 +116,8 @@
 //!                           shock, but it still pulls the trial's Elo
 //!                           towards the blend's view: a shift of the mean
 //!                           forecast, measured under SEASON_SHOCK=elo
-//!                           (CLAUDE.md, "Season-level evaluation")
+//!                           (docs/evaluation.md, "Season-level
+//!                           evaluation")
 //!   SEASON_DRIFT=0          SD, in Elo points, of each club's random-walk
 //!                           step before every round still to be played
 //!
